@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sól de Sóter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<!-- ── ESTILOS ── -->
+<link rel="stylesheet" href="css/global.css">
+<link rel="stylesheet" href="css/splash.css">
+<link rel="stylesheet" href="css/tracker.css">
+<link rel="stylesheet" href="css/profile.css">
+</head>
+<body>
+
+<!-- INTERACTIVE STARFIELD CANVAS -->
+<canvas id="bg-canvas"></canvas>
+
+<!-- ══════════ SPLASH ══════════ -->
+<div id="splash">
+  <div id="starfield"></div>
+  <div class="nebula" style="width:500px;height:500px;background:rgba(124,111,205,.18);top:-100px;left:-100px"></div>
+  <div class="nebula" style="width:400px;height:400px;background:rgba(200,169,110,.1);bottom:-50px;right:-80px"></div>
+  <div class="nebula" style="width:300px;height:300px;background:rgba(94,196,168,.07);top:40%;left:60%"></div>
+  <div class="splash-content">
+    <div class="splash-eyebrow">✦ espaço pessoal ✦</div>
+    <div class="splash-title"><em>Sól</em> de Sóter</div>
+    <div class="splash-subtitle">o universo que vive em você</div>
+    <div class="splash-divider"></div>
+    <button class="btn-enter" onclick="enterSite()">✦ &nbsp; Entrar &nbsp; ✦</button>
+  </div>
+  <div class="splash-bottom">SOL DE SOTER · ESPAÇO PESSOAL</div>
+</div>
+
+<div class="overlay" id="overlay" onclick="closeMobileNav()"></div>
+
+<!-- ══════════ HEADER ══════════ -->
+<header class="site-header" id="site-header">
+  <span class="header-brand" onclick="goTo('home')"><em>Sól</em> de Sóter</span>
+
+  <nav class="header-nav" id="header-nav">
+    <div style="flex:1"></div>
+    <button class="hn-link active" id="hn-home" onclick="goTo('home')">Home</button>
+
+    <div class="hn-dropdown" id="dd-biblioteca">
+      <button class="hn-dropdown-trigger" tabindex="0">Biblioteca <span class="hn-chevron">▾</span></button>
+      <div class="hn-menu">
+        <button class="hn-menu-item" id="hn-livros" onclick="goTo('livros')">Livraria</button>
+        <button class="hn-menu-item" id="hn-cinema" onclick="goTo('cinema')">Cinema</button>
+        <button class="hn-menu-item" id="hn-mangas" onclick="goTo('mangas')">Mangás</button>
+      </div>
+    </div>
+
+    <div class="hn-dropdown" id="dd-pessoal">
+      <button class="hn-dropdown-trigger" tabindex="0">Pessoal <span class="hn-chevron">▾</span></button>
+      <div class="hn-menu">
+        <button class="hn-menu-item" id="hn-sonhos" onclick="goTo('sonhos')">Sonhos</button>
+        <button class="hn-menu-item" id="hn-viagens" onclick="goTo('viagens')">Viagens</button>
+        <button class="hn-menu-item" id="hn-wishlist" onclick="goTo('wishlist')">Wishlist</button>
+        <button class="hn-menu-item" id="hn-financas" onclick="goTo('financas')">Finanças</button>
+        <button class="hn-menu-item" id="hn-tarefas" onclick="goTo('tarefas')">Planejamento</button>
+        <button class="hn-menu-item" id="hn-academia" onclick="goTo('academia')">Academia</button>
+        <button class="hn-menu-item" id="hn-estudos" onclick="goTo('estudos')">Estudos</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="header-balance">
+    <div>
+      <div class="balance-label">Saldo</div>
+      <div class="balance-value" id="header-balance-val">R$ 0,00</div>
+    </div>
+  </div>
+
+  <div class="profile-widget" id="profile-widget">
+    <button class="profile-trigger" id="profile-trigger">
+      <div class="profile-avatar" id="header-avatar">
+        <img id="header-avatar-img" src="" alt="">
+        <span class="avatar-initials" id="header-initials">?</span>
+      </div>
+      <div class="profile-info">
+        <div class="profile-name" id="header-profile-name">Usuário</div>
+        <div class="profile-level-row">
+          <span class="profile-level-badge" id="header-level-badge">Nv 1</span>
+          <div class="profile-xp-bar">
+            <div class="profile-xp-fill" id="header-xp-fill" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+      <span class="profile-chevron">▾</span>
+    </button>
+
+    <div class="profile-menu" id="profile-menu">
+      <div class="pm-header">
+        <div class="pm-name" id="pm-name-display">Usuário</div>
+        <div class="pm-title" id="pm-title-display">Viajante Nível 1</div>
+        <div class="pm-xp-row">
+          <span id="pm-xp-text">0 XP</span>
+          <span id="pm-xp-next">próx. nível: 100 XP</span>
+        </div>
+        <div class="pm-xp-bar"><div class="pm-xp-fill" id="pm-xp-fill" style="width:0%"></div></div>
+      </div>
+      <div class="pm-edit-zone">
+        <div class="pm-edit-label">Seu nome</div>
+        <input class="pm-name-input" id="pm-name-input" placeholder="Como quer ser chamado?" oninput="saveProfileName(this.value)">
+        <div class="pm-edit-label" style="margin-top:8px">Foto de perfil</div>
+        <div class="pm-avatar-upload">
+          <button class="pm-avatar-btn" onclick="document.getElementById('pm-avatar-input').click()">📷 Trocar foto</button>
+          <button class="pm-avatar-btn" onclick="removeAvatar()">✕ Remover</button>
+        </div>
+        <input type="file" id="pm-avatar-input" accept="image/*" onchange="handleAvatarUpload(event)">
+      </div>
+      <div class="pm-divider"></div>
+      <button class="pm-item" onclick="goTo('rpg');closeMobileNav()"><span class="pm-icon">⚔️</span> RPG</button>
+      <button class="pm-item" onclick="goTo('financas')"><span class="pm-icon">💰</span> Finanças</button>
+      <button class="pm-item" onclick="goTo('armazenamento')"><span class="pm-icon">💾</span> Armazenamento</button>
+    </div>
+  </div>
+
+  <button class="hamburger" onclick="toggleMobileNav()" id="hamburger-btn">☰</button>
+</header>
+
+<!-- MOBILE NAV DRAWER -->
+<div class="mobile-nav" id="mobile-nav">
+  <button class="hn-menu-item" onclick="goTo('home');closeMobileNav()">Home</button>
+  <div class="mobile-nav-label">Biblioteca</div>
+  <button class="hn-menu-item" onclick="goTo('livros');closeMobileNav()">Livraria</button>
+  <button class="hn-menu-item" onclick="goTo('cinema');closeMobileNav()">Cinema</button>
+  <button class="hn-menu-item" onclick="goTo('mangas');closeMobileNav()">Mangás</button>
+  <div class="mobile-nav-label">Pessoal</div>
+  <button class="hn-menu-item" onclick="goTo('sonhos');closeMobileNav()">Sonhos</button>
+  <button class="hn-menu-item" onclick="goTo('viagens');closeMobileNav()">Viagens</button>
+  <button class="hn-menu-item" onclick="goTo('wishlist');closeMobileNav()">Wishlist</button>
+  <button class="hn-menu-item" onclick="goTo('financas');closeMobileNav()">Finanças</button>
+  <button class="hn-menu-item" onclick="goTo('tarefas');closeMobileNav()">Planejamento</button>
+  <button class="hn-menu-item" onclick="goTo('academia');closeMobileNav()">Academia</button>
+  <button class="hn-menu-item" onclick="goTo('estudos');closeMobileNav()">Estudos</button>
+</div>
+
+<!-- ══════════ MAIN CONTENT ══════════ -->
+<main class="main">
+
+<!-- MODAL TRACKER -->
+<div class="modal-backdrop" id="tracker-modal" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-layout">
+      <div class="modal-img-col">
+        <div class="img-upload-zone" id="img-zone" onclick="document.getElementById('modal-img-input').click()">
+          <img id="modal-preview" src="" alt="preview">
+          <div class="upload-hint">
+            <span class="uh-icon">🖼️</span>
+            <span class="uh-text">Clique para<br>enviar capa</span>
+            <span class="uh-sub">JPG · PNG · WebP</span>
+          </div>
+          <div class="img-change-btn">✎ trocar foto</div>
+        </div>
+        <input type="file" id="modal-img-input" accept="image/*" onchange="handleImgUpload(event)">
+        <label class="fav-toggle">
+          <input type="checkbox" id="m-fav" onchange="this.nextElementSibling.textContent=this.checked?'❤️':'🤍'">
+          <span class="fav-icon">🤍</span>
+          <span>Favorito</span>
+        </label>
+      </div>
+      <div class="modal-fields-col">
+        <div class="modal-top-bar">
+          <div class="modal-title" id="modal-title">Adicionar</div>
+        </div>
+        <div class="mlabel">Título & Autor</div>
+        <div class="form-row" style="margin-bottom:10px">
+          <input class="inp" id="m-titulo" placeholder="Título *" style="font-weight:600">
+        </div>
+        <div class="form-row" style="margin-bottom:10px">
+          <input class="inp" id="m-autor" placeholder="Autor / Criador">
+          <input class="inp" id="m-genero" placeholder="Gênero">
+        </div>
+        <div class="mlabel">Status</div>
+        <select class="inp" id="m-status" style="margin-bottom:10px;width:100%"></select>
+        <div id="m-livros-extra">
+          <div class="mlabel">Progresso de leitura</div>
+          <div class="form-row" style="margin-bottom:10px">
+            <input class="inp" id="m-paginas" placeholder="Total de páginas" type="number">
+            <input class="inp" id="m-atual-pag" placeholder="Página atual" type="number">
+          </div>
+        </div>
+        <div id="m-cinema-extra" style="display:none">
+          <div class="mlabel">Tipo</div>
+          <select class="inp" id="m-tipo-cinema" style="margin-bottom:10px;width:100%">
+            <option>Filme</option><option>Série</option><option>Documentário</option><option>Anime</option>
+          </select>
+        </div>
+        <div id="m-mangas-extra" style="display:none">
+          <div class="mlabel">Progresso de capítulos</div>
+          <div class="form-row" style="margin-bottom:10px">
+            <input class="inp" id="m-cap-atual" placeholder="Capítulo atual" type="number">
+            <input class="inp" id="m-cap-total" placeholder="Total de caps" type="number">
+          </div>
+        </div>
+        <div class="mlabel">Sua nota</div>
+        <div class="modal-stars" id="modal-stars">
+          <button class="mstar" data-v="1" onclick="setModalStar(1)">★</button>
+          <button class="mstar" data-v="2" onclick="setModalStar(2)">★</button>
+          <button class="mstar" data-v="3" onclick="setModalStar(3)">★</button>
+          <button class="mstar" data-v="4" onclick="setModalStar(4)">★</button>
+          <button class="mstar" data-v="5" onclick="setModalStar(5)">★</button>
+        </div>
+        <div style="font-size:10px;color:var(--muted);font-family:var(--font-mono);margin-bottom:4px">
+          <span id="modal-star-label">Sem nota</span>
+        </div>
+        <div class="mlabel">Observações</div>
+        <textarea class="inp" id="m-obs" placeholder="Notas pessoais, sinopse…" style="width:100%;min-height:60px;margin-bottom:4px"></textarea>
+        <div class="modal-actions">
+          <button class="btn btn-primary btn-save" onclick="saveModalItem()">✓ &nbsp;Salvar</button>
+          <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+          <button class="btn btn-danger" id="modal-del-btn" onclick="modalDeleteItem()">🗑 Excluir</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ HOME ══════════ -->
+<section class="page active" id="page-home">
+  <div class="home-greeting">Olá, <em>bem-vindo</em><br>de volta.</div>
+  <div class="home-date" id="homeDate"></div>
+  <div class="quick-tiles" id="quickTiles">
+    <div class="quick-tile" onclick="goTo('livros')">
+      <div class="tile-icon">📚</div>
+      <div class="tile-name">Livros</div>
+      <div class="tile-val" id="ht-livros">0</div>
+    </div>
+    <div class="quick-tile" onclick="goTo('cinema')">
+      <div class="tile-icon">🎬</div>
+      <div class="tile-name">Filmes</div>
+      <div class="tile-val" id="ht-cinema">0</div>
+    </div>
+    <div class="quick-tile" onclick="goTo('mangas')">
+      <div class="tile-icon">📖</div>
+      <div class="tile-name">Mangás</div>
+      <div class="tile-val" id="ht-mangas">0</div>
+    </div>
+    <div class="quick-tile" onclick="goTo('tarefas')">
+      <div class="tile-icon">✅</div>
+      <div class="tile-name">Tarefas</div>
+      <div class="tile-val" id="ht-tarefas">0</div>
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Humor de hoje</div>
+      <div class="mood-section" id="moodBtns">
+        <button class="mood-btn" onclick="setMood(this,'😴')">😴</button>
+        <button class="mood-btn" onclick="setMood(this,'😐')">😐</button>
+        <button class="mood-btn" onclick="setMood(this,'🙂')">🙂</button>
+        <button class="mood-btn" onclick="setMood(this,'😄')">😄</button>
+        <button class="mood-btn" onclick="setMood(this,'🤩')">🤩</button>
+        <button class="mood-btn" onclick="setMood(this,'😤')">😤</button>
+        <button class="mood-btn" onclick="setMood(this,'😟')">😟</button>
+      </div>
+      <div style="margin-top:14px;font-size:12px;color:var(--muted);font-family:var(--font-mono)">
+        Humor atual: <span id="moodDisplay" style="color:var(--text)">—</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Nota rápida</div>
+      <textarea class="inp" id="quickNote" placeholder="Escreva algo para lembrar…" style="width:100%;min-height:80px;margin:0" oninput="saveNote()"></textarea>
+    </div>
+  </div>
+  <div class="section-gap grid-3">
+    <div class="card">
+      <div class="card-title">Lendo agora</div>
+      <div id="home-lendo" class="empty"><div class="empty-icon">📚</div>Nenhum livro</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Assistindo</div>
+      <div id="home-cinema" class="empty"><div class="empty-icon">🎬</div>Nenhum filme</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Próxima Tarefa</div>
+      <div id="home-tarefa" class="empty"><div class="empty-icon">✅</div>Sem tarefas</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ LIVRARIA ══════════ -->
+<section class="page" id="page-livros">
+  <div class="page-header">
+    <div class="page-title">Minha <span>Livraria</span></div>
+    <div class="page-subtitle">Tracking de leitura • livros lidos e em progresso</div>
+  </div>
+  <div class="grid-4" style="margin-bottom:24px">
+    <div class="card"><div class="card-title">Total</div><div class="card-big-num" id="lv-total">0</div></div>
+    <div class="card"><div class="card-title">Lendo</div><div class="card-big-num" style="color:var(--accent1)" id="lv-lendo">0</div></div>
+    <div class="card"><div class="card-title">Concluídos</div><div class="card-big-num" style="color:var(--accent3)" id="lv-done">0</div></div>
+    <div class="card"><div class="card-title">Favoritos</div><div class="card-big-num" style="color:var(--accent4)" id="lv-fav">0</div></div>
+  </div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:10px">
+      <div>
+        <div style="font-size:14px;font-weight:700">Todos os livros</div>
+        <div class="tracker-count" id="lv-count-label"></div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <input class="inp" id="lv-search" placeholder="🔍 Buscar…" style="min-width:150px;flex:unset" oninput="renderTracker('livros')">
+        <button class="btn btn-primary" onclick="openModal('livros')">+ Adicionar</button>
+      </div>
+    </div>
+    <div class="tracker-tabs" id="livros-tabs"></div>
+    <div class="tracker-grid" id="livros-grid"><div class="empty"><div class="empty-icon">📚</div>Adicione seu primeiro livro!</div></div>
+  </div>
+</section>
+
+<!-- ══════════ CINEMA ══════════ -->
+<section class="page" id="page-cinema">
+  <div class="page-header">
+    <div class="page-title">Meu <span>Cinema</span></div>
+    <div class="page-subtitle">Filmes e séries • assistidos e na fila</div>
+  </div>
+  <div class="grid-4" style="margin-bottom:24px">
+    <div class="card"><div class="card-title">Total</div><div class="card-big-num" id="ci-total">0</div></div>
+    <div class="card"><div class="card-title">Assistindo</div><div class="card-big-num" style="color:var(--accent5)" id="ci-watch">0</div></div>
+    <div class="card"><div class="card-title">Concluídos</div><div class="card-big-num" style="color:var(--accent3)" id="ci-done">0</div></div>
+    <div class="card"><div class="card-title">Favoritos</div><div class="card-big-num" style="color:var(--accent4)" id="ci-fav">0</div></div>
+  </div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:10px">
+      <div>
+        <div style="font-size:14px;font-weight:700">Minha lista</div>
+        <div class="tracker-count" id="ci-count-label"></div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <input class="inp" id="ci-search" placeholder="🔍 Buscar…" style="min-width:150px;flex:unset" oninput="renderTracker('cinema')">
+        <button class="btn btn-primary" onclick="openModal('cinema')">+ Adicionar</button>
+      </div>
+    </div>
+    <div class="tracker-tabs" id="cinema-tabs"></div>
+    <div class="tracker-grid" id="cinema-grid"><div class="empty"><div class="empty-icon">🎬</div>Adicione um filme ou série!</div></div>
+  </div>
+</section>
+
+<!-- ══════════ MANGÁS ══════════ -->
+<section class="page" id="page-mangas">
+  <div class="page-header">
+    <div class="page-title">Coleção de <span>Mangás</span></div>
+    <div class="page-subtitle">Tracking de capítulos e volumes</div>
+  </div>
+  <div class="grid-4" style="margin-bottom:24px">
+    <div class="card"><div class="card-title">Total</div><div class="card-big-num" id="mg-total">0</div></div>
+    <div class="card"><div class="card-title">Lendo</div><div class="card-big-num" style="color:var(--accent4)" id="mg-lendo">0</div></div>
+    <div class="card"><div class="card-title">Concluídos</div><div class="card-big-num" style="color:var(--accent3)" id="mg-done">0</div></div>
+    <div class="card"><div class="card-title">Favoritos</div><div class="card-big-num" style="color:var(--accent4)" id="mg-fav">0</div></div>
+  </div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:10px">
+      <div>
+        <div style="font-size:14px;font-weight:700">Minha coleção</div>
+        <div class="tracker-count" id="mg-count-label"></div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <input class="inp" id="mg-search" placeholder="🔍 Buscar…" style="min-width:150px;flex:unset" oninput="renderTracker('mangas')">
+        <button class="btn btn-primary" onclick="openModal('mangas')">+ Adicionar</button>
+      </div>
+    </div>
+    <div class="tracker-tabs" id="mangas-tabs"></div>
+    <div class="tracker-grid" id="mangas-grid"><div class="empty"><div class="empty-icon">📖</div>Adicione seu primeiro mangá!</div></div>
+  </div>
+</section>
+
+<!-- ══════════ SONHOS ══════════ -->
+<section class="page" id="page-sonhos">
+  <div class="page-header">
+    <div class="page-title">Meus <span>Sonhos</span></div>
+    <div class="page-subtitle">O que você quer construir para sua vida</div>
+  </div>
+  <div style="display:flex;justify-content:flex-end;margin-bottom:20px">
+    <button class="btn btn-primary" onclick="toggleForm('sonhos-form')">+ Novo Sonho</button>
+  </div>
+  <div class="add-form" id="sonhos-form" style="margin-bottom:20px">
+    <div class="form-row">
+      <input class="inp" id="sn-titulo" placeholder="Título do sonho">
+      <input class="inp" id="sn-icon" placeholder="Emoji (ex: 🏡)" maxlength="4">
+      <select class="inp" id="sn-horizonte">
+        <option>1 ano</option><option>3 anos</option><option>5 anos</option>
+        <option>10 anos</option><option>Longo prazo</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <textarea class="inp" id="sn-desc" placeholder="Descreva seu sonho com detalhes…"></textarea>
+    </div>
+    <div class="form-row">
+      <button class="btn btn-primary" onclick="addSonho()">Salvar</button>
+      <button class="btn btn-ghost" onclick="toggleForm('sonhos-form')">Cancelar</button>
+    </div>
+  </div>
+  <div class="grid-3" id="sonhos-grid"><div class="empty" style="grid-column:span 3"><div class="empty-icon">🌙</div>Adicione seu primeiro sonho!</div></div>
+</section>
+
+<!-- ══════════ VIAGENS ══════════ -->
+<section class="page" id="page-viagens">
+  <div class="page-header">
+    <div class="page-title">Minhas <span>Viagens</span></div>
+    <div class="page-subtitle">Destinos sonhados e aventuras vividas</div>
+  </div>
+  <div style="display:flex;justify-content:flex-end;margin-bottom:20px">
+    <button class="btn btn-primary" onclick="toggleForm('viagens-form')">+ Novo Destino</button>
+  </div>
+  <div class="add-form" id="viagens-form" style="margin-bottom:20px">
+    <div class="form-row">
+      <input class="inp" id="vg-dest" placeholder="Destino (ex: Tokyo, Japão)">
+      <input class="inp" id="vg-flag" placeholder="Emoji da bandeira 🇯🇵" maxlength="4">
+      <select class="inp" id="vg-status">
+        <option value="sonho">Sonho</option>
+        <option value="planejando">Planejando</option>
+        <option value="feito">Já fui!</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <input class="inp" id="vg-data" placeholder="Data prevista (ex: Jul 2026)">
+      <textarea class="inp" id="vg-notas" placeholder="Notas sobre a viagem…"></textarea>
+    </div>
+    <div class="form-row">
+      <button class="btn btn-primary" onclick="addViagem()">Salvar</button>
+      <button class="btn btn-ghost" onclick="toggleForm('viagens-form')">Cancelar</button>
+    </div>
+  </div>
+  <div class="grid-3" id="viagens-grid"><div class="empty" style="grid-column:span 3"><div class="empty-icon">✈️</div>Adicione seu primeiro destino!</div></div>
+</section>
+
+<!-- ══════════ WISHLIST ══════════ -->
+<section class="page" id="page-wishlist">
+  <div class="page-header">
+    <div class="page-title">Minha <span>Wishlist</span></div>
+    <div class="page-subtitle">Tudo que você quer adquirir ou conquistar</div>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div style="font-size:14px;font-weight:700">Lista de desejos</div>
+        <button class="btn btn-primary" onclick="toggleForm('wish-form')">+ Adicionar</button>
+      </div>
+      <div class="add-form" id="wish-form">
+        <div class="form-row">
+          <input class="inp" id="wl-nome" placeholder="Nome do item">
+          <input class="inp" id="wl-emoji" placeholder="Emoji 🛍️" maxlength="4">
+        </div>
+        <div class="form-row">
+          <input class="inp" id="wl-preco" placeholder="Preço estimado (R$)">
+          <select class="inp" id="wl-prior">
+            <option value="alta">Alta prioridade</option>
+            <option value="media">Média prioridade</option>
+            <option value="baixa">Baixa prioridade</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <button class="btn btn-primary" onclick="addWish()">Salvar</button>
+          <button class="btn btn-ghost" onclick="toggleForm('wish-form')">Cancelar</button>
+        </div>
+      </div>
+      <div id="wish-list"><div class="empty"><div class="empty-icon">⭐</div>Adicione itens à wishlist!</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Resumo</div>
+      <div class="card-big-num" id="wl-total">0</div>
+      <div class="card-label">itens na lista</div>
+      <div style="margin-top:20px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px">
+          <span style="color:var(--accent4)">● Alta</span><span id="wl-alta" style="font-family:var(--font-mono)">0</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px">
+          <span style="color:var(--accent1)">● Média</span><span id="wl-media" style="font-family:var(--font-mono)">0</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px">
+          <span style="color:var(--accent3)">● Baixa</span><span id="wl-baixa" style="font-family:var(--font-mono)">0</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ FINANÇAS ══════════ -->
+<section class="page" id="page-financas">
+  <div class="page-header">
+    <div class="page-title">Minhas <span>Finanças</span></div>
+    <div class="page-subtitle">Controle de receitas, gastos e metas</div>
+  </div>
+  <div class="grid-4" style="margin-bottom:24px">
+    <div class="card"><div class="card-title">Receita</div><div class="card-big-num" style="color:var(--accent3)" id="fn-receita">R$ 0</div></div>
+    <div class="card"><div class="card-title">Gastos</div><div class="card-big-num" style="color:var(--accent4)" id="fn-gastos">R$ 0</div></div>
+    <div class="card"><div class="card-title">Saldo</div><div class="card-big-num" style="color:var(--accent1)" id="fn-saldo">R$ 0</div></div>
+    <div class="card"><div class="card-title">Economias</div><div class="card-big-num" style="color:var(--accent2)" id="fn-eco">R$ 0</div></div>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div style="font-size:14px;font-weight:700">Lançamentos</div>
+        <button class="btn btn-primary" onclick="toggleForm('fin-form')">+ Adicionar</button>
+      </div>
+      <div class="add-form" id="fin-form">
+        <div class="form-row">
+          <input class="inp" id="fn-desc" placeholder="Descrição">
+          <input class="inp" id="fn-val" placeholder="Valor (R$)" type="number">
+          <select class="inp" id="fn-tipo">
+            <option value="receita">Receita</option>
+            <option value="gasto">Gasto</option>
+            <option value="economia">Poupança</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <input class="inp" id="fn-cat" placeholder="Categoria (ex: Alimentação)">
+          <button class="btn btn-primary" onclick="addFinanca()">Salvar</button>
+          <button class="btn btn-ghost" onclick="toggleForm('fin-form')">Cancelar</button>
+        </div>
+      </div>
+      <div id="fin-list"><div class="empty"><div class="empty-icon">💰</div>Adicione um lançamento!</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Meta de economia</div>
+      <div style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:6px">
+          <span>Progresso</span><span id="fn-pct">0%</span>
+        </div>
+        <div class="finance-bar"><div class="finance-fill" id="fn-bar" style="width:0%"></div></div>
+      </div>
+      <div class="form-row" style="margin-top:12px">
+        <input class="inp" id="fn-meta" placeholder="Meta (R$)" type="number">
+        <button class="btn btn-primary" onclick="setMeta()">Definir</button>
+      </div>
+      <div style="margin-top:12px;font-size:12px;color:var(--muted)">Meta atual: <span id="fn-metaval" style="color:var(--text);font-family:var(--font-mono)">—</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ PLANEJAMENTO ══════════ -->
+<section class="page" id="page-tarefas">
+  <div class="page-header">
+    <div class="page-title">Meu <span>Planejamento</span></div>
+    <div class="page-subtitle">Tarefas e objetivos do dia</div>
+  </div>
+  <div class="grid-4" style="margin-bottom:24px">
+    <div class="card"><div class="card-title">Total</div><div class="card-big-num" id="tk-total">0</div></div>
+    <div class="card"><div class="card-title">Pendentes</div><div class="card-big-num" style="color:var(--accent5)" id="tk-pend">0</div></div>
+    <div class="card"><div class="card-title">Concluídas</div><div class="card-big-num" style="color:var(--accent3)" id="tk-done">0</div></div>
+    <div class="card"><div class="card-title">Progresso</div><div class="card-big-num" style="color:var(--accent2)" id="tk-pct">0%</div></div>
+  </div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div style="font-size:14px;font-weight:700">Lista de tarefas</div>
+      <button class="btn btn-primary" onclick="toggleForm('task-form')">+ Adicionar</button>
+    </div>
+    <div class="add-form" id="task-form">
+      <div class="form-row">
+        <input class="inp" id="tk-nome" placeholder="Descrição da tarefa">
+        <select class="inp" id="tk-prior">
+          <option value="alta">🔴 Alta</option>
+          <option value="media">🟡 Média</option>
+          <option value="baixa">🟢 Baixa</option>
+        </select>
+        <select class="inp" id="tk-cat">
+          <option>Pessoal</option><option>Trabalho</option>
+          <option>Estudos</option><option>Saúde</option><option>Outros</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <button class="btn btn-primary" onclick="addTask()">Salvar</button>
+        <button class="btn btn-ghost" onclick="toggleForm('task-form')">Cancelar</button>
+      </div>
+    </div>
+    <div id="task-list"><div class="empty"><div class="empty-icon">✅</div>Adicione sua primeira tarefa!</div></div>
+  </div>
+</section>
+
+<!-- ══════════ ACADEMIA ══════════ -->
+<section class="page" id="page-academia">
+  <div class="page-header">
+    <div class="page-title">Minha <span>Academia</span></div>
+    <div class="page-subtitle">Treinos, metas e progresso físico</div>
+  </div>
+  <div class="grid-2" style="margin-bottom:24px">
+    <div class="card" style="text-align:center">
+      <div class="card-title">Treinos esta semana</div>
+      <div class="gym-rings">
+        <div class="ring-wrap">
+          <svg class="ring-svg" width="80" height="80" viewBox="0 0 80 80">
+            <circle class="ring-bg" cx="40" cy="40" r="32"/>
+            <circle class="ring-fill" id="ring1" cx="40" cy="40" r="32" stroke="var(--accent4)" stroke-dasharray="201" stroke-dashoffset="201"/>
+          </svg>
+          <div class="ring-count" id="ring1-val">0</div>
+          <div class="ring-label">Treinos</div>
+        </div>
+        <div class="ring-wrap">
+          <svg class="ring-svg" width="80" height="80" viewBox="0 0 80 80">
+            <circle class="ring-bg" cx="40" cy="40" r="32"/>
+            <circle class="ring-fill" id="ring2" cx="40" cy="40" r="32" stroke="var(--accent3)" stroke-dasharray="201" stroke-dashoffset="201"/>
+          </svg>
+          <div class="ring-count" id="ring2-val">0</div>
+          <div class="ring-label">Minutos</div>
+        </div>
+        <div class="ring-wrap">
+          <svg class="ring-svg" width="80" height="80" viewBox="0 0 80 80">
+            <circle class="ring-bg" cx="40" cy="40" r="32"/>
+            <circle class="ring-fill" id="ring3" cx="40" cy="40" r="32" stroke="var(--accent1)" stroke-dasharray="201" stroke-dashoffset="201"/>
+          </svg>
+          <div class="ring-count" id="ring3-val">0</div>
+          <div class="ring-label">Sequência</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Metas semanais</div>
+      <div class="form-row" style="margin-top:8px">
+        <input class="inp" id="gym-meta-treinos" placeholder="Treinos/semana" type="number" min="1" max="7">
+        <input class="inp" id="gym-meta-min" placeholder="Minutos/treino" type="number">
+        <button class="btn btn-primary" onclick="setGymMeta()">Definir</button>
+      </div>
+      <div style="margin-top:12px;font-size:12px;color:var(--muted)">
+        Meta de treinos: <span id="gym-meta-display" style="color:var(--text);font-family:var(--font-mono)">—</span>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div style="font-size:14px;font-weight:700">Registrar treino</div>
+      <button class="btn btn-primary" onclick="toggleForm('gym-form')">+ Treino</button>
+    </div>
+    <div class="add-form" id="gym-form">
+      <div class="form-row">
+        <input class="inp" id="gym-tipo" placeholder="Tipo (ex: Peito, Costas, Cardio)">
+        <input class="inp" id="gym-dur" placeholder="Duração (min)" type="number">
+        <input class="inp" id="gym-obs" placeholder="Observações">
+      </div>
+      <div class="form-row">
+        <button class="btn btn-primary" onclick="addGym()">Salvar</button>
+        <button class="btn btn-ghost" onclick="toggleForm('gym-form')">Cancelar</button>
+      </div>
+    </div>
+    <div id="gym-list"><div class="empty"><div class="empty-icon">💪</div>Registre seu primeiro treino!</div></div>
+  </div>
+</section>
+
+<!-- ══════════ ESTUDOS ══════════ -->
+<section class="page" id="page-estudos">
+  <div class="page-header">
+    <div class="page-title">Meus <span>Estudos</span></div>
+    <div class="page-subtitle">Matérias, horas e progresso de aprendizado</div>
+  </div>
+  <div class="grid-4" style="margin-bottom:24px">
+    <div class="card"><div class="card-title">Total horas</div><div class="card-big-num" id="st-total">0h</div></div>
+    <div class="card"><div class="card-title">Esta semana</div><div class="card-big-num" style="color:var(--accent6)" id="st-week">0h</div></div>
+    <div class="card"><div class="card-title">Matérias</div><div class="card-big-num" style="color:var(--accent2)" id="st-mat">0</div></div>
+    <div class="card"><div class="card-title">Sessões</div><div class="card-big-num" style="color:var(--accent1)" id="st-sess">0</div></div>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div style="font-size:14px;font-weight:700">Matérias</div>
+        <button class="btn btn-primary" onclick="toggleForm('study-form')">+ Sessão</button>
+      </div>
+      <div class="add-form" id="study-form">
+        <div class="form-row">
+          <input class="inp" id="st-mat-nome" placeholder="Matéria / Curso">
+          <input class="inp" id="st-horas" placeholder="Horas estudadas" type="number" step="0.5">
+          <input class="inp" id="st-obs" placeholder="O que estudou?">
+        </div>
+        <div class="form-row">
+          <button class="btn btn-primary" onclick="addStudy()">Salvar</button>
+          <button class="btn btn-ghost" onclick="toggleForm('study-form')">Cancelar</button>
+        </div>
+      </div>
+      <div id="study-list"><div class="empty"><div class="empty-icon">🎓</div>Registre uma sessão de estudos!</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Progresso por matéria</div>
+      <div id="study-subjects"><div class="empty"><div class="empty-icon">📊</div>Sem dados ainda</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ RPG ══════════ -->
+<section class="page" id="page-rpg">
+  <div class="page-header">
+    <div class="page-title">Meu <span>Personagem</span></div>
+    <div class="page-subtitle">Progresso, conquistas e atributos do universo pessoal</div>
+  </div>
+  <div class="rpg-hero-card">
+    <div class="rpg-avatar" id="rpg-avatar">
+      <img id="rpg-avatar-img" src="" alt="">
+      <span class="avatar-initials" id="rpg-initials">?</span>
+    </div>
+    <div class="rpg-hero-info">
+      <div class="rpg-hero-name" id="rpg-hero-name">Usuário</div>
+      <div class="rpg-hero-title" id="rpg-hero-title">⚔ Viajante · Nível 1</div>
+      <div class="rpg-xp-label">
+        <span id="rpg-xp-label">0 XP</span>
+        <span id="rpg-xp-next-label">100 XP para o próximo nível</span>
+      </div>
+      <div class="rpg-xp-track">
+        <div class="rpg-xp-bar" id="rpg-xp-bar" style="width:0%"></div>
+      </div>
+    </div>
+  </div>
+  <div class="rpg-stats-grid" id="rpg-stats-grid">
+    <div class="rpg-stat-card">
+      <div class="rpg-stat-icon">📚</div>
+      <div class="rpg-stat-val" style="color:var(--accent1)" id="rpg-stat-livros">0</div>
+      <div class="rpg-stat-name">Livros lidos</div>
+    </div>
+    <div class="rpg-stat-card">
+      <div class="rpg-stat-icon">🎬</div>
+      <div class="rpg-stat-val" style="color:var(--accent5)" id="rpg-stat-cinema">0</div>
+      <div class="rpg-stat-name">Filmes / Séries</div>
+    </div>
+    <div class="rpg-stat-card">
+      <div class="rpg-stat-icon">💪</div>
+      <div class="rpg-stat-val" style="color:var(--accent4)" id="rpg-stat-gym">0</div>
+      <div class="rpg-stat-name">Treinos</div>
+    </div>
+    <div class="rpg-stat-card">
+      <div class="rpg-stat-icon">🎓</div>
+      <div class="rpg-stat-val" style="color:var(--accent6)" id="rpg-stat-estudo">0h</div>
+      <div class="rpg-stat-name">Horas de estudo</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Conquistas</div>
+    <div class="rpg-achievements" id="rpg-achievements"></div>
+  </div>
+</section>
+
+<!-- ══════════ ARMAZENAMENTO ══════════ -->
+<section class="page" id="page-armazenamento">
+  <div class="page-header">
+    <div class="page-title">Armazenamento</div>
+    <div class="page-subtitle" id="stor-last-updated">Monitoramento de dados salvos no navegador</div>
+  </div>
+  <div class="stor-kpi-row">
+    <div class="stor-kpi-card" id="stor-kpi-usado">
+      <div class="stor-kpi-icon" style="background:rgba(200,169,110,.12);color:var(--accent1)">💾</div>
+      <div class="stor-kpi-body"><div class="stor-kpi-val" id="kpi-usado">—</div><div class="stor-kpi-label">Usado</div></div>
+    </div>
+    <div class="stor-kpi-card">
+      <div class="stor-kpi-icon" style="background:rgba(94,196,168,.12);color:var(--accent3)">📦</div>
+      <div class="stor-kpi-body"><div class="stor-kpi-val" id="kpi-livre">—</div><div class="stor-kpi-label">Livre</div></div>
+    </div>
+    <div class="stor-kpi-card">
+      <div class="stor-kpi-icon" style="background:rgba(124,111,205,.12);color:var(--accent2)">🖼</div>
+      <div class="stor-kpi-body"><div class="stor-kpi-val" id="kpi-imgs">0</div><div class="stor-kpi-label">Imagens</div></div>
+    </div>
+    <div class="stor-kpi-card">
+      <div class="stor-kpi-icon" style="background:rgba(232,134,74,.12);color:var(--accent5)">📋</div>
+      <div class="stor-kpi-body"><div class="stor-kpi-val" id="kpi-itens">0</div><div class="stor-kpi-label">Itens totais</div></div>
+    </div>
+    <div class="stor-kpi-card">
+      <div class="stor-kpi-icon" id="kpi-status-icon" style="background:rgba(94,196,168,.12);color:var(--accent3)">✓</div>
+      <div class="stor-kpi-body"><div class="stor-kpi-val" id="kpi-pct">0%</div><div class="stor-kpi-label" id="kpi-status-label">Capacidade usada</div></div>
+    </div>
+  </div>
+  <div class="stor-main-row">
+    <div class="card stor-meter-card">
+      <div class="stor-meter-header">
+        <div>
+          <div style="font-size:15px;font-weight:700;margin-bottom:3px">Uso do armazenamento</div>
+          <div style="font-size:11px;color:var(--muted);font-family:var(--font-mono)">localStorage · capacidade: <strong id="stor-cap-label" style="color:var(--text)">10 MB</strong></div>
+        </div>
+        <div style="text-align:right">
+          <div class="stor-big-num" id="stor-big-used">—</div>
+          <div style="font-size:10px;color:var(--muted);font-family:var(--font-mono)" id="stor-of-total">de 10 MB</div>
+        </div>
+      </div>
+      <div class="stor-seg-bar" id="stor-seg-bar"></div>
+      <div class="stor-seg-legend" id="stor-seg-legend"></div>
+      <div class="stor-capacity-row">
+        <span class="stor-cap-label-txt">Capacidade definida:</span>
+        <div class="stor-cap-btns">
+          <button class="stor-cap-btn" onclick="setCapacity(5)">5 MB</button>
+          <button class="stor-cap-btn active" onclick="setCapacity(10)">10 MB</button>
+          <button class="stor-cap-btn" onclick="setCapacity(25)">25 MB</button>
+          <button class="stor-cap-btn" onclick="setCapacity(50)">50 MB</button>
+        </div>
+      </div>
+    </div>
+    <div class="card stor-donut-card">
+      <div class="card-title">Distribuição</div>
+      <div class="stor-donut-wrap">
+        <canvas id="stor-donut" width="160" height="160"></canvas>
+        <div class="stor-donut-center">
+          <div class="stor-donut-pct" id="donut-pct">0%</div>
+          <div class="stor-donut-sub">usado</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="stor-bottom-row">
+    <div class="card" style="flex:1;min-width:0">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div class="card-title" style="margin:0">Por seção</div>
+        <button class="stor-refresh-btn" onclick="renderStorage()">↺ Atualizar</button>
+      </div>
+      <div id="stor-breakdown"></div>
+    </div>
+    <div class="stor-actions-panel">
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">Dicas de espaço</div>
+        <div id="stor-tips" style="font-size:12px;color:var(--muted);line-height:1.7"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Ações</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <button class="stor-action-btn" onclick="renderStorage()">↺ &nbsp;Atualizar</button>
+          <button class="stor-action-btn warn" onclick="clearAllImages()">🖼 &nbsp;Limpar imagens</button>
+          <button class="stor-action-btn danger" onclick="clearAllData()">🗑 &nbsp;Apagar tudo</button>
+        </div>
+        <div style="margin-top:12px;font-size:10px;color:var(--muted);font-family:var(--font-mono);line-height:1.6;opacity:.7">
+          ⚠ Apagar todos os dados é irreversível e permanente.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ══════════ FOOTER ══════════ -->
+<footer class="site-footer">
+  <div>
+    <div class="footer-brand"><em>Sól</em> de Sóter</div>
+    <div class="footer-tagline">Espaço pessoal · tudo em um só lugar</div>
+  </div>
+  <div class="footer-links">
+    <button class="footer-link" onclick="goTo('home')">Home</button>
+    <button class="footer-link" onclick="goTo('livros')">Livraria</button>
+    <button class="footer-link" onclick="goTo('cinema')">Cinema</button>
+    <button class="footer-link" onclick="goTo('sonhos')">Sonhos</button>
+    <button class="footer-link" onclick="goTo('financas')">Finanças</button>
+    <button class="footer-link" onclick="goTo('tarefas')">Planejamento</button>
+  </div>
+  <div class="footer-copy">✦ Sól de Sóter · <span id="footer-year"></span></div>
+</footer>
+
+<!-- ══════════ SCRIPTS ══════════ -->
+<!-- Core: storage, navigation, starfield -->
+<script src="js/core.js"></script>
+<!-- Profile & RPG -->
+<script src="js/profile.js"></script>
+<!-- Tracker: Livros, Cinema, Mangás -->
+<script src="js/tracker.js"></script>
+<!-- Pages -->
+<script src="js/pages/home.js"></script>
+<script src="js/pages/sonhos.js"></script>
+<script src="js/pages/viagens.js"></script>
+<script src="js/pages/wishlist.js"></script>
+<script src="js/pages/financas.js"></script>
+<script src="js/pages/planejamento.js"></script>
+<script src="js/pages/academia.js"></script>
+<script src="js/pages/estudos.js"></script>
+<script src="js/pages/armazenamento.js"></script>
+
+<script>
+// ── INIT ──────────────────────────────────────────────────────────────────
+(function() {
+  // Build splash starfield
+  const field = document.getElementById('starfield');
+  const W = window.innerWidth, H = window.innerHeight;
+  const count = Math.min(280, Math.floor(W * H / 6000));
+  let html = '';
+  for (let i = 0; i < count; i++) {
+    const x = Math.random() * 100, y = Math.random() * 100;
+    const size = Math.random() < .85 ? Math.random() * 1.5 + .5 : Math.random() * 2.5 + 1.5;
+    const dur = (Math.random() * 4 + 2).toFixed(1);
+    const delay = (Math.random() * 6).toFixed(1);
+    const minOp = (Math.random() * .1 + .05).toFixed(2);
+    const maxOp = (Math.random() * .6 + .4).toFixed(2);
+    html += `<div class="star" style="left:${x}%;top:${y}%;width:${size}px;height:${size}px;--dur:${dur}s;--delay:-${delay}s;--min-op:${minOp};--max-op:${maxOp}"></div>`;
+  }
+  for (let i = 0; i < 4; i++) {
+    const x = 30 + Math.random() * 60, y = 5 + Math.random() * 40;
+    const dur = (Math.random() * 5 + 4).toFixed(1);
+    const delay = (Math.random() * 10).toFixed(1);
+    html += `<div class="shoot" style="left:${x}%;top:${y}%;--sdur:${dur}s;--sdelay:${delay}s"></div>`;
+  }
+  field.innerHTML = html;
+
+  // Footer year
+  const fy = document.getElementById('footer-year');
+  if (fy) fy.textContent = new Date().getFullYear();
+
+  // Load data & render all pages
+  load();
+  if (!S.profile) S.profile = { name: 'Usuário', avatar: '' };
+
+  // Restore capacity button state
+  document.querySelectorAll('.stor-cap-btn').forEach(b => {
+    b.classList.toggle('active', b.textContent.trim() === STOR_CAPACITY_MB + ' MB');
+  });
+
+  setDate();
+  renderProfile();
+  renderHome();
+  renderLivros();
+  renderCinema();
+  renderMangas();
+  renderSonhos();
+  renderViagens();
+  renderWish();
+  renderFinancas();
+  renderTasks();
+  renderGym();
+  renderStudy();
+
+  // Start canvas starfield
+  initCanvasStarfield();
+})();
+</script>
+</body>
+</html>

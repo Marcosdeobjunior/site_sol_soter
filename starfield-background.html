@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Starfield Background</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: #020208;
+  }
+
+  /* ── Canvas fixo, cobre tudo ── */
+  #bg-canvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    z-index: 0;
+  }
+
+  /* ── Exemplo de conteúdo sobre o fundo ──
+     Remova ou substitua pelo seu próprio HTML */
+  .demo-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    color: #fff;
+    font-family: Georgia, 'Times New Roman', serif;
+    text-align: center;
+    pointer-events: none;
+    user-select: none;
+  }
+  .demo-content h1 {
+    font-size: clamp(2rem, 6vw, 4.5rem);
+    font-weight: 400;
+    letter-spacing: .04em;
+    color: rgba(255,255,255,.92);
+    text-shadow: 0 0 60px rgba(180,150,255,.3);
+    margin-bottom: .4em;
+  }
+  .demo-content p {
+    font-size: clamp(.9rem, 2vw, 1.15rem);
+    color: rgba(255,255,255,.38);
+    letter-spacing: .12em;
+    font-style: italic;
+  }
+  /* ─────────────────────────────────── */
+</style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+
+<!-- Substitua este bloco pelo seu próprio conteúdo -->
+<div class="demo-content">
+  <h1>Seu conteúdo aqui</h1>
+  <p>mova o mouse para interagir com as estrelas</p>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+//  STARFIELD BACKGROUND — standalone, sem dependências
+//  
+//  COMO USAR:
+//    1. Inclua <canvas id="bg-canvas"></canvas> no seu HTML
+//    2. Adicione ao CSS:  #bg-canvas { position:fixed; inset:0; z-index:0; }
+//    3. Cole este <script> antes do </body>
+//
+//  CONFIGURAÇÕES (edite as constantes abaixo):
+//    STAR_COUNT    — quantidade de estrelas (padrão 320)
+//    SHOOT_INTERVAL — intervalo entre estrelas cadentes em ms (padrão 4000)
+//    CONNECT_DIST  — distância máxima para linhas de constelação (padrão 100)
+//    MOUSE_REPEL   — raio de repulsão do mouse em px (padrão 90)
+// ═══════════════════════════════════════════════════════════════════
+(function () {
+
+  // ── Configurações ──────────────────────────────────────────────
+  const STAR_COUNT     = 320;
+  const PARALLAX_LAYERS = 3;
+  const SHOOT_INTERVAL = 4000;   // ms entre estrelas cadentes
+  const CONNECT_DIST   = 100;    // px para linhas de constelação
+  const MOUSE_REPEL    = 90;     // px de raio de repulsão
+  // ───────────────────────────────────────────────────────────────
+
+  const canvas = document.getElementById('bg-canvas');
+  const ctx    = canvas.getContext('2d');
+  let W, H, stars = [], shoots = [];
+  let mouse = { x: -9999, y: -9999 };
+
+  // Paleta de cores das estrelas
+  const hueMap = {
+    white:  [220, 215, 255],
+    gold:   [200, 169, 110],
+    violet: [140, 120, 210],
+    sky:    [120, 190, 240],
+  };
+
+  function rand(a, b) { return a + Math.random() * (b - a); }
+
+  // ── Inicializa estrelas ───────────────────────────────────────
+  function initStars() {
+    stars = [];
+    for (let i = 0; i < STAR_COUNT; i++) {
+      const layer = Math.floor(Math.random() * PARALLAX_LAYERS);
+      stars.push({
+        x: rand(0, W), y: rand(0, H),
+        vx: rand(-0.04, 0.04) * (layer + 1),
+        vy: rand(-0.02, 0.03) * (layer + 1),
+        r: rand(0.3, 1.2) * (layer * 0.4 + 0.6),
+        alpha: rand(0.3, 1),
+        twinkleSpeed: rand(0.005, 0.025),
+        twinkleDir: Math.random() > 0.5 ? 1 : -1,
+        layer,
+        hue: Math.random() < 0.15
+          ? (Math.random() < 0.5 ? 'gold' : Math.random() < 0.5 ? 'violet' : 'sky')
+          : 'white',
+      });
+    }
+  }
+
+  // ── Estrela cadente ──────────────────────────────────────────
+  function spawnShoot() {
+    shoots.push({
+      x:     rand(W * 0.2, W),
+      y:     rand(0, H * 0.4),
+      len:   rand(100, 200),
+      angle: rand(20, 50) * Math.PI / 180,
+      speed: rand(8, 16),
+      alpha: 1,
+    });
+  }
+  setInterval(spawnShoot, SHOOT_INTERVAL);
+  setTimeout(spawnShoot, 800);
+
+  // ── Nebulosas ────────────────────────────────────────────────
+  function drawNebula(cx, cy, r, color) {
+    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+    g.addColorStop(0, color);
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // ── Linhas de constelação ────────────────────────────────────
+  function drawConstellations() {
+    ctx.save();
+    for (let i = 0; i < stars.length; i++) {
+      for (let j = i + 1; j < stars.length; j++) {
+        const dx = stars[i].x - stars[j].x;
+        const dy = stars[i].y - stars[j].y;
+        const d  = Math.sqrt(dx * dx + dy * dy);
+        if (d < CONNECT_DIST && stars[i].layer === stars[j].layer) {
+          const op = (1 - d / CONNECT_DIST) * 0.07;
+          ctx.strokeStyle = `rgba(200,180,255,${op})`;
+          ctx.lineWidth = 0.4;
+          ctx.beginPath();
+          ctx.moveTo(stars[i].x, stars[i].y);
+          ctx.lineTo(stars[j].x, stars[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+    ctx.restore();
+  }
+
+  // ── Brilho do mouse ──────────────────────────────────────────
+  function drawMouseGlow() {
+    if (mouse.x < 0 || mouse.x > W) return;
+    const grad = ctx.createRadialGradient(
+      mouse.x, mouse.y, 0,
+      mouse.x, mouse.y, 140
+    );
+    grad.addColorStop(0, 'rgba(180,150,255,0.06)');
+    grad.addColorStop(1, 'rgba(180,150,255,0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(mouse.x, mouse.y, 140, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // ── Loop principal ───────────────────────────────────────────
+  function frame() {
+    ctx.clearRect(0, 0, W, H);
+
+    // Gradiente de fundo — espaço profundo
+    const bg = ctx.createRadialGradient(
+      W * 0.35, H * 0.3, 0,
+      W * 0.5,  H * 0.5, Math.max(W, H) * 0.9
+    );
+    bg.addColorStop(0,   '#08082a');
+    bg.addColorStop(0.4, '#05050f');
+    bg.addColorStop(1,   '#020208');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+
+    // Nuvens de nebulosa
+    drawNebula(W * 0.15, H * 0.20, 320, 'rgba(80,50,180,0.035)');
+    drawNebula(W * 0.75, H * 0.60, 280, 'rgba(180,120,50,0.028)');
+    drawNebula(W * 0.50, H * 0.85, 200, 'rgba(40,120,150,0.025)');
+
+    drawMouseGlow();
+    drawConstellations();
+
+    // Estrelas
+    for (const s of stars) {
+      // Cintilação
+      s.alpha += s.twinkleSpeed * s.twinkleDir;
+      if (s.alpha >= 1)    { s.alpha = 1;    s.twinkleDir = -1; }
+      if (s.alpha <= 0.15) { s.alpha = 0.15; s.twinkleDir =  1; }
+
+      // Repulsão do mouse
+      const mx = mouse.x - s.x;
+      const my = mouse.y - s.y;
+      const md = Math.sqrt(mx * mx + my * my);
+      if (md < MOUSE_REPEL && md > 0) {
+        const force = (1 - md / MOUSE_REPEL) * 0.6;
+        s.x -= (mx / md) * force;
+        s.y -= (my / md) * force;
+      }
+
+      // Deriva lenta
+      s.x += s.vx; s.y += s.vy;
+      if (s.x < -5)    s.x = W + 5;
+      if (s.x > W + 5) s.x = -5;
+      if (s.y < -5)    s.y = H + 5;
+      if (s.y > H + 5) s.y = -5;
+
+      // Desenha a estrela com brilho radial
+      const [r, g, b] = hueMap[s.hue];
+      const glow = s.r * 3;
+      const glowGrad = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, glow);
+      glowGrad.addColorStop(0, `rgba(${r},${g},${b},${s.alpha})`);
+      glowGrad.addColorStop(1, `rgba(${r},${g},${b},0)`);
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, glow, 0, Math.PI * 2);
+      ctx.fillStyle = glowGrad;
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r * 0.6, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${r},${g},${b},${Math.min(s.alpha * 1.4, 1)})`;
+      ctx.fill();
+    }
+
+    // Estrelas cadentes
+    for (let i = shoots.length - 1; i >= 0; i--) {
+      const sh = shoots[i];
+      sh.x -= Math.cos(sh.angle) * sh.speed;
+      sh.y += Math.sin(sh.angle) * sh.speed;
+      sh.alpha -= 0.012;
+      if (sh.alpha <= 0 || sh.x < -50 || sh.y > H + 50) {
+        shoots.splice(i, 1);
+        continue;
+      }
+      const tx = sh.x + Math.cos(sh.angle) * sh.len;
+      const ty = sh.y - Math.sin(sh.angle) * sh.len;
+      const grad = ctx.createLinearGradient(sh.x, sh.y, tx, ty);
+      grad.addColorStop(0,   `rgba(255,255,255,${sh.alpha})`);
+      grad.addColorStop(0.3, `rgba(200,180,255,${sh.alpha * 0.6})`);
+      grad.addColorStop(1,   `rgba(255,255,255,0)`);
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(sh.x, sh.y);
+      ctx.lineTo(tx, ty);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(sh.x, sh.y, 1.5, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,255,255,${sh.alpha})`;
+      ctx.fill();
+    }
+
+    requestAnimationFrame(frame);
+  }
+
+  // ── Resize ───────────────────────────────────────────────────
+  function resize() {
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+    initStars();
+  }
+
+  // ── Eventos ──────────────────────────────────────────────────
+  window.addEventListener('resize', resize);
+  window.addEventListener('mousemove',  e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+  window.addEventListener('mouseleave', () => { mouse.x = -9999; mouse.y = -9999; });
+  window.addEventListener('touchmove',  e => {
+    mouse.x = e.touches[0].clientX;
+    mouse.y = e.touches[0].clientY;
+  }, { passive: true });
+  window.addEventListener('touchend', () => { mouse.x = -9999; mouse.y = -9999; });
+
+  // ── Inicializa ───────────────────────────────────────────────
+  resize();
+  frame();
+
+})();
+</script>
+</body>
+</html>

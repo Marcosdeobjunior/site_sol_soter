@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sól de Sóter — Design System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════════════
+   SÓL DE SÓTER — DESIGN SYSTEM
+   Copie o bloco :root abaixo para qualquer projeto.
+   As fontes são carregadas via Google Fonts (linha acima no <head>).
+═══════════════════════════════════════════════════════════════════ */
+
+/* ──────────────────────────────────────────────────────────────────
+   VARIÁVEIS — copie este bloco :root no seu CSS
+────────────────────────────────────────────────────────────────── */
+:root {
+  /* Fundos */
+  --bg:    #0d0d12;   /* fundo principal */
+  --bg2:   #13131c;   /* fundo secundário */
+  --bg3:   #1a1a27;   /* fundo terciário */
+  --card:  #16161f;   /* cards */
+
+  /* Bordas e texto */
+  --border: rgba(255,255,255,0.07);
+  --text:   #e8e4f0;
+  --muted:  #7a7590;
+
+  /* Acentos */
+  --accent1: #c8a96e; /* ouro */
+  --accent2: #7c6fcd; /* violeta */
+  --accent3: #5ec4a8; /* teal */
+  --accent4: #e06b8b; /* rose */
+  --accent5: #e8864a; /* âmbar */
+  --accent6: #4ab0e8; /* sky */
+
+  /* Tipografia */
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-ui:      'Syne', system-ui, sans-serif;
+  --font-mono:    'DM Mono', 'Courier New', monospace;
+
+  /* Misc */
+  --radius: 16px;
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   RESET MÍNIMO
+────────────────────────────────────────────────────────────────── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  min-height: 100vh;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   CLASSES DE TIPOGRAFIA — use diretamente no HTML
+────────────────────────────────────────────────────────────────── */
+
+/* Títulos */
+.font-display          { font-family: var(--font-display); }
+.font-ui               { font-family: var(--font-ui); }
+.font-mono             { font-family: var(--font-mono); }
+
+.text-display-xl       { font-family: var(--font-display); font-size: clamp(2.4rem, 6vw, 5rem); font-weight: 700; line-height: 1.1; letter-spacing: -.01em; }
+.text-display-lg       { font-family: var(--font-display); font-size: clamp(1.8rem, 4vw, 3.2rem); font-weight: 700; line-height: 1.2; }
+.text-display-md       { font-family: var(--font-display); font-size: clamp(1.3rem, 2.5vw, 2rem); font-weight: 400; font-style: italic; line-height: 1.3; }
+.text-display-sm       { font-family: var(--font-display); font-size: 1.1rem; font-weight: 400; letter-spacing: .02em; }
+
+.text-ui-xl            { font-family: var(--font-ui); font-size: 1.5rem; font-weight: 800; letter-spacing: -.01em; }
+.text-ui-lg            { font-family: var(--font-ui); font-size: 1.1rem; font-weight: 700; }
+.text-ui-md            { font-family: var(--font-ui); font-size: .9rem; font-weight: 600; letter-spacing: .03em; }
+.text-ui-sm            { font-family: var(--font-ui); font-size: .78rem; font-weight: 400; }
+.text-ui-xs            { font-family: var(--font-ui); font-size: .68rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+
+.text-mono-md          { font-family: var(--font-mono); font-size: .88rem; font-weight: 300; }
+.text-mono-sm          { font-family: var(--font-mono); font-size: .75rem; }
+
+/* Cores de texto */
+.text-muted            { color: var(--muted); }
+.text-gold             { color: var(--accent1); }
+.text-violet           { color: var(--accent2); }
+.text-teal             { color: var(--accent3); }
+.text-rose             { color: var(--accent4); }
+.text-amber            { color: var(--accent5); }
+.text-sky              { color: var(--accent6); }
+
+/* ──────────────────────────────────────────────────────────────────
+   COMPONENTES BASE
+────────────────────────────────────────────────────────────────── */
+
+/* Card */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+
+/* Input */
+.inp {
+  width: 100%;
+  background: rgba(255,255,255,.04);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  padding: 9px 13px;
+  outline: none;
+  transition: border-color .18s;
+}
+.inp:focus { border-color: rgba(200,169,110,.4); }
+.inp::placeholder { color: var(--muted); }
+
+/* Botões */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 9px 18px; border-radius: 10px;
+  font-family: var(--font-ui); font-size: 13px; font-weight: 600;
+  border: none; cursor: pointer; transition: all .18s;
+  white-space: nowrap;
+}
+.btn-primary  { background: var(--accent1); color: #1a1200; }
+.btn-primary:hover  { filter: brightness(1.12); }
+.btn-violet   { background: var(--accent2); color: #fff; }
+.btn-violet:hover   { filter: brightness(1.12); }
+.btn-teal     { background: var(--accent3); color: #0a1a16; }
+.btn-teal:hover     { filter: brightness(1.12); }
+.btn-rose     { background: var(--accent4); color: #fff; }
+.btn-rose:hover     { filter: brightness(1.12); }
+.btn-ghost    { background: rgba(255,255,255,.05); color: var(--text); border: 1px solid var(--border); }
+.btn-ghost:hover    { background: rgba(255,255,255,.1); }
+.btn-danger   { background: rgba(224,107,139,.12); color: var(--accent4); border: 1px solid rgba(224,107,139,.2); }
+.btn-danger:hover   { background: rgba(224,107,139,.22); }
+
+/* Badge */
+.badge {
+  display: inline-block;
+  font-family: var(--font-mono); font-size: 10px;
+  padding: 2px 8px; border-radius: 6px;
+  border: 1px solid currentColor;
+  opacity: .85;
+}
+
+/* Glassmorphism panel */
+.glass {
+  background: rgba(13,13,18,0.82);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+/* Gradiente de texto */
+.gradient-text {
+  background: linear-gradient(135deg, var(--accent1), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Divisor */
+.divider {
+  width: 48px; height: 2px;
+  background: linear-gradient(90deg, var(--accent1), transparent);
+  border-radius: 2px;
+  margin: 12px 0;
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   ESTILOS DA PÁGINA DE DOCUMENTAÇÃO (apenas para exibição)
+────────────────────────────────────────────────────────────────── */
+.ds-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 60px 24px 100px;
+}
+.ds-section {
+  margin-bottom: 60px;
+}
+.ds-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.ds-title {
+  font-family: var(--font-display);
+  font-size: 1.9rem;
+  font-weight: 700;
+  margin-bottom: 24px;
+  color: var(--text);
+}
+.ds-title em { color: var(--accent1); }
+.ds-subtitle {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 16px;
+  font-family: var(--font-mono);
+}
+.ds-code {
+  background: rgba(255,255,255,.04);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 18px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--accent3);
+  margin-bottom: 16px;
+  overflow-x: auto;
+  white-space: pre;
+}
+.ds-code .cm { color: var(--muted); }
+.ds-code .ck { color: var(--accent2); }
+.ds-code .cv { color: var(--accent1); }
+.ds-code .cc { color: var(--accent3); }
+
+/* Paleta de cores */
+.palette-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.swatch {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.swatch-color {
+  height: 72px;
+  position: relative;
+}
+.swatch-color::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,.08), rgba(0,0,0,.2));
+}
+.swatch-info {
+  padding: 10px 12px;
+  background: var(--card);
+}
+.swatch-name  { font-size: 12px; font-weight: 700; margin-bottom: 2px; }
+.swatch-var   { font-family: var(--font-mono); font-size: 10px; color: var(--muted); margin-bottom: 2px; }
+.swatch-hex   { font-family: var(--font-mono); font-size: 10px; color: var(--muted); }
+
+/* Fundo swatches */
+.swatch-bg-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.bg-swatch {
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.bg-swatch-color { height: 48px; }
+.bg-swatch-info { padding: 8px 10px; background: rgba(255,255,255,.02); }
+.bg-swatch-var  { font-family: var(--font-mono); font-size: 9px; color: var(--muted); }
+.bg-swatch-hex  { font-family: var(--font-mono); font-size: 9px; color: rgba(255,255,255,.35); }
+
+/* Font specimens */
+.font-specimen {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: 12px;
+}
+.specimen-meta {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px;
+}
+.specimen-name   { font-family: var(--font-mono); font-size: 11px; color: var(--accent1); }
+.specimen-import { font-family: var(--font-mono); font-size: 10px; color: var(--muted); }
+.specimen-sample { margin-bottom: 14px; }
+.specimen-weights { display: flex; flex-wrap: wrap; gap: 8px; }
+.specimen-w { font-size: 12px; color: var(--muted); }
+
+/* Type scale */
+.type-scale-row {
+  display: flex; align-items: baseline; gap: 16px;
+  padding: 10px 0; border-bottom: 1px solid var(--border);
+}
+.type-scale-label {
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--muted); min-width: 120px; flex-shrink: 0;
+}
+
+/* Component demos */
+.comp-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 14px; }
+.comp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+@media (max-width: 600px) { .comp-grid { grid-template-columns: 1fr; } }
+
+hr.ds-hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 40px 0;
+}
+</style>
+</head>
+<body>
+
+<div class="ds-page">
+
+  <!-- ── Cabeçalho ────────────────────────────────────────────── -->
+  <div style="margin-bottom:56px">
+    <div class="ds-eyebrow">design system</div>
+    <h1 class="text-display-xl" style="margin-bottom:8px">
+      <em class="font-display" style="color:var(--accent1)">Sól</em> de Sóter
+    </h1>
+    <p class="text-mono-md text-muted">Fontes · Paleta · Variáveis CSS · Componentes</p>
+    <div class="divider" style="margin-top:20px"></div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       1. IMPORTAÇÃO DAS FONTES
+  ══════════════════════════════════ -->
+  <div class="ds-section">
+    <div class="ds-eyebrow">01 — fontes</div>
+    <h2 class="ds-title">Tipografia</h2>
+
+    <p class="ds-subtitle">Cole no &lt;head&gt; do seu HTML:</p>
+    <div class="ds-code"><span class="cm">&lt;!-- Google Fonts --&gt;</span>
+<span class="cc">&lt;link</span> <span class="ck">rel</span>=<span class="cv">"preconnect"</span> <span class="ck">href</span>=<span class="cv">"https://fonts.googleapis.com"</span><span class="cc">&gt;</span>
+<span class="cc">&lt;link</span> <span class="ck">href</span>=<span class="cv">"https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&amp;family=Syne:wght@400;600;700;800&amp;family=DM+Mono:wght@300;400&amp;display=swap"</span>
+      <span class="ck">rel</span>=<span class="cv">"stylesheet"</span><span class="cc">&gt;</span></div>
+
+    <!-- Playfair Display -->
+    <div class="font-specimen">
+      <div class="specimen-meta">
+        <span class="specimen-name">Playfair Display — var(--font-display)</span>
+        <span class="specimen-import">display · titles · quotes</span>
+      </div>
+      <div class="specimen-sample">
+        <div style="font-family:'Playfair Display',serif;font-size:2.6rem;line-height:1.15;margin-bottom:10px">
+          O universo que vive em você
+        </div>
+        <div style="font-family:'Playfair Display',serif;font-size:1.5rem;font-style:italic;color:var(--muted)">
+          "Ler é sonhar pela mão de outrem."
+        </div>
+      </div>
+      <div class="specimen-weights">
+        <span class="specimen-w" style="font-family:'Playfair Display',serif;font-weight:400">Regular 400</span>
+        <span class="specimen-w" style="font-family:'Playfair Display',serif;font-weight:700">Bold 700</span>
+        <span class="specimen-w" style="font-family:'Playfair Display',serif;font-weight:400;font-style:italic">Italic 400</span>
+        <span class="specimen-w" style="font-family:'Playfair Display',serif;font-weight:700;font-style:italic">Bold Italic 700</span>
+      </div>
+    </div>
+
+    <!-- Syne -->
+    <div class="font-specimen">
+      <div class="specimen-meta">
+        <span class="specimen-name">Syne — var(--font-ui)</span>
+        <span class="specimen-import">UI · navigation · labels · body</span>
+      </div>
+      <div class="specimen-sample">
+        <div style="font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;letter-spacing:-.02em;margin-bottom:8px">
+          SYNE EIGHT HUNDRED
+        </div>
+        <div style="font-family:'Syne',sans-serif;font-size:1rem;font-weight:400;color:var(--muted)">
+          Fonte geométrica de alta legibilidade para interfaces modernas e espaçosas.
+        </div>
+      </div>
+      <div class="specimen-weights">
+        <span class="specimen-w" style="font-family:'Syne',sans-serif;font-weight:400">Regular 400</span>
+        <span class="specimen-w" style="font-family:'Syne',sans-serif;font-weight:600">SemiBold 600</span>
+        <span class="specimen-w" style="font-family:'Syne',sans-serif;font-weight:700">Bold 700</span>
+        <span class="specimen-w" style="font-family:'Syne',sans-serif;font-weight:800">ExtraBold 800</span>
+      </div>
+    </div>
+
+    <!-- DM Mono -->
+    <div class="font-specimen">
+      <div class="specimen-meta">
+        <span class="specimen-name">DM Mono — var(--font-mono)</span>
+        <span class="specimen-import">code · labels · numbers · metadata</span>
+      </div>
+      <div class="specimen-sample">
+        <div style="font-family:'DM Mono',monospace;font-size:1.1rem;font-weight:300;margin-bottom:8px">
+          --accent1: #c8a96e; /* ouro */
+        </div>
+        <div style="font-family:'DM Mono',monospace;font-size:.85rem;color:var(--muted)">
+          01 · 02 · 03 · 99.9% · 3.141 · KB · MB · px
+        </div>
+      </div>
+      <div class="specimen-weights">
+        <span class="specimen-w" style="font-family:'DM Mono',monospace;font-weight:300">Light 300</span>
+        <span class="specimen-w" style="font-family:'DM Mono',monospace;font-weight:400">Regular 400</span>
+      </div>
+    </div>
+
+    <!-- Escala tipográfica -->
+    <h3 style="font-size:13px;font-weight:700;margin:24px 0 12px">Escala tipográfica — classes utilitárias</h3>
+    <div class="card" style="padding:0 20px">
+      <div class="type-scale-row">
+        <span class="type-scale-label">.text-display-xl</span>
+        <span class="text-display-xl">Título Principal</span>
+      </div>
+      <div class="type-scale-row">
+        <span class="type-scale-label">.text-display-lg</span>
+        <span class="text-display-lg">Título Seção</span>
+      </div>
+      <div class="type-scale-row">
+        <span class="type-scale-label">.text-display-md</span>
+        <span class="text-display-md">Subtítulo elegante</span>
+      </div>
+      <div class="type-scale-row">
+        <span class="type-scale-label">.text-display-sm</span>
+        <span class="text-display-sm">Texto display pequeno</span>
+      </div>
+      <div class="type-scale-row">
+        <span class="type-scale-label">.text-ui-xl</span>
+        <span class="text-ui-xl">UI Extra Large</span>
+      </div>
+      <div class="type-scale-row">
+        <span class="type-scale-label">.text-ui-lg</span>
+        <span class="text-ui-lg">UI Large</span>
+      </div>
+      <div class="type-scale-row">
+        <span class="type-scale-label">.text-ui-md</span>
+        <span class="text-ui-md">UI Medium — labels</span>
+      </div>
+      <div class="type-scale-row">
+        <span class="type-scale-label">.text-ui-sm</span>
+        <span class="text-ui-sm">UI Small — corpo de texto</span>
+      </div>
+      <div class="type-scale-row">
+        <span class="type-scale-label">.text-ui-xs</span>
+        <span class="text-ui-xs">UI XSmall — eyebrow</span>
+      </div>
+      <div class="type-scale-row">
+        <span class="type-scale-label">.text-mono-md</span>
+        <span class="text-mono-md">mono · 3.141 · #c8a96e</span>
+      </div>
+      <div class="type-scale-row" style="border:none">
+        <span class="type-scale-label">.text-mono-sm</span>
+        <span class="text-mono-sm">mono sm · KB · 99% · 2024</span>
+      </div>
+    </div>
+  </div>
+
+  <hr class="ds-hr">
+
+  <!-- ══════════════════════════════════
+       2. PALETA DE CORES
+  ══════════════════════════════════ -->
+  <div class="ds-section">
+    <div class="ds-eyebrow">02 — cores</div>
+    <h2 class="ds-title">Paleta <em>de Acentos</em></h2>
+
+    <div class="palette-grid">
+      <div class="swatch">
+        <div class="swatch-color" style="background:#c8a96e"></div>
+        <div class="swatch-info">
+          <div class="swatch-name" style="color:#c8a96e">Ouro</div>
+          <div class="swatch-var">--accent1</div>
+          <div class="swatch-hex">#c8a96e</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#7c6fcd"></div>
+        <div class="swatch-info">
+          <div class="swatch-name" style="color:#7c6fcd">Violeta</div>
+          <div class="swatch-var">--accent2</div>
+          <div class="swatch-hex">#7c6fcd</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#5ec4a8"></div>
+        <div class="swatch-info">
+          <div class="swatch-name" style="color:#5ec4a8">Teal</div>
+          <div class="swatch-var">--accent3</div>
+          <div class="swatch-hex">#5ec4a8</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#e06b8b"></div>
+        <div class="swatch-info">
+          <div class="swatch-name" style="color:#e06b8b">Rose</div>
+          <div class="swatch-var">--accent4</div>
+          <div class="swatch-hex">#e06b8b</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#e8864a"></div>
+        <div class="swatch-info">
+          <div class="swatch-name" style="color:#e8864a">Âmbar</div>
+          <div class="swatch-var">--accent5</div>
+          <div class="swatch-hex">#e8864a</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#4ab0e8"></div>
+        <div class="swatch-info">
+          <div class="swatch-name" style="color:#4ab0e8">Sky</div>
+          <div class="swatch-var">--accent6</div>
+          <div class="swatch-hex">#4ab0e8</div>
+        </div>
+      </div>
+    </div>
+
+    <h3 style="font-size:13px;font-weight:700;margin:24px 0 12px">Fundos &amp; Superfícies</h3>
+    <div class="swatch-bg-grid">
+      <div class="bg-swatch">
+        <div class="bg-swatch-color" style="background:#020208;border:1px solid rgba(255,255,255,.12)"></div>
+        <div class="bg-swatch-info">
+          <div class="bg-swatch-var">canvas bg</div>
+          <div class="bg-swatch-hex">#020208</div>
+        </div>
+      </div>
+      <div class="bg-swatch">
+        <div class="bg-swatch-color" style="background:#04040c"></div>
+        <div class="bg-swatch-info">
+          <div class="bg-swatch-var">body bg</div>
+          <div class="bg-swatch-hex">#04040c</div>
+        </div>
+      </div>
+      <div class="bg-swatch">
+        <div class="bg-swatch-color" style="background:#0d0d12"></div>
+        <div class="bg-swatch-info">
+          <div class="bg-swatch-var">--bg</div>
+          <div class="bg-swatch-hex">#0d0d12</div>
+        </div>
+      </div>
+      <div class="bg-swatch">
+        <div class="bg-swatch-color" style="background:#13131c"></div>
+        <div class="bg-swatch-info">
+          <div class="bg-swatch-var">--bg2</div>
+          <div class="bg-swatch-hex">#13131c</div>
+        </div>
+      </div>
+      <div class="bg-swatch">
+        <div class="bg-swatch-color" style="background:#1a1a27"></div>
+        <div class="bg-swatch-info">
+          <div class="bg-swatch-var">--bg3</div>
+          <div class="bg-swatch-hex">#1a1a27</div>
+        </div>
+      </div>
+      <div class="bg-swatch">
+        <div class="bg-swatch-color" style="background:#16161f"></div>
+        <div class="bg-swatch-info">
+          <div class="bg-swatch-var">--card</div>
+          <div class="bg-swatch-hex">#16161f</div>
+        </div>
+      </div>
+      <div class="bg-swatch">
+        <div class="bg-swatch-color" style="background:#e8e4f0"></div>
+        <div class="bg-swatch-info">
+          <div class="bg-swatch-var">--text</div>
+          <div class="bg-swatch-hex">#e8e4f0</div>
+        </div>
+      </div>
+      <div class="bg-swatch">
+        <div class="bg-swatch-color" style="background:#7a7590"></div>
+        <div class="bg-swatch-info">
+          <div class="bg-swatch-var">--muted</div>
+          <div class="bg-swatch-hex">#7a7590</div>
+        </div>
+      </div>
+    </div>
+
+    <h3 style="font-size:13px;font-weight:700;margin:24px 0 12px">Variantes transparentes dos acentos</h3>
+    <div class="card" style="display:flex;flex-wrap:wrap;gap:10px;padding:16px">
+      <!-- ouro -->
+      <div style="display:flex;flex-direction:column;gap:4px;align-items:center">
+        <div style="width:44px;height:36px;border-radius:8px;background:rgba(200,169,110,.1)"></div>
+        <span style="font-size:9px;font-family:var(--font-mono);color:var(--muted)">10%</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;align-items:center">
+        <div style="width:44px;height:36px;border-radius:8px;background:rgba(200,169,110,.18)"></div>
+        <span style="font-size:9px;font-family:var(--font-mono);color:var(--muted)">18%</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;align-items:center">
+        <div style="width:44px;height:36px;border-radius:8px;background:rgba(200,169,110,.3)"></div>
+        <span style="font-size:9px;font-family:var(--font-mono);color:var(--muted)">30%</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;align-items:center">
+        <div style="width:44px;height:36px;border-radius:8px;background:rgba(200,169,110,.5)"></div>
+        <span style="font-size:9px;font-family:var(--font-mono);color:var(--muted)">50%</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;align-items:center">
+        <div style="width:44px;height:36px;border-radius:8px;background:#c8a96e"></div>
+        <span style="font-size:9px;font-family:var(--font-mono);color:var(--muted)">100%</span>
+      </div>
+      <div style="width:1px;background:var(--border);margin:0 4px"></div>
+      <!-- violeta -->
+      <div style="display:flex;flex-direction:column;gap:4px;align-items:center">
+        <div style="width:44px;height:36px;border-radius:8px;background:rgba(124,111,205,.12)"></div>
+        <span style="font-size:9px;font-family:var(--font-mono);color:var(--muted)">12%</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;align-items:center">
+        <div style="width:44px;height:36px;border-radius:8px;background:rgba(124,111,205,.3)"></div>
+        <span style="font-size:9px;font-family:var(--font-mono);color:var(--muted)">30%</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;align-items:center">
+        <div style="width:44px;height:36px;border-radius:8px;background:#7c6fcd"></div>
+        <span style="font-size:9px;font-family:var(--font-mono);color:var(--muted)">100%</span>
+      </div>
+    </div>
+
+    <h3 style="font-size:13px;font-weight:700;margin:24px 0 12px">Gradientes</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px">
+      <div style="border-radius:12px;overflow:hidden;border:1px solid var(--border)">
+        <div style="height:60px;background:linear-gradient(135deg,var(--accent1),var(--accent2))"></div>
+        <div style="padding:10px 12px;background:var(--card);font-family:var(--font-mono);font-size:10px;color:var(--muted)">accent1 → accent2</div>
+      </div>
+      <div style="border-radius:12px;overflow:hidden;border:1px solid var(--border)">
+        <div style="height:60px;background:linear-gradient(135deg,var(--accent2),var(--accent4))"></div>
+        <div style="padding:10px 12px;background:var(--card);font-family:var(--font-mono);font-size:10px;color:var(--muted)">accent2 → accent4</div>
+      </div>
+      <div style="border-radius:12px;overflow:hidden;border:1px solid var(--border)">
+        <div style="height:60px;background:linear-gradient(90deg,var(--accent1),var(--accent3))"></div>
+        <div style="padding:10px 12px;background:var(--card);font-family:var(--font-mono);font-size:10px;color:var(--muted)">accent1 → accent3</div>
+      </div>
+      <div style="border-radius:12px;overflow:hidden;border:1px solid var(--border)">
+        <div style="height:60px;background:linear-gradient(90deg,var(--accent3),var(--accent6))"></div>
+        <div style="padding:10px 12px;background:var(--card);font-family:var(--font-mono);font-size:10px;color:var(--muted)">accent3 → accent6</div>
+      </div>
+      <div style="border-radius:12px;overflow:hidden;border:1px solid var(--border)">
+        <div style="height:60px;background:linear-gradient(180deg,#08082a,#020208)"></div>
+        <div style="padding:10px 12px;background:var(--card);font-family:var(--font-mono);font-size:10px;color:var(--muted)">espaço profundo</div>
+      </div>
+      <div style="border-radius:12px;overflow:hidden;border:1px solid var(--border)">
+        <div style="height:60px;background:linear-gradient(135deg,rgba(124,111,205,.18),rgba(200,169,110,.1))"></div>
+        <div style="padding:10px 12px;background:var(--card);font-family:var(--font-mono);font-size:10px;color:var(--muted)">nebulosa suave</div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="ds-hr">
+
+  <!-- ══════════════════════════════════
+       3. CSS VARIÁVEIS — BLOCO PARA COPIAR
+  ══════════════════════════════════ -->
+  <div class="ds-section">
+    <div class="ds-eyebrow">03 — variáveis</div>
+    <h2 class="ds-title">Bloco <em>:root</em> para copiar</h2>
+    <p class="ds-subtitle">Cole no início do seu arquivo CSS:</p>
+    <div class="ds-code"><span class="ck">:root</span> {
+  <span class="cm">/* ── Fundos ──────────────────── */</span>
+  <span class="ck">--bg</span>:    <span class="cv">#0d0d12</span>;   <span class="cm">/* fundo principal */</span>
+  <span class="ck">--bg2</span>:   <span class="cv">#13131c</span>;   <span class="cm">/* fundo secundário */</span>
+  <span class="ck">--bg3</span>:   <span class="cv">#1a1a27</span>;   <span class="cm">/* fundo terciário */</span>
+  <span class="ck">--card</span>:  <span class="cv">#16161f</span>;   <span class="cm">/* cards */</span>
+
+  <span class="cm">/* ── Bordas & texto ──────────── */</span>
+  <span class="ck">--border</span>: <span class="cv">rgba(255,255,255,0.07)</span>;
+  <span class="ck">--text</span>:   <span class="cv">#e8e4f0</span>;
+  <span class="ck">--muted</span>:  <span class="cv">#7a7590</span>;
+
+  <span class="cm">/* ── Acentos ─────────────────── */</span>
+  <span class="ck">--accent1</span>: <span class="cv">#c8a96e</span>; <span class="cm">/* ouro    */</span>
+  <span class="ck">--accent2</span>: <span class="cv">#7c6fcd</span>; <span class="cm">/* violeta */</span>
+  <span class="ck">--accent3</span>: <span class="cv">#5ec4a8</span>; <span class="cm">/* teal    */</span>
+  <span class="ck">--accent4</span>: <span class="cv">#e06b8b</span>; <span class="cm">/* rose    */</span>
+  <span class="ck">--accent5</span>: <span class="cv">#e8864a</span>; <span class="cm">/* âmbar   */</span>
+  <span class="ck">--accent6</span>: <span class="cv">#4ab0e8</span>; <span class="cm">/* sky     */</span>
+
+  <span class="cm">/* ── Tipografia ──────────────── */</span>
+  <span class="ck">--font-display</span>: <span class="cv">'Playfair Display'</span>, Georgia, serif;
+  <span class="ck">--font-ui</span>:      <span class="cv">'Syne'</span>, system-ui, sans-serif;
+  <span class="ck">--font-mono</span>:    <span class="cv">'DM Mono'</span>, 'Courier New', monospace;
+
+  <span class="cm">/* ── Misc ────────────────────── */</span>
+  <span class="ck">--radius</span>: <span class="cv">16px</span>;
+}</div>
+  </div>
+
+  <hr class="ds-hr">
+
+  <!-- ══════════════════════════════════
+       4. COMPONENTES
+  ══════════════════════════════════ -->
+  <div class="ds-section">
+    <div class="ds-eyebrow">04 — componentes</div>
+    <h2 class="ds-title">Componentes <em>Base</em></h2>
+
+    <!-- Botões -->
+    <h3 style="font-size:13px;font-weight:700;margin-bottom:12px">Botões</h3>
+    <div class="comp-row">
+      <button class="btn btn-primary">btn-primary</button>
+      <button class="btn btn-violet">btn-violet</button>
+      <button class="btn btn-teal">btn-teal</button>
+      <button class="btn btn-rose">btn-rose</button>
+      <button class="btn btn-ghost">btn-ghost</button>
+      <button class="btn btn-danger">btn-danger</button>
+    </div>
+
+    <!-- Badges -->
+    <h3 style="font-size:13px;font-weight:700;margin:20px 0 12px">Badges</h3>
+    <div class="comp-row">
+      <span class="badge text-gold">Ouro</span>
+      <span class="badge text-violet">Violeta</span>
+      <span class="badge text-teal">Teal</span>
+      <span class="badge text-rose">Rose</span>
+      <span class="badge text-amber">Âmbar</span>
+      <span class="badge text-sky">Sky</span>
+      <span class="badge text-muted">Muted</span>
+    </div>
+
+    <!-- Cards -->
+    <h3 style="font-size:13px;font-weight:700;margin:20px 0 12px">Cards</h3>
+    <div class="comp-grid">
+      <div class="card">
+        <div class="text-ui-xs text-muted" style="margin-bottom:4px">card padrão</div>
+        <div class="text-display-md">Título do Card</div>
+        <p class="text-ui-sm text-muted" style="margin-top:8px">Conteúdo do card com texto secundário usando a fonte UI.</p>
+      </div>
+      <div class="glass" style="padding:20px">
+        <div class="text-ui-xs text-muted" style="margin-bottom:4px">glass panel</div>
+        <div class="text-display-md">Glassmorphism</div>
+        <p class="text-ui-sm text-muted" style="margin-top:8px">Painel com blur e fundo semi-transparente.</p>
+      </div>
+    </div>
+
+    <!-- Inputs -->
+    <h3 style="font-size:13px;font-weight:700;margin:20px 0 12px">Inputs</h3>
+    <div style="display:flex;flex-direction:column;gap:10px;max-width:400px">
+      <input class="inp" placeholder="Placeholder padrão">
+      <input class="inp" value="Valor preenchido" style="border-color:rgba(200,169,110,.4)">
+      <textarea class="inp" placeholder="Textarea…" style="min-height:70px;resize:vertical"></textarea>
+    </div>
+
+    <!-- Gradiente de texto -->
+    <h3 style="font-size:13px;font-weight:700;margin:20px 0 12px">Gradiente de texto</h3>
+    <div class="text-display-lg gradient-text" style="margin-bottom:8px">Gradiente accent1 → accent2</div>
+    <div class="ds-code">&lt;<span class="ck">span</span> <span class="cv">class</span>=<span class="cv">"gradient-text"</span>&gt;Seu texto aqui&lt;/<span class="ck">span</span>&gt;</div>
+
+    <!-- Divisor -->
+    <h3 style="font-size:13px;font-weight:700;margin:20px 0 12px">Divisor</h3>
+    <div class="divider"></div>
+    <div class="ds-code">&lt;<span class="ck">div</span> <span class="cv">class</span>=<span class="cv">"divider"</span>&gt;&lt;/<span class="ck">div</span>&gt;</div>
+  </div>
+
+  <!-- ── Rodapé ───────────────────────────────────────────────── -->
+  <div style="text-align:center;padding-top:20px;border-top:1px solid var(--border)">
+    <div class="text-mono-sm text-muted">Sól de Sóter · Design System · <span id="year"></span></div>
+  </div>
+
+</div>
+
+<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+</body>
+</html>

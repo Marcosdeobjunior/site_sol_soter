@@ -238,9 +238,8 @@
       '        <input type="file" id="pm-avatar-input" accept="image/*">',
       '      </div>',
       '      <div class="pm-divider"></div>',
-      '      <a class="pm-item" href="rpg.html"><span class="pm-icon">⚔</span> RPG</a>',
-      '      <a class="pm-item" href="financas.html"><span class="pm-icon">💰</span> Finanças</a>',
-      '      <a class="pm-item" href="armazenamento.html"><span class="pm-icon">💾</span> Armazenamento</a>',
+      '      <a class="pm-item" href="rpg.html">RPG</a>',
+      '      <a class="pm-item" href="armazenamento.html">Armazenamento</a>',
       '    </div>',
       '  </div>',
       '</header>'

@@ -1,3 +1,17 @@
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+[data-app-footer] {
+  margin-top: auto;
+}
+
 .site-header {
   position: fixed;
   top: 0;
@@ -644,16 +658,19 @@
 }
 
 .pm-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  display: block;
   width: 100%;
+  background: none;
+  border: none;
   text-decoration: none;
   color: var(--muted);
   padding: 9px 20px;
   font-size: 13px;
   font-weight: 600;
   font-family: var(--font-ui);
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
   letter-spacing: 0.2px;
   transition: color 0.18s;
   position: relative;
@@ -679,11 +696,6 @@
 
 .pm-item:hover::after {
   transform: scaleX(1);
-}
-
-.pm-icon {
-  width: 16px;
-  text-align: center;
 }
 
 .site-footer {

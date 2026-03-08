@@ -232,6 +232,121 @@
   transform: scaleX(1);
 }
 
+.hn-notif {
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  margin-left: 6px;
+}
+
+.hn-notif-trigger {
+  min-width: 54px;
+  justify-content: center;
+  gap: 0;
+  font-size: 16px;
+}
+
+.hn-notif-badge {
+  position: absolute;
+  top: 12px;
+  right: 10px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 20px;
+  background: var(--accent4);
+  color: #0d0d12;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  display: none;
+}
+
+.hn-notif-menu {
+  right: 0;
+  left: auto;
+  min-width: 320px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.hn-notif-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-size: 11px;
+  font-family: var(--font-mono);
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+}
+
+.hn-notif-clear {
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--muted);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 6px;
+  padding: 3px 8px;
+  cursor: pointer;
+}
+
+.hn-notif-clear:hover {
+  color: var(--text);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.hn-notif-list {
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.hn-notif-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.hn-notif-text {
+  flex: 1;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.hn-notif-remove {
+  margin-left: auto;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.hn-notif-remove:hover {
+  color: var(--accent4);
+  border-color: rgba(224, 107, 139, 0.45);
+  background: rgba(224, 107, 139, 0.08);
+}
+
+.hn-notif-empty {
+  padding: 16px 14px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .header-balance {
   display: flex;
   align-items: center;
@@ -655,6 +770,10 @@
   }
 
   .header-balance {
+    display: none;
+  }
+
+  .hn-notif {
     display: none;
   }
 

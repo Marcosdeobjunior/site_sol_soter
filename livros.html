@@ -9,38 +9,1566 @@
   <link rel="stylesheet" href="css/design-system.css">
   <link rel="stylesheet" href="css/app-shell.css">
   <link rel="stylesheet" href="css/livros.css">
+  <style>
+  /* ══════════════════════════════════════════
+     TOKENS
+  ══════════════════════════════════════════ */
+  :root {
+    --bg: #0d0d12;
+    --bg2: #13131c;
+    --bg3: #1a1a27;
+    --card: #16161f;
+    --border: rgba(255,255,255,0.07);
+    --text: #e8e4f0;
+    --muted: #7a7590;
+    --accent1: #c8a96e; /* gold */
+    --accent2: #7c6fcd; /* violet */
+    --accent3: #5ec4a8; /* teal */
+    --accent4: #e06b8b; /* rose */
+    --accent5: #e8864a; /* amber */
+    --accent6: #4ab0e8; /* sky */
+    --radius: 16px;
+    --font-display: 'Playfair Display', serif;
+    --font-ui: 'Syne', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #04040c;
+    color: var(--text);
+    font-family: var(--font-ui);
+    min-height: 100vh;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── STARFIELD CANVAS ── */
+  #bg-canvas {
+    position: fixed; inset: 0;
+    z-index: 0; pointer-events: none;
+  }
+/* ══════════════════════════════════════════
+     HEADER
+  ══════════════════════════════════════════ */
+  .site-header {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(6,5,16,0.85); backdrop-filter: blur(22px);
+    -webkit-backdrop-filter: blur(22px);
+    border-bottom: 1px solid var(--border);
+    height: 58px; display: flex; align-items: center;
+    padding: 0 40px; gap: 0;
+  }
+  .header-brand {
+    font-family: var(--font-display); font-size: 17px;
+    color: var(--accent1); letter-spacing: .5px;
+    cursor: pointer; white-space: nowrap; flex-shrink: 0;
+    margin-right: 36px; text-decoration: none;
+  }
+  .header-brand em { font-style: italic; }
+  .header-nav {
+    display: flex; align-items: stretch; gap: 0; flex: 1; height: 100%;
+  }
+  .hn-link {
+    background: none; border: none; color: var(--muted);
+    font-family: var(--font-ui); font-size: 13px; font-weight: 600;
+    letter-spacing: .3px; cursor: pointer; padding: 0 14px;
+    position: relative; transition: color .2s; white-space: nowrap;
+    text-decoration: none; display: flex; align-items: center; height: 100%;
+  }
+  .hn-link::after {
+    content: ''; position: absolute; bottom: 0; left: 14px; right: 14px;
+    height: 2px; background: var(--accent1);
+    transform: scaleX(0); transform-origin: left;
+    transition: transform .25s cubic-bezier(.22,1,.36,1);
+    border-radius: 2px 2px 0 0;
+  }
+  .hn-link:hover { color: var(--text); }
+  .hn-link:hover::after { transform: scaleX(1); }
+  .hn-link.active { color: var(--accent1); }
+  .hn-link.active::after { transform: scaleX(1); }
+
+  /* nav tabs for biblioteca */
+  .nav-tabs {
+    display: flex; align-items: center; gap: 0; height: 100%; margin-left: 8px;
+  }
+  .nav-tab {
+    background: none; border: none; color: var(--muted);
+    font-family: var(--font-ui); font-size: 13px; font-weight: 600;
+    letter-spacing: .3px; cursor: pointer; padding: 0 14px;
+    position: relative; transition: color .2s; display: flex;
+    align-items: center; height: 100%;
+  }
+  .nav-tab::after {
+    content: ''; position: absolute; bottom: 0; left: 14px; right: 14px;
+    height: 2px; background: var(--accent1);
+    transform: scaleX(0); transform-origin: left;
+    transition: transform .25s cubic-bezier(.22,1,.36,1);
+    border-radius: 2px 2px 0 0;
+  }
+  .nav-tab:hover { color: var(--text); }
+  .nav-tab:hover::after { transform: scaleX(1); }
+  .nav-tab.active { color: var(--accent1); }
+  .nav-tab.active::after { transform: scaleX(1); }
+
+  /* hamburger */
+  .hamburger {
+    display: none; background: none; border: none; color: var(--muted);
+    font-size: 20px; cursor: pointer; padding: 4px 8px;
+    margin-left: auto; flex-shrink: 0; transition: color .2s;
+  }
+  .hamburger:hover { color: var(--text); }
+  .mobile-nav {
+    display: none; position: fixed; top: 58px; left: 0; right: 0;
+    background: rgba(6,5,16,0.97); backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid var(--border);
+    z-index: 99; padding: 12px 24px 18px; flex-direction: column;
+    gap: 0; animation: fadeIn .2s ease;
+  }
+  .mobile-nav.open { display: flex; }
+  .mobile-nav-label {
+    font-size: 9px; letter-spacing: 2.5px; text-transform: uppercase;
+    color: var(--muted); font-family: var(--font-mono); padding: 12px 0 4px; opacity: .6;
+  }
+  .mobile-nav .nav-tab { padding: 10px 0; font-size: 14px; }
+  .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 98; }
+  .overlay.open { display: block; }
+
+  /* ══════════════════════════════════════════
+     LAYOUT
+  ══════════════════════════════════════════ */
+.main { position: relative; z-index: 1; padding: 80px 40px 40px; flex: 1 0 auto; }
+  [data-app-footer] { margin-top: auto; }
+  .page { display: none; animation: fadeIn .35s ease; }
+  .page.active { display: block; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
+  /* ── PAGE HEADER ── */
+  .page-header { margin-bottom: 36px; }
+  .page-title { font-family: var(--font-display); font-size: 38px; font-weight: 700; line-height: 1.1; }
+  .page-title span { font-style: italic; }
+  .page-subtitle { color: var(--muted); font-size: 13px; margin-top: 6px; font-family: var(--font-mono); }
+
+  .library-top { display:grid; grid-template-columns: 1.4fr .95fr; gap:16px; margin-bottom:24px; }
+  .quote-panel { min-height:170px; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; background:rgba(255,255,255,.03); }
+  .quote-text { font-family:var(--font-display); font-size:42px; line-height:1.2; font-style:italic; color:#e7e7e7; max-width:92%; }
+  .quote-author { margin-top:14px; font-family:var(--font-ui); font-size:26px; font-weight:700; color:rgba(255,255,255,.62); }
+  .goal-panel { padding:20px 22px; min-height:112px; }
+  .goal-title { font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); font-family:var(--font-mono); margin-bottom:6px; }
+  .goal-main { display:flex; align-items:flex-end; justify-content:center; gap:8px; margin-bottom:8px; }
+  .goal-main strong { font-size:44px; line-height:1; font-family:var(--font-display); }
+  .goal-main span { font-size:26px; line-height:1; color:var(--muted); font-family:var(--font-display); }
+  .goal-sub { text-align:center; color:var(--muted); font-family:var(--font-mono); font-size:11px; margin-bottom:8px; }
+  .goal-track { height:8px; border-radius:999px; background:rgba(255,255,255,.1); overflow:hidden; }
+  .goal-fill { height:100%; border-radius:999px; background:linear-gradient(90deg,#d0d55a,#c8a96e); width:0; transition:width .4s ease; }
+  .goal-pct { text-align:center; margin-top:8px; color:var(--muted); font-family:var(--font-mono); font-size:11px; }
+  .mini-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:12px; }
+  .mini-stat { text-align:center; padding:14px 10px; }
+  .mini-stat .card-big-num { font-size:42px; line-height:1; margin-bottom:6px; }
+  .mini-stat .card-title { margin-bottom:0; font-size:10px; letter-spacing:1.5px; }
+  .tracker-headline { margin-bottom:14px; font-family:var(--font-ui); font-size:28px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; }
+
+  /* ── GRIDS ── */
+  .grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
+
+  /* ── CARD ── */
+  .card {
+    background: rgba(18,18,28,0.72); backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 24px; transition: border-color .2s;
+  }
+  .card:hover { border-color: rgba(255,255,255,.14); }
+  .card-title { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); font-family: var(--font-mono); margin-bottom: 14px; }
+  .card-big-num { font-family: var(--font-display); font-size: 48px; font-weight: 700; line-height: 1; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    padding: 10px 18px; border-radius: 10px; border: none;
+    font-family: var(--font-ui); font-weight: 700; font-size: 12.5px;
+    cursor: pointer; transition: all .2s; letter-spacing: .5px;
+  }
+  .btn-primary { background: linear-gradient(135deg,#d4b070,#c8a96e); color: #0d0d12; box-shadow: 0 4px 14px rgba(200,169,110,.3); }
+  .btn-primary:hover { opacity:.9; transform:translateY(-1px); box-shadow:0 6px 20px rgba(200,169,110,.4); }
+  .btn-ghost { background: rgba(255,255,255,.04); color: var(--muted); border: 1px solid rgba(255,255,255,.08); }
+  .btn-ghost:hover { color:var(--text); border-color:rgba(255,255,255,.18); background:rgba(255,255,255,.07); }
+  .btn-danger {
+    padding: 10px 14px; border-radius: 10px; border: 1px solid rgba(224,107,139,.25);
+    background: rgba(224,107,139,.07); color: var(--accent4); font-family: var(--font-ui);
+    font-weight: 700; font-size: 12.5px; cursor: pointer; transition: all .2s;
+    letter-spacing: .5px; display: none;
+  }
+  .btn-danger:hover { background:rgba(224,107,139,.18); border-color:var(--accent4); transform:translateY(-1px); }
+  .btn-danger.visible { display: block; }
+
+  /* ── INPUTS ── */
+  .inp {
+    flex: 1; min-width: 120px; background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.07); border-radius: 10px;
+    padding: 9px 13px; color: var(--text); font-family: var(--font-ui);
+    font-size: 13px; outline: none;
+    transition: border-color .2s, background .2s, box-shadow .2s;
+  }
+  .inp:focus { border-color:rgba(200,169,110,.5); background:rgba(200,169,110,.04); box-shadow:0 0 0 3px rgba(200,169,110,.07); }
+  .inp::placeholder { color: rgba(122,117,144,.6); }
+  select.inp option { background: #0d0c1e; }
+  textarea.inp { resize: vertical; min-height: 70px; }
+  .form-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+
+  /* ── EMPTY STATE ── */
+  .empty { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 13px; }
+  .empty-icon { font-size: 36px; margin-bottom: 10px; }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 4px; }
+
+  /* ══════════════════════════════════════════
+     TRACKER GRID & CARDS
+  ══════════════════════════════════════════ */
+  .tracker-count { font-family: var(--font-mono); font-size: 10px; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; }
+
+  .tracker-tabs { display: flex; gap: 5px; margin-bottom: 20px; flex-wrap: wrap; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+  .ttab {
+    font-size: 11px; font-family: var(--font-mono); padding: 6px 16px;
+    border-radius: 6px; border: 1px solid var(--border); background: transparent;
+    color: var(--muted); cursor: pointer; transition: all .18s; letter-spacing: .5px;
+  }
+  .ttab:hover { color:var(--text); border-color:rgba(255,255,255,.18); background:rgba(255,255,255,.04); }
+  .ttab.active { background:rgba(200,169,110,.12); color:var(--accent1); border-color:rgba(200,169,110,.35); font-weight:700; }
+
+  .tracker-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 16px; }
+
+  /* ── MEDIA CARD ── */
+  .mc {
+    position: relative; border-radius: 14px; overflow: hidden;
+    border: 1px solid rgba(255,255,255,.08); background: rgba(12,11,22,0.8);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    cursor: pointer; aspect-ratio: 2/3; display: flex; flex-direction: column;
+    transition: transform .28s cubic-bezier(.22,1,.36,1), border-color .28s, box-shadow .28s;
+  }
+  .mc::after {
+    content: ''; position: absolute; inset: 0; border-radius: 14px;
+    background: linear-gradient(180deg,transparent 50%,rgba(0,0,0,.7) 100%);
+    pointer-events: none; opacity: 0; transition: opacity .28s;
+  }
+  .mc:hover { transform: translateY(-8px) scale(1.03); border-color: rgba(200,169,110,.5); box-shadow: 0 20px 60px rgba(0,0,0,.6), 0 0 0 1px rgba(200,169,110,.15); }
+  .mc:hover::after { opacity: 1; }
+  .mc.fav { border-color: rgba(200,169,110,.45); }
+  .mc.fav::before { content:''; position:absolute; inset:0; background:linear-gradient(135deg,rgba(200,169,110,.06) 0%,transparent 60%); pointer-events:none; z-index:1; }
+
+  .mc-img { width:100%; flex:1; object-fit:cover; display:block; min-height:0; transition:transform .4s cubic-bezier(.22,1,.36,1); }
+  .mc:hover .mc-img { transform: scale(1.05); }
+
+  .mc-img-placeholder {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 8px;
+    background: linear-gradient(160deg,rgba(28,22,48,.95),rgba(10,8,20,.98));
+    position: relative; overflow: hidden;
+  }
+  .mc-img-placeholder::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at 30% 30%,rgba(124,111,205,.15),transparent 70%); }
+  .mc-img-placeholder .ph-icon { font-size:36px; position:relative; z-index:1; }
+  .mc-img-placeholder .ph-title { font-size:10px; font-family:var(--font-display); font-style:italic; color:rgba(255,255,255,.35); text-align:center; padding:0 10px; position:relative; z-index:1; max-height:2.6em; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+
+  .mc-body { padding:10px 11px 11px; background:linear-gradient(180deg,rgba(6,5,16,0) 0%,rgba(6,5,16,.97) 18px); position:relative; z-index:2; }
+  .mc-title { font-size:11px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:2px; line-height:1.3; letter-spacing:.2px; }
+  .mc-author { font-size:9.5px; color:var(--muted); font-family:var(--font-mono); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:6px; }
+  .mc-stars { font-size:9px; color:var(--accent1); letter-spacing:1px; margin-bottom:5px; text-shadow:0 0 8px rgba(200,169,110,.5); }
+  .mc-progress-bar { height:2px; background:rgba(255,255,255,.07); border-radius:2px; overflow:hidden; margin-bottom:6px; }
+  .mc-progress-fill { height:100%; border-radius:2px; background:linear-gradient(90deg,var(--accent2),var(--accent1)); transition:width .6s; position:relative; }
+  .mc-progress-fill::after { content:''; position:absolute; right:0; top:-1px; width:4px; height:4px; border-radius:50%; background:var(--accent1); box-shadow:0 0 6px var(--accent1); }
+  .mc-bottom { display:flex; align-items:center; justify-content:space-between; gap:4px; }
+  .mc-status-pill { display:inline-flex; align-items:center; gap:4px; font-size:8.5px; font-family:var(--font-mono); font-weight:600; letter-spacing:.8px; text-transform:uppercase; padding:2px 7px; border-radius:20px; border:1px solid currentColor; opacity:.85; }
+  .mc-pct { font-size:9px; font-family:var(--font-mono); color:var(--muted); flex-shrink:0; }
+  .mc-fav-badge { position:absolute; top:8px; right:8px; font-size:13px; filter:drop-shadow(0 1px 6px rgba(0,0,0,.9)); z-index:3; animation:favPop .3s cubic-bezier(.22,1,.36,1) both; }
+  @keyframes favPop { from { transform:scale(0); } to { transform:scale(1); } }
+  .mc-ribbon { position:absolute; top:10px; left:0; font-size:8px; font-family:var(--font-mono); font-weight:700; letter-spacing:1.2px; text-transform:uppercase; padding:4px 10px 4px 7px; border-radius:0 8px 8px 0; backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); box-shadow:2px 2px 8px rgba(0,0,0,.4); z-index:3; }
+
+  /* ══════════════════════════════════════════
+     FILTER BUTTON & PANEL
+  ══════════════════════════════════════════ */
+  .filter-wrap { position: relative; }
+  .btn-filter {
+    display: flex; align-items: center; gap: 6px; padding: 9px 14px;
+    border-radius: 8px; border: 1px solid var(--border); background: rgba(255,255,255,.04);
+    color: var(--muted); font-family: var(--font-ui); font-size: 12.5px; font-weight: 700;
+    cursor: pointer; transition: all .2s; white-space: nowrap; letter-spacing: .4px;
+  }
+  .btn-filter:hover { color:var(--text); border-color:rgba(255,255,255,.2); background:rgba(255,255,255,.07); }
+  .btn-filter.active { color:var(--accent1); border-color:rgba(200,169,110,.5); background:rgba(200,169,110,.08); }
+  .btn-filter .filter-badge { display:none; background:var(--accent1); color:#0d0d12; font-size:9px; font-weight:800; border-radius:50%; width:16px; height:16px; align-items:center; justify-content:center; }
+  .btn-filter.active .filter-badge { display:flex; }
+
+  .filter-panel {
+    position: absolute; top: calc(100% + 6px); right: 0; z-index: 300;
+    background: rgba(8,7,20,.98); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,.1); border-top: 2px solid var(--accent1);
+    border-radius: 0 0 14px 14px; width: 260px; padding: 14px 16px 16px;
+    box-shadow: 0 20px 50px rgba(0,0,0,.7);
+    opacity: 0; visibility: hidden; transform: translateY(-6px);
+    transition: opacity .2s, transform .2s, visibility .2s;
+  }
+  .filter-panel.open { opacity:1; visibility:visible; transform:translateY(0); }
+  .filter-section-title { font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); font-family:var(--font-mono); margin-bottom:8px; margin-top:10px; }
+  .filter-section-title:first-child { margin-top:0; }
+  .filter-chips { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:2px; }
+  .filter-chip { font-size:11px; font-family:var(--font-mono); padding:5px 10px; border-radius:6px; border:1px solid var(--border); background:transparent; color:var(--muted); cursor:pointer; transition:all .15s; letter-spacing:.3px; }
+  .filter-chip:hover { color:var(--text); border-color:rgba(255,255,255,.2); }
+  .filter-chip.selected { background:rgba(200,169,110,.12); color:var(--accent1); border-color:rgba(200,169,110,.45); font-weight:700; }
+  .filter-chips.sort-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; }
+  .filter-chips.sort-grid .filter-chip { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:center; }
+  .filter-divider { height:1px; background:var(--border); margin:12px 0; }
+  .filter-actions { display:flex; gap:7px; margin-top:14px; }
+  .filter-actions .btn { flex:1; font-size:11.5px; padding:8px 10px; }
+
+  /* ══════════════════════════════════════════
+     MODAL — full redesign v2
+  ══════════════════════════════════════════ */
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(2,2,10,.88);
+    backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+    z-index: 600; display: none; align-items: center; justify-content: center;
+    padding: 24px 8vw;
+  }
+  .modal-backdrop.open { display: flex; animation: backdropIn .3s ease both; }
+  @keyframes backdropIn { from { opacity:0; } to { opacity:1; } }
+
+  .modal {
+    background: #0c0b1a; border: 1px solid rgba(255,255,255,.08);
+    border-radius: 24px; width: 100%; max-width: 780px; max-height: 94vh;
+    overflow: hidden; display: flex; flex-direction: column;
+    animation: modalIn .38s cubic-bezier(.16,1,.3,1) both; position: relative;
+    box-shadow: 0 0 0 1px rgba(200,169,110,.07), 0 32px 80px rgba(0,0,0,.8), 0 8px 24px rgba(0,0,0,.5);
+  }
+  @keyframes modalIn { from { opacity:0; transform:translateY(28px) scale(.96); } to { opacity:1; transform:none; } }
+
+  .modal-hero { position:relative; height:88px; flex-shrink:0; overflow:hidden; background:linear-gradient(135deg,#1a1230 0%,#0d0c1e 100%); }
+  .modal-hero-blur { position:absolute; inset:-20px; background-size:cover; background-position:center top; filter:blur(28px) brightness(.35) saturate(1.4); transform:scale(1.1); transition:background-image .4s; }
+  .modal-hero-gradient { position:absolute; inset:0; background:linear-gradient(180deg,rgba(12,11,26,0) 0%,rgba(12,11,26,.5) 60%,rgba(12,11,26,1) 100%); }
+  .modal-hero-content { display:none; }
+  .modal-hero-title { font-family:var(--font-display); font-size:15px; font-weight:700; font-style:italic; color:rgba(255,255,255,.55); letter-spacing:.3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:300px; }
+  .modal-hero-type-badge { font-size:9px; font-family:var(--font-mono); letter-spacing:1.5px; text-transform:uppercase; color:var(--accent1); background:rgba(200,169,110,.12); border:1px solid rgba(200,169,110,.25); padding:2px 8px; border-radius:20px; white-space:nowrap; flex-shrink:0; }
+
+  .modal-close { position:absolute; top:14px; right:14px; z-index:10; background:rgba(10,9,24,.7); border:1px solid rgba(255,255,255,.1); color:var(--muted); width:30px; height:30px; border-radius:50%; font-size:11px; cursor:pointer; transition:all .2s; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); }
+  .modal-close:hover { background:rgba(224,107,139,.22); border-color:var(--accent4); color:var(--accent4); transform:rotate(90deg); }
+
+  .modal-body { display:grid; grid-template-columns:180px 1fr; flex:1; overflow:hidden; min-height:0; }
+
+  .modal-img-col { padding:16px 0 0 24px; display:flex; flex-direction:column; gap:12px; position:relative; margin-top:0; z-index:2; padding-bottom:24px; }
+  .img-upload-zone { border:2px solid rgba(255,255,255,.1); border-radius:14px; cursor:pointer; transition:border-color .22s, box-shadow .22s, transform .22s; overflow:hidden; aspect-ratio:2/3; display:flex; align-items:center; justify-content:center; background:linear-gradient(160deg,rgba(28,22,52,.95),rgba(10,8,22,.98)); position:relative; box-shadow:0 8px 32px rgba(0,0,0,.5),0 2px 8px rgba(0,0,0,.3); }
+  .img-upload-zone:hover { border-color:rgba(200,169,110,.6); box-shadow:0 12px 40px rgba(0,0,0,.6),0 0 0 1px rgba(200,169,110,.2),0 0 30px rgba(200,169,110,.08); transform:translateY(-2px); }
+  .img-upload-zone img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:none; }
+  .img-upload-zone.has-img img { display:block; }
+  .img-upload-zone.has-img .upload-hint { display:none; }
+  .upload-hint { font-size:11px; color:var(--muted); text-align:center; padding:12px; display:flex; flex-direction:column; align-items:center; gap:8px; }
+  .upload-hint .uh-icon { font-size:28px; opacity:.6; }
+  .upload-hint .uh-text { line-height:1.5; font-size:11px; }
+  .upload-hint .uh-sub { font-size:9px; opacity:.4; font-family:var(--font-mono); letter-spacing:1px; }
+  #modal-img-input { display:none; }
+  .img-change-btn { position:absolute; bottom:8px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,.8); border:1px solid rgba(255,255,255,.18); color:rgba(255,255,255,.85); font-size:10px; font-family:var(--font-mono); letter-spacing:.8px; padding:4px 12px; border-radius:20px; cursor:pointer; display:none; white-space:nowrap; z-index:2; transition:all .2s; backdrop-filter:blur(4px); }
+  .img-upload-zone.has-img:hover .img-change-btn { display:block; }
+
+  .fav-toggle { display:flex; align-items:center; gap:8px; cursor:pointer; font-size:12px; color:var(--muted); user-select:none; padding:8px 12px; border-radius:10px; border:1px solid var(--border); transition:all .2s; background:rgba(255,255,255,.025); }
+  .fav-toggle:hover { border-color:rgba(200,169,110,.35); color:var(--accent1); background:rgba(200,169,110,.06); }
+  .fav-toggle input { display:none; }
+  .fav-toggle .fav-icon { font-size:15px; transition:transform .25s cubic-bezier(.34,1.56,.64,1); }
+  .fav-toggle input:checked ~ .fav-icon { transform:scale(1.3); }
+  .fav-toggle input:checked ~ span:last-child { color:var(--accent1); }
+
+  .modal-fields-col { padding:8px 24px 0 20px; display:flex; flex-direction:column; overflow-y:auto; overflow-x:hidden; min-height:0; scrollbar-width:thin; scrollbar-color:rgba(255,255,255,.06) transparent; }
+  .modal-fields-col::-webkit-scrollbar { width:4px; }
+  .modal-fields-col::-webkit-scrollbar-track { background:transparent; }
+  .modal-fields-col::-webkit-scrollbar-thumb { background:rgba(255,255,255,.08); border-radius:4px; }
+
+  .modal-top-bar { display:flex; flex-direction:column; align-items:flex-start; justify-content:flex-start; margin-bottom:12px; gap:6px; padding-top:0; }
+  .modal-pretitle { font-family:var(--font-display); font-size:15px; font-weight:700; font-style:italic; color:rgba(255,255,255,.62); letter-spacing:.3px; max-width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .modal-title { font-family:var(--font-display); font-size:18px; font-weight:700; line-height:1.25; flex:1; }
+  .modal-title em { font-style:italic; color:var(--accent1); }
+  .modal-type-inline { margin-top:2px; }
+
+  .modal-status-row { display:flex; align-items:center; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
+  .modal-status-pill { font-size:10px; font-family:var(--font-mono); font-weight:700; padding:3px 10px; border-radius:20px; letter-spacing:.5px; border:1px solid; transition:all .2s; }
+
+  .mlabel { font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); font-family:var(--font-mono); margin:12px 0 6px; display:flex; align-items:center; gap:8px; }
+  .mlabel::after { content:''; flex:1; height:1px; background:var(--border); }
+  .mlabel:first-child { margin-top:0; }
+
+  .modal-progress-wrap { margin-bottom:12px; }
+  .modal-progress-bar-bg { height:6px; background:rgba(255,255,255,.06); border-radius:6px; overflow:hidden; margin-top:8px; margin-bottom:4px; }
+  .modal-progress-bar-fill { height:100%; border-radius:6px; background:linear-gradient(90deg,var(--accent2),var(--accent1)); transition:width .5s cubic-bezier(.22,1,.36,1); box-shadow:0 0 8px rgba(200,169,110,.4); }
+  .modal-progress-pct { font-family:var(--font-mono); font-size:10px; color:var(--muted); text-align:right; }
+
+  .modal-stars { display:flex; gap:3px; margin-bottom:2px; }
+  .mstar { font-size:22px; cursor:pointer; opacity:.18; transition:opacity .12s, transform .15s cubic-bezier(.34,1.56,.64,1); background:none; border:none; padding:0 2px; color:var(--accent1); line-height:1; }
+  .mstar.on { opacity:1; text-shadow:0 0 12px rgba(200,169,110,.7); }
+  .mstar:hover { transform:scale(1.3); opacity:.8; }
+
+  .modal-footer { padding:14px 24px 20px; border-top:1px solid rgba(255,255,255,.05); background:linear-gradient(180deg,rgba(12,11,26,0) 0%,rgba(12,11,26,1) 100%); flex-shrink:0; }
+  .modal-actions { display:flex; gap:8px; align-items:center; }
+  .modal-actions .btn-save { flex:1; }
+
+  /* Related */
+  .modal-related { margin-top:20px; padding-top:0; animation:fadeIn .3s .1s ease both; }
+  .modal-related-title { font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); font-family:var(--font-mono); margin-bottom:12px; display:flex; align-items:center; gap:8px; }
+  .modal-related-title::before { content:'✦'; color:var(--accent1); font-size:8px; opacity:.7; }
+  .modal-related-title::after { content:''; flex:1; height:1px; background:rgba(255,255,255,.06); }
+  .related-scroll { display:flex; gap:10px; overflow-x:auto; padding-bottom:8px; scrollbar-width:thin; scrollbar-color:rgba(200,169,110,.25) transparent; }
+  .related-scroll::-webkit-scrollbar { height:3px; }
+  .related-scroll::-webkit-scrollbar-track { background:transparent; }
+  .related-scroll::-webkit-scrollbar-thumb { background:rgba(200,169,110,.25); border-radius:3px; }
+  .rel-card { flex-shrink:0; width:76px; cursor:pointer; transition:transform .22s cubic-bezier(.22,1,.36,1); position:relative; }
+  .rel-card:hover { transform:translateY(-5px); }
+  .rel-thumb { width:76px; height:114px; border-radius:10px; overflow:hidden; border:1px solid rgba(255,255,255,.08); background:linear-gradient(160deg,rgba(28,22,52,.95),rgba(10,8,22,.98)); display:flex; align-items:center; justify-content:center; font-size:24px; position:relative; transition:border-color .2s, box-shadow .2s; box-shadow:0 4px 12px rgba(0,0,0,.4); }
+  .rel-card:hover .rel-thumb { border-color:rgba(200,169,110,.45); box-shadow:0 8px 24px rgba(0,0,0,.5),0 0 0 1px rgba(200,169,110,.15); }
+  .rel-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+  .rel-status-bar { position:absolute; bottom:0; left:0; right:0; height:3px; border-radius:0 0 10px 10px; }
+  .rel-name { font-size:10px; font-weight:600; margin-top:6px; line-height:1.35; color:var(--text); overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+  .rel-meta { font-size:9px; font-family:var(--font-mono); color:var(--muted); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .rel-stars { font-size:8px; color:var(--accent1); margin-top:2px; letter-spacing:.5px; }
+
+  /* ══════════════════════════════════════════
+     FOOTER
+  ══════════════════════════════════════════ */
+  .site-footer {
+    position: relative; z-index: 1; background: rgba(10,10,18,0.78);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border); padding: 28px 40px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 14px;
+  }
+  .footer-brand { font-family: var(--font-display); font-size: 18px; color: var(--accent1); }
+  .footer-brand span { font-style: italic; }
+  .footer-tagline { font-family: var(--font-mono); font-size: 10px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-top: 3px; }
+  .footer-copy { font-family: var(--font-mono); font-size: 10px; color: var(--muted); letter-spacing: 1px; }
+
+  /* ══════════════════════════════════════════
+     RESPONSIVE
+  ══════════════════════════════════════════ */
+  @media (max-width: 1100px) { .tracker-grid { grid-template-columns: repeat(4,1fr); } }
+  @media (max-width: 860px)  { .tracker-grid { grid-template-columns: repeat(3,1fr); } }
+  @media (max-width: 640px)  { .tracker-grid { grid-template-columns: repeat(2,1fr); } }
+  @media (max-width: 1120px) {
+    .library-top { grid-template-columns:1fr; }
+    .mini-stats { grid-template-columns:repeat(2,1fr); }
+    .quote-text { font-size:34px; }
+    .quote-author { font-size:22px; }
+  }
+  @media (max-width: 900px) {
+    .site-header { padding: 0 20px; }
+    .header-nav { display: none; }
+    .hamburger { display: block; }
+    .main { padding: 74px 20px 30px; }
+    .grid-4 { grid-template-columns: repeat(2,1fr); }
+    .modal-body { grid-template-columns: 140px 1fr; }
+    .modal-hero-content { left: 168px; }
+    .modal-img-col { padding-left: 16px; }
+    .modal-fields-col { padding: 16px 16px 0 14px; }
+  }
+  @media (max-width: 560px) {
+    .modal-body { grid-template-columns: 1fr; }
+    .modal-img-col { margin-top: 0; padding: 16px 16px 0; flex-direction: row; align-items: flex-start; }
+    .img-upload-zone { width: 100px; aspect-ratio: 2/3; flex-shrink: 0; }
+    .modal-hero-content { left: 16px; }
+  }
+</style>
 </head>
 <body data-page="livros">
-  <canvas id="bg-canvas"></canvas>
+
+<!-- STARFIELD -->
+<canvas id="bg-canvas"></canvas>
+
+<!-- OVERLAY -->
+<div class="overlay" id="overlay" onclick="closeMobileNav()"></div>
   <div data-app-header></div>
 
-  <main class="app-content">
-    <section class="page-shell">
-      <p class="page-eyebrow">✦ Espaço Pessoal ✦</p>
-      <h1 class="page-title"><em>Sól</em> de Sóter · Livraria</h1>
-      <p class="page-subtitle">Organize leituras, autores e progresso.</p>
+<!-- MOBILE NAV -->
+<div class="mobile-nav" id="mobile-nav">
+  <div class="mobile-nav-label">Biblioteca</div>
+  <button class="nav-tab" onclick="goTo('livros');closeMobileNav()">📚 Livraria</button>
+  <button class="nav-tab" onclick="goTo('cinema');closeMobileNav()">🎬 Cinema</button>
+  <button class="nav-tab" onclick="goTo('mangas');closeMobileNav()">📖 Mangás</button>
+</div>
 
-      <div class="placeholder-grid">
-        <article class="placeholder-card">
-          <h3>Painel</h3>
-          <p>Área pronta para os dados desta página.</p>
-        </article>
-        <article class="placeholder-card">
-          <h3>Itens</h3>
-          <p>Listas, cartões e formulários podem entrar aqui.</p>
-        </article>
-        <article class="placeholder-card">
-          <h3>Resumo</h3>
-          <p>Indicadores e progresso desta seção.</p>
-        </article>
+<!-- MODAL -->
+<div class="modal-backdrop" id="tracker-modal" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()" title="Fechar">✕</button>
+
+    <div class="modal-hero">
+      <div class="modal-hero-blur" id="modal-hero-blur"></div>
+      <div class="modal-hero-gradient"></div>
+      <div class="modal-hero-content">
+        <div class="modal-hero-title" id="modal-hero-title"></div>
+        <div class="modal-hero-type-badge" id="modal-hero-badge"></div>
       </div>
-    </section>
-  </main>
+    </div>
 
+    <div class="modal-body">
+      <div class="modal-img-col">
+        <div class="img-upload-zone" id="img-zone" onclick="document.getElementById('modal-img-input').click()">
+          <img id="modal-preview" src="" alt="preview">
+          <div class="upload-hint">
+            <span class="uh-icon">🖼️</span>
+            <span class="uh-text">Clique para<br>enviar capa</span>
+            <span class="uh-sub">JPG · PNG · WebP</span>
+          </div>
+          <div class="img-change-btn">✎ trocar</div>
+        </div>
+        <input type="file" id="modal-img-input" accept="image/*" onchange="handleImgUpload(event)">
+        <label class="fav-toggle">
+          <input type="checkbox" id="m-fav" onchange="updateFavToggle(this)">
+          <span class="fav-icon">🤍</span>
+          <span>Favorito</span>
+        </label>
+      </div>
+
+      <div class="modal-fields-col">
+        <div class="modal-top-bar">
+          <div class="modal-pretitle" id="modal-pretitle"></div>
+          <div class="modal-title" id="modal-title">Adicionar</div>
+          <div class="modal-hero-type-badge modal-type-inline" id="modal-badge-inline"></div>
+        </div>
+        <div class="modal-status-row" id="modal-status-row" style="display:none">
+          <span class="modal-status-pill" id="modal-status-pill"></span>
+        </div>
+
+        <div class="mlabel">Título</div>
+        <div class="form-row" style="margin-bottom:10px">
+          <input class="inp" id="m-titulo" placeholder="Título *" style="font-weight:600" oninput="updateModalHero()">
+        </div>
+
+        <div class="mlabel">Autor · Gênero</div>
+        <div class="form-row" style="margin-bottom:10px">
+          <input class="inp" id="m-autor" placeholder="Autor / Criador">
+          <input class="inp" id="m-genero" placeholder="Gênero">
+        </div>
+
+        <div class="mlabel">Status</div>
+        <select class="inp" id="m-status" style="margin-bottom:10px;width:100%" onchange="updateModalStatusPill()"></select>
+
+        <!-- Livros -->
+        <div id="m-livros-extra">
+          <div class="mlabel">Progresso de leitura</div>
+          <div class="form-row" style="margin-bottom:6px">
+            <input class="inp" id="m-paginas" placeholder="Total de páginas" type="number" oninput="updateModalProgress()">
+            <input class="inp" id="m-atual-pag" placeholder="Página atual" type="number" oninput="updateModalProgress()">
+          </div>
+          <div class="modal-progress-wrap" id="modal-progress-wrap" style="display:none">
+            <div class="modal-progress-bar-bg"><div class="modal-progress-bar-fill" id="modal-progress-fill" style="width:0%"></div></div>
+            <div class="modal-progress-pct" id="modal-progress-pct">0%</div>
+          </div>
+        </div>
+        <!-- Cinema -->
+        <div id="m-cinema-extra" style="display:none">
+          <div class="mlabel">Tipo</div>
+          <select class="inp" id="m-tipo-cinema" style="margin-bottom:10px;width:100%" onchange="updateCinemaTypeFields()">
+            <option>Filme</option><option>Série</option>
+          </select>
+          <div id="m-cinema-serie-extra" style="display:none">
+            <div class="mlabel">Progresso da série</div>
+            <div class="form-row" style="margin-bottom:6px">
+              <input class="inp" id="m-temp-atual" placeholder="Temporada atual" type="number" min="1" oninput="updateModalProgress()">
+              <input class="inp" id="m-ep-atual" placeholder="Episódio atual" type="number" min="1" oninput="updateModalProgress()">
+              <input class="inp" id="m-temp-total" placeholder="Temporadas totais" type="number" min="1" oninput="updateModalProgress()">
+              <input class="inp" id="m-ep-total" placeholder="Episódios totais" type="number" min="1" oninput="updateModalProgress()">
+            </div>
+            <div class="modal-progress-wrap" id="modal-progress-wrap-ci" style="display:none">
+              <div class="modal-progress-bar-bg"><div class="modal-progress-bar-fill" id="modal-progress-fill-ci" style="width:0%"></div></div>
+              <div class="modal-progress-pct" id="modal-progress-pct-ci">0%</div>
+            </div>
+          </div>
+        </div>
+        <!-- Mangás -->
+        <div id="m-mangas-extra" style="display:none">
+          <div class="mlabel">Progresso de capítulos</div>
+          <div class="form-row" style="margin-bottom:6px">
+            <input class="inp" id="m-cap-atual" placeholder="Capítulo atual" type="number" oninput="updateModalProgress()">
+            <input class="inp" id="m-cap-total" placeholder="Total de caps" type="number" oninput="updateModalProgress()">
+          </div>
+          <div class="modal-progress-wrap" id="modal-progress-wrap-mg" style="display:none">
+            <div class="modal-progress-bar-bg"><div class="modal-progress-bar-fill" id="modal-progress-fill-mg" style="width:0%"></div></div>
+            <div class="modal-progress-pct" id="modal-progress-pct-mg">0%</div>
+          </div>
+        </div>
+
+        <div class="mlabel">Avaliação</div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+          <div class="modal-stars" id="modal-stars">
+            <button class="mstar" data-v="1" onclick="setModalStar(1)">★</button>
+            <button class="mstar" data-v="2" onclick="setModalStar(2)">★</button>
+            <button class="mstar" data-v="3" onclick="setModalStar(3)">★</button>
+            <button class="mstar" data-v="4" onclick="setModalStar(4)">★</button>
+            <button class="mstar" data-v="5" onclick="setModalStar(5)">★</button>
+          </div>
+          <span id="modal-star-label" style="font-size:10px;color:var(--muted);font-family:var(--font-mono)">Sem nota</span>
+        </div>
+
+        <div class="mlabel">Observações</div>
+        <textarea class="inp" id="m-obs" placeholder="Notas pessoais, sinopse, resenha…" style="width:100%;min-height:72px;resize:vertical;margin-bottom:4px"></textarea>
+
+        <div class="modal-related" id="modal-related" style="display:none">
+          <div class="modal-related-title" id="modal-related-label">Relacionados</div>
+          <div class="related-scroll" id="modal-related-scroll"></div>
+        </div>
+
+        <div style="height:80px;flex-shrink:0"></div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <div class="modal-actions">
+        <button class="btn btn-primary btn-save" onclick="saveModalItem()">✓ &nbsp;Salvar</button>
+        <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+        <button class="btn btn-danger" id="modal-del-btn" onclick="modalDeleteItem()">🗑</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- ══════════ LIVRARIA ══════════ -->
+  <section class="page active" id="page-livros">
+    <div class="page-header">
+      <div class="page-title">Minha <span>Livraria</span></div>
+      <div class="page-subtitle">Tracking de leitura • livros lidos e em progresso</div>
+    </div>
+    <div class="library-top">
+      <div class="card quote-panel">
+        <div class="quote-text">"Ler é sonhar pela mão de outrem."</div>
+        <div class="quote-author">- Fernando Pessoa</div>
+      </div>
+      <div>
+        <div class="card goal-panel">
+          <div class="goal-title">Meta de Leitura <span id="lv-goal-year"></span></div>
+          <div class="goal-main"><strong id="lv-goal-done">0</strong><span>/ <span id="lv-goal-target">24</span></span></div>
+          <div class="goal-sub">livros concluídos</div>
+          <div class="goal-track"><div class="goal-fill" id="lv-goal-fill"></div></div>
+          <div class="goal-pct" id="lv-goal-pct">0% concluído</div>
+        </div>
+        <div class="mini-stats">
+          <div class="card mini-stat"><div class="card-big-num" id="lv-total">0</div><div class="card-title">Total</div></div>
+          <div class="card mini-stat"><div class="card-big-num" style="color:var(--accent1)" id="lv-lendo">0</div><div class="card-title">Lendo</div></div>
+          <div class="card mini-stat"><div class="card-big-num" style="color:var(--accent3)" id="lv-done">0</div><div class="card-title">Concluídos</div></div>
+          <div class="card mini-stat"><div class="card-big-num" style="color:var(--accent4)" id="lv-fav">0</div><div class="card-title">Favoritos</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:10px">
+        <div>
+          <div style="font-size:14px;font-weight:700">Todos os livros</div>
+          <div class="tracker-count" id="lv-count-label"></div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <input class="inp" id="lv-search" placeholder="🔍 Buscar…" style="min-width:150px;flex:unset" oninput="renderTracker('livros')">
+          <div class="filter-wrap" id="lv-filter-wrap">
+            <button class="btn-filter" id="lv-filter-btn" onclick="toggleFilterPanel('livros')">⚙ Filtros <span class="filter-badge" id="lv-filter-badge">0</span></button>
+            <div class="filter-panel" id="lv-filter-panel">
+              <div class="filter-section-title">Organizar por</div>
+              <div class="filter-chips sort-grid">
+                <button class="filter-chip" data-filter="sort" data-val="recent" onclick="toggleFilterChip('livros',this)">Mais recentes</button>
+                <button class="filter-chip" data-filter="sort" data-val="title_az" onclick="toggleFilterChip('livros',this)">Título (A-Z)</button>
+                <button class="filter-chip" data-filter="sort" data-val="title_za" onclick="toggleFilterChip('livros',this)">Título (Z-A)</button>
+                <button class="filter-chip" data-filter="sort" data-val="author_az" onclick="toggleFilterChip('livros',this)">Autor (A-Z)</button>
+                <button class="filter-chip" data-filter="sort" data-val="pages_asc" onclick="toggleFilterChip('livros',this)">Menos páginas</button>
+                <button class="filter-chip" data-filter="sort" data-val="pages_desc" onclick="toggleFilterChip('livros',this)">Mais páginas</button>
+                <button class="filter-chip" data-filter="sort" data-val="progress_desc" onclick="toggleFilterChip('livros',this)">Maior progresso</button>
+                <button class="filter-chip" data-filter="sort" data-val="start_recent" onclick="toggleFilterChip('livros',this)">Data início (recente)</button>
+                <button class="filter-chip" data-filter="sort" data-val="start_old" onclick="toggleFilterChip('livros',this)">Data início (antiga)</button>
+                <button class="filter-chip" data-filter="sort" data-val="end_recent" onclick="toggleFilterChip('livros',this)">Data término (recente)</button>
+                <button class="filter-chip" data-filter="sort" data-val="rating_desc" onclick="toggleFilterChip('livros',this)">Melhor avaliação</button>
+                <button class="filter-chip" data-filter="sort" data-val="read_duration" onclick="toggleFilterChip('livros',this)">Duração da leitura</button>
+                <button class="filter-chip" data-filter="sort" data-val="mangas_first" onclick="toggleFilterChip('livros',this)">Mangás</button>
+              </div>
+              <div class="filter-divider"></div>
+              <div class="filter-section-title">Status</div>
+              <div class="filter-chips" id="lv-chips-status">
+                <button class="filter-chip" data-filter="status" data-val="lendo" onclick="toggleFilterChip('livros',this)">Lendo</button>
+                <button class="filter-chip" data-filter="status" data-val="concluido" onclick="toggleFilterChip('livros',this)">Concluído</button>
+                <button class="filter-chip" data-filter="status" data-val="quero" onclick="toggleFilterChip('livros',this)">Quero ler</button>
+                <button class="filter-chip" data-filter="status" data-val="pausado" onclick="toggleFilterChip('livros',this)">Pausado</button>
+              </div>
+              <div class="filter-section-title">Avaliação mínima</div>
+              <div class="filter-chips" id="lv-chips-nota">
+                <button class="filter-chip" data-filter="nota" data-val="1" onclick="toggleFilterChip('livros',this)">★ 1+</button>
+                <button class="filter-chip" data-filter="nota" data-val="2" onclick="toggleFilterChip('livros',this)">★ 2+</button>
+                <button class="filter-chip" data-filter="nota" data-val="3" onclick="toggleFilterChip('livros',this)">★ 3+</button>
+                <button class="filter-chip" data-filter="nota" data-val="4" onclick="toggleFilterChip('livros',this)">★ 4+</button>
+                <button class="filter-chip" data-filter="nota" data-val="5" onclick="toggleFilterChip('livros',this)">★ 5</button>
+              </div>
+              <div class="filter-section-title">Outros</div>
+              <div class="filter-chips">
+                <button class="filter-chip" data-filter="fav" data-val="true" onclick="toggleFilterChip('livros',this)">⭐ Favoritos</button>
+                <button class="filter-chip" data-filter="comImg" data-val="true" onclick="toggleFilterChip('livros',this)">🖼 Com capa</button>
+              </div>
+              <div class="filter-divider"></div>
+              <div class="filter-actions">
+                <button class="btn btn-primary" onclick="applyFilters('livros')">✓ Aplicar</button>
+                <button class="btn btn-ghost" onclick="clearFilters('livros')">✕ Limpar</button>
+              </div>
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="openModal('livros')">+ Adicionar</button>
+        </div>
+      </div>
+      <div class="tracker-tabs" id="livros-tabs"></div>
+      <div class="tracker-grid" id="livros-grid"><div class="empty"><div class="empty-icon">📚</div>Adicione seu primeiro livro!</div></div>
+    </div>
+  </section>
+
+  <!-- ══════════ CINEMA ══════════ -->
+  <section class="page" id="page-cinema">
+    <div class="page-header">
+      <div class="page-title">Meu <span>Cinema</span></div>
+      <div class="page-subtitle">Filmes e séries • assistidos e na fila</div>
+    </div>
+    <div class="library-top">
+      <div class="card quote-panel">
+        <div class="quote-text">"O cinema é um espelho pintado dos sonhos."</div>
+        <div class="quote-author">- Orson Welles</div>
+      </div>
+      <div>
+        <div class="card goal-panel">
+          <div class="goal-title">Meta de Sessões <span id="ci-goal-year"></span></div>
+          <div class="goal-main"><strong id="ci-goal-done">0</strong><span>/ <span id="ci-goal-target">24</span></span></div>
+          <div class="goal-sub">títulos concluídos</div>
+          <div class="goal-track"><div class="goal-fill" id="ci-goal-fill"></div></div>
+          <div class="goal-pct" id="ci-goal-pct">0% concluído</div>
+        </div>
+        <div class="mini-stats">
+          <div class="card mini-stat"><div class="card-big-num" id="ci-total">0</div><div class="card-title">Total</div></div>
+          <div class="card mini-stat"><div class="card-big-num" style="color:var(--accent5)" id="ci-watch">0</div><div class="card-title">Assistindo</div></div>
+          <div class="card mini-stat"><div class="card-big-num" style="color:var(--accent3)" id="ci-done">0</div><div class="card-title">Concluídos</div></div>
+          <div class="card mini-stat"><div class="card-big-num" style="color:var(--accent4)" id="ci-fav">0</div><div class="card-title">Favoritos</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:10px">
+        <div>
+          <div style="font-size:14px;font-weight:700">Minha lista</div>
+          <div class="tracker-count" id="ci-count-label"></div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <input class="inp" id="ci-search" placeholder="🔍 Buscar…" style="min-width:150px;flex:unset" oninput="renderTracker('cinema')">
+          <div class="filter-wrap" id="ci-filter-wrap">
+            <button class="btn-filter" id="ci-filter-btn" onclick="toggleFilterPanel('cinema')">⚙ Filtros <span class="filter-badge" id="ci-filter-badge">0</span></button>
+            <div class="filter-panel" id="ci-filter-panel">
+              <div class="filter-section-title">Organizar por</div>
+              <div class="filter-chips sort-grid">
+                <button class="filter-chip" data-filter="sort" data-val="recent" onclick="toggleFilterChip('cinema',this)">Mais recentes</button>
+                <button class="filter-chip" data-filter="sort" data-val="title_az" onclick="toggleFilterChip('cinema',this)">Título (A-Z)</button>
+                <button class="filter-chip" data-filter="sort" data-val="title_za" onclick="toggleFilterChip('cinema',this)">Título (Z-A)</button>
+                <button class="filter-chip" data-filter="sort" data-val="author_az" onclick="toggleFilterChip('cinema',this)">Autor (A-Z)</button>
+                <button class="filter-chip" data-filter="sort" data-val="pages_asc" onclick="toggleFilterChip('cinema',this)">Menos duração</button>
+                <button class="filter-chip" data-filter="sort" data-val="pages_desc" onclick="toggleFilterChip('cinema',this)">Mais duração</button>
+                <button class="filter-chip" data-filter="sort" data-val="progress_desc" onclick="toggleFilterChip('cinema',this)">Maior progresso</button>
+                <button class="filter-chip" data-filter="sort" data-val="start_recent" onclick="toggleFilterChip('cinema',this)">Data início (recente)</button>
+                <button class="filter-chip" data-filter="sort" data-val="start_old" onclick="toggleFilterChip('cinema',this)">Data início (antiga)</button>
+                <button class="filter-chip" data-filter="sort" data-val="end_recent" onclick="toggleFilterChip('cinema',this)">Data término (recente)</button>
+                <button class="filter-chip" data-filter="sort" data-val="rating_desc" onclick="toggleFilterChip('cinema',this)">Melhor avaliação</button>
+                <button class="filter-chip" data-filter="sort" data-val="read_duration" onclick="toggleFilterChip('cinema',this)">Duração da leitura</button>
+                <button class="filter-chip" data-filter="sort" data-val="mangas_first" onclick="toggleFilterChip('cinema',this)">Mangás</button>
+              </div>
+              <div class="filter-divider"></div>
+              <div class="filter-section-title">Status</div>
+              <div class="filter-chips">
+                <button class="filter-chip" data-filter="status" data-val="assistindo" onclick="toggleFilterChip('cinema',this)">Assistindo</button>
+                <button class="filter-chip" data-filter="status" data-val="concluido" onclick="toggleFilterChip('cinema',this)">Concluído</button>
+                <button class="filter-chip" data-filter="status" data-val="quero" onclick="toggleFilterChip('cinema',this)">Quero ver</button>
+              </div>
+              <div class="filter-section-title">Tipo</div>
+              <div class="filter-chips">
+                <button class="filter-chip" data-filter="tipo" data-val="Filme" onclick="toggleFilterChip('cinema',this)">Filme</button>
+                <button class="filter-chip" data-filter="tipo" data-val="Série" onclick="toggleFilterChip('cinema',this)">Série</button>
+              </div>
+              <div class="filter-section-title">Avaliação mínima</div>
+              <div class="filter-chips">
+                <button class="filter-chip" data-filter="nota" data-val="1" onclick="toggleFilterChip('cinema',this)">★ 1+</button>
+                <button class="filter-chip" data-filter="nota" data-val="2" onclick="toggleFilterChip('cinema',this)">★ 2+</button>
+                <button class="filter-chip" data-filter="nota" data-val="3" onclick="toggleFilterChip('cinema',this)">★ 3+</button>
+                <button class="filter-chip" data-filter="nota" data-val="4" onclick="toggleFilterChip('cinema',this)">★ 4+</button>
+                <button class="filter-chip" data-filter="nota" data-val="5" onclick="toggleFilterChip('cinema',this)">★ 5</button>
+              </div>
+              <div class="filter-section-title">Outros</div>
+              <div class="filter-chips">
+                <button class="filter-chip" data-filter="fav" data-val="true" onclick="toggleFilterChip('cinema',this)">⭐ Favoritos</button>
+                <button class="filter-chip" data-filter="comImg" data-val="true" onclick="toggleFilterChip('cinema',this)">🖼 Com capa</button>
+              </div>
+              <div class="filter-divider"></div>
+              <div class="filter-actions">
+                <button class="btn btn-primary" onclick="applyFilters('cinema')">✓ Aplicar</button>
+                <button class="btn btn-ghost" onclick="clearFilters('cinema')">✕ Limpar</button>
+              </div>
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="openModal('cinema')">+ Adicionar</button>
+        </div>
+      </div>
+      <div class="tracker-tabs" id="cinema-tabs"></div>
+      <div class="tracker-grid" id="cinema-grid"><div class="empty"><div class="empty-icon">🎬</div>Adicione um filme ou série!</div></div>
+    </div>
+  </section>
+
+  <!-- ══════════ MANGÁS ══════════ -->
+  <section class="page" id="page-mangas">
+    <div class="page-header">
+      <div class="page-title">Coleção de <span>Mangás</span></div>
+      <div class="page-subtitle">Tracking de capítulos e volumes</div>
+    </div>
+    <div class="library-top">
+      <div class="card quote-panel">
+        <div class="quote-text">"Toda história começa com um quadro em branco."</div>
+        <div class="quote-author">- Osamu Tezuka</div>
+      </div>
+      <div>
+        <div class="card goal-panel">
+          <div class="goal-title">Meta de Leitura <span id="mg-goal-year"></span></div>
+          <div class="goal-main"><strong id="mg-goal-done">0</strong><span>/ <span id="mg-goal-target">24</span></span></div>
+          <div class="goal-sub">mangás concluídos</div>
+          <div class="goal-track"><div class="goal-fill" id="mg-goal-fill"></div></div>
+          <div class="goal-pct" id="mg-goal-pct">0% concluído</div>
+        </div>
+        <div class="mini-stats">
+          <div class="card mini-stat"><div class="card-big-num" id="mg-total">0</div><div class="card-title">Total</div></div>
+          <div class="card mini-stat"><div class="card-big-num" style="color:var(--accent4)" id="mg-lendo">0</div><div class="card-title">Lendo</div></div>
+          <div class="card mini-stat"><div class="card-big-num" style="color:var(--accent3)" id="mg-done">0</div><div class="card-title">Concluídos</div></div>
+          <div class="card mini-stat"><div class="card-big-num" style="color:var(--accent4)" id="mg-fav">0</div><div class="card-title">Favoritos</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:10px">
+        <div>
+          <div style="font-size:14px;font-weight:700">Minha coleção</div>
+          <div class="tracker-count" id="mg-count-label"></div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <input class="inp" id="mg-search" placeholder="🔍 Buscar…" style="min-width:150px;flex:unset" oninput="renderTracker('mangas')">
+          <div class="filter-wrap" id="mg-filter-wrap">
+            <button class="btn-filter" id="mg-filter-btn" onclick="toggleFilterPanel('mangas')">⚙ Filtros <span class="filter-badge" id="mg-filter-badge">0</span></button>
+            <div class="filter-panel" id="mg-filter-panel">
+              <div class="filter-section-title">Organizar por</div>
+              <div class="filter-chips sort-grid">
+                <button class="filter-chip" data-filter="sort" data-val="recent" onclick="toggleFilterChip('mangas',this)">Mais recentes</button>
+                <button class="filter-chip" data-filter="sort" data-val="title_az" onclick="toggleFilterChip('mangas',this)">Título (A-Z)</button>
+                <button class="filter-chip" data-filter="sort" data-val="title_za" onclick="toggleFilterChip('mangas',this)">Título (Z-A)</button>
+                <button class="filter-chip" data-filter="sort" data-val="author_az" onclick="toggleFilterChip('mangas',this)">Autor (A-Z)</button>
+                <button class="filter-chip" data-filter="sort" data-val="pages_asc" onclick="toggleFilterChip('mangas',this)">Menos páginas</button>
+                <button class="filter-chip" data-filter="sort" data-val="pages_desc" onclick="toggleFilterChip('mangas',this)">Mais páginas</button>
+                <button class="filter-chip" data-filter="sort" data-val="progress_desc" onclick="toggleFilterChip('mangas',this)">Maior progresso</button>
+                <button class="filter-chip" data-filter="sort" data-val="start_recent" onclick="toggleFilterChip('mangas',this)">Data início (recente)</button>
+                <button class="filter-chip" data-filter="sort" data-val="start_old" onclick="toggleFilterChip('mangas',this)">Data início (antiga)</button>
+                <button class="filter-chip" data-filter="sort" data-val="end_recent" onclick="toggleFilterChip('mangas',this)">Data término (recente)</button>
+                <button class="filter-chip" data-filter="sort" data-val="rating_desc" onclick="toggleFilterChip('mangas',this)">Melhor avaliação</button>
+                <button class="filter-chip" data-filter="sort" data-val="read_duration" onclick="toggleFilterChip('mangas',this)">Duração da leitura</button>
+                <button class="filter-chip" data-filter="sort" data-val="mangas_first" onclick="toggleFilterChip('mangas',this)">Mangás</button>
+              </div>
+              <div class="filter-divider"></div>
+              <div class="filter-section-title">Status</div>
+              <div class="filter-chips">
+                <button class="filter-chip" data-filter="status" data-val="lendo" onclick="toggleFilterChip('mangas',this)">Lendo</button>
+                <button class="filter-chip" data-filter="status" data-val="concluido" onclick="toggleFilterChip('mangas',this)">Concluído</button>
+                <button class="filter-chip" data-filter="status" data-val="pausado" onclick="toggleFilterChip('mangas',this)">Pausado</button>
+                <button class="filter-chip" data-filter="status" data-val="quero" onclick="toggleFilterChip('mangas',this)">Quero ler</button>
+              </div>
+              <div class="filter-section-title">Avaliação mínima</div>
+              <div class="filter-chips">
+                <button class="filter-chip" data-filter="nota" data-val="1" onclick="toggleFilterChip('mangas',this)">★ 1+</button>
+                <button class="filter-chip" data-filter="nota" data-val="2" onclick="toggleFilterChip('mangas',this)">★ 2+</button>
+                <button class="filter-chip" data-filter="nota" data-val="3" onclick="toggleFilterChip('mangas',this)">★ 3+</button>
+                <button class="filter-chip" data-filter="nota" data-val="4" onclick="toggleFilterChip('mangas',this)">★ 4+</button>
+                <button class="filter-chip" data-filter="nota" data-val="5" onclick="toggleFilterChip('mangas',this)">★ 5</button>
+              </div>
+              <div class="filter-section-title">Outros</div>
+              <div class="filter-chips">
+                <button class="filter-chip" data-filter="fav" data-val="true" onclick="toggleFilterChip('mangas',this)">⭐ Favoritos</button>
+                <button class="filter-chip" data-filter="comImg" data-val="true" onclick="toggleFilterChip('mangas',this)">🖼 Com capa</button>
+              </div>
+              <div class="filter-divider"></div>
+              <div class="filter-actions">
+                <button class="btn btn-primary" onclick="applyFilters('mangas')">✓ Aplicar</button>
+                <button class="btn btn-ghost" onclick="clearFilters('mangas')">✕ Limpar</button>
+              </div>
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="openModal('mangas')">+ Adicionar</button>
+        </div>
+      </div>
+      <div class="tracker-tabs" id="mangas-tabs"></div>
+      <div class="tracker-grid" id="mangas-grid"><div class="empty"><div class="empty-icon">📖</div>Adicione seu primeiro mangá!</div></div>
+    </div>
+  </section>
+
+</main>
   <div data-app-footer></div>
 
-  <script src="js/app-shell.js"></script>
-  <script src="js/index.js"></script>
-  <script src="js/livros.js"></script>
+<script src="js/app-shell.js"></script>
+<script>
+// ─── STATE — dados persistidos no localStorage ────────────────────────────
+const STORAGE_KEY = 'biblioteca_standalone_v1';
+const S = { livros: [], cinema: [], mangas: [] };
+
+function save() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(S)); } catch(e){}
+}
+function load() {
+  try {
+    const d = localStorage.getItem(STORAGE_KEY);
+    if (d) Object.assign(S, JSON.parse(d));
+  } catch(e){}
+}
+
+// ─── NAV ─────────────────────────────────────────────────────────────────
+function goTo(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  const tab = document.getElementById('tab-' + id);
+  if (tab) tab.classList.add('active');
+}
+
+function toggleMobileNav() {
+  const nav = document.getElementById('mobile-nav');
+  const overlay = document.getElementById('overlay');
+  const btn = document.getElementById('hamburger-btn');
+  const open = nav.classList.toggle('open');
+  overlay.classList.toggle('open', open);
+  btn.textContent = open ? '✕' : '☰';
+}
+function closeMobileNav() {
+  document.getElementById('mobile-nav').classList.remove('open');
+  document.getElementById('overlay').classList.remove('open');
+  document.getElementById('hamburger-btn').textContent = '☰';
+}
+
+// ─── TRACKER CONFIG ───────────────────────────────────────────────────────
+const TRACKER_CFG = {
+  livros: {
+    key: 'livros', icon: '📚', emptyMsg: 'Adicione seu primeiro livro!',
+    statusOpts: ['lendo','concluido','quero','pausado'],
+    statusLabels: { lendo:'Lendo', concluido:'Concluído', quero:'Quero ler', pausado:'Pausado' },
+    statusColors: { lendo:'#c8a96e', concluido:'#5ec4a8', quero:'#7c6fcd', pausado:'#7a7590' },
+    ribbonColors: { lendo:'rgba(200,169,110,.8)', concluido:'rgba(94,196,168,.8)', quero:'rgba(124,111,205,.8)', pausado:'rgba(122,117,144,.6)' },
+    progressFn: (item) => item.paginas ? Math.round((item.atual||0)/item.paginas*100) : null,
+    progressLabel: (item) => item.paginas ? `Pág. ${item.atual||0}/${item.paginas}` : null,
+  },
+  cinema: {
+    key: 'cinema', icon: '🎬', emptyMsg: 'Adicione um filme ou série!',
+    statusOpts: ['assistindo','concluido','quero'],
+    statusLabels: { assistindo:'Assistindo', concluido:'Concluído', quero:'Quero ver' },
+    statusColors: { assistindo:'#e8864a', concluido:'#5ec4a8', quero:'#4ab0e8' },
+    ribbonColors: { assistindo:'rgba(232,134,74,.8)', concluido:'rgba(94,196,168,.8)', quero:'rgba(74,176,232,.8)' },
+    progressFn: (item) => {
+      if (item.tipo !== 'Série') return null;
+      const epTotal = +item.episodioTotal || 0;
+      const epAtual = +item.episodioAtual || 0;
+      const tempTotal = +item.temporadaTotal || 0;
+      const tempAtual = +item.temporadaAtual || 0;
+      if (epTotal > 0) return Math.min(100, Math.round((epAtual / epTotal) * 100));
+      if (tempTotal > 0) return Math.min(100, Math.round((tempAtual / tempTotal) * 100));
+      return null;
+    },
+    progressLabel: (item) => {
+      if (item.tipo === 'Série') {
+        const t = +item.temporadaAtual || 0;
+        const e = +item.episodioAtual || 0;
+        const tt = +item.temporadaTotal || 0;
+        const et = +item.episodioTotal || 0;
+        const tPart = tt > 0 ? `T${t || 1}/${tt}` : `T${t || 1}`;
+        const ePart = et > 0 ? `EP ${e || 1}/${et}` : `EP ${e || 1}`;
+        return (t > 0 || e > 0 || tt > 0 || et > 0) ? `${tPart} · ${ePart}` : 'Série';
+      }
+      return item.tipo || null;
+    },
+  },
+  mangas: {
+    key: 'mangas', icon: '📖', emptyMsg: 'Adicione seu primeiro mangá!',
+    statusOpts: ['lendo','concluido','pausado','quero'],
+    statusLabels: { lendo:'Lendo', concluido:'Concluído', pausado:'Pausado', quero:'Quero ler' },
+    statusColors: { lendo:'#e06b8b', concluido:'#5ec4a8', pausado:'#7a7590', quero:'#7c6fcd' },
+    ribbonColors: { lendo:'rgba(224,107,139,.8)', concluido:'rgba(94,196,168,.8)', pausado:'rgba(122,117,144,.6)', quero:'rgba(124,111,205,.8)' },
+    progressFn: (item) => item.capTotal ? Math.round((item.capAtual||0)/item.capTotal*100) : null,
+    progressLabel: (item) => item.capTotal ? `Cap. ${item.capAtual||0}/${item.capTotal}` : (item.capAtual ? `Cap. ${item.capAtual}` : null),
+  }
+};
+
+const TRACKER_PAGES = {};
+const PER_PAGE = 25;
+const TRACKER_GOALS = { livros: 24, cinema: 24, mangas: 24 };
+
+function updateGoalDisplay(prefix, done, target) {
+  const doneEl = document.getElementById(prefix + '-goal-done');
+  const targetEl = document.getElementById(prefix + '-goal-target');
+  const fillEl = document.getElementById(prefix + '-goal-fill');
+  const pctEl = document.getElementById(prefix + '-goal-pct');
+  const yearEl = document.getElementById(prefix + '-goal-year');
+  if (yearEl) yearEl.textContent = new Date().getFullYear();
+  if (!doneEl || !targetEl || !fillEl || !pctEl) return;
+  const safeTarget = Math.max(1, +target || 1);
+  const safeDone = Math.max(0, +done || 0);
+  const pct = Math.min(100, Math.round((safeDone / safeTarget) * 100));
+  doneEl.textContent = String(safeDone);
+  targetEl.textContent = String(safeTarget);
+  fillEl.style.width = pct + '%';
+  pctEl.textContent = pct + '% concluído';
+}
+
+// ─── MODAL STATE ──────────────────────────────────────────────────────────
+let modalTracker = null, modalEditId = null, modalStarVal = 0, modalImgData = '';
+
+// ─── MODAL UI HELPERS ─────────────────────────────────────────────────────
+function updateModalHero() {
+  const t = (document.getElementById('m-titulo')||{value:''}).value;
+  const el = document.getElementById('modal-hero-title');
+  const pretitleEl = document.getElementById('modal-pretitle');
+  if (el) el.textContent = t;
+  if (pretitleEl) pretitleEl.textContent = t;
+}
+function updateModalHeroImage(src) {
+  const el = document.getElementById('modal-hero-blur');
+  if (!el) return;
+  el.style.backgroundImage = src ? `url(${src})` : '';
+  el.style.opacity = src ? '1' : '0';
+}
+function updateModalStatusPill() {
+  if (!modalTracker) return;
+  const cfg = TRACKER_CFG[modalTracker];
+  const sel = document.getElementById('m-status');
+  const pill = document.getElementById('modal-status-pill');
+  const row  = document.getElementById('modal-status-row');
+  if (!sel||!pill||!row) return;
+  const color = cfg.statusColors[sel.value]||'#7a7590';
+  pill.textContent = cfg.statusLabels[sel.value]||sel.value;
+  pill.style.color = color;
+  pill.style.borderColor = color+'44';
+  pill.style.background  = color+'18';
+}
+function updateModalProgress() {
+  // Livros
+  const pags = +(document.getElementById('m-paginas')||{value:0}).value||0;
+  const atual= +(document.getElementById('m-atual-pag')||{value:0}).value||0;
+  const wrap=document.getElementById('modal-progress-wrap'), fill=document.getElementById('modal-progress-fill'), pct=document.getElementById('modal-progress-pct');
+  if (wrap&&fill&&pct) { if(pags>0){const p=Math.min(100,Math.round(atual/pags*100));wrap.style.display='';fill.style.width=p+'%';pct.textContent=p+'% · pág. '+atual+'/'+pags;}else{wrap.style.display='none';} }
+  // Mangás
+  const capT=+(document.getElementById('m-cap-total')||{value:0}).value||0;
+  const capA=+(document.getElementById('m-cap-atual')||{value:0}).value||0;
+  const wM=document.getElementById('modal-progress-wrap-mg'),fM=document.getElementById('modal-progress-fill-mg'),pM=document.getElementById('modal-progress-pct-mg');
+  if(wM&&fM&&pM){if(capT>0){const p=Math.min(100,Math.round(capA/capT*100));wM.style.display='';fM.style.width=p+'%';pM.textContent=p+'% · cap. '+capA+'/'+capT;}else{wM.style.display='none';}}
+  // Cinema (Séries)
+  const tipo = (document.getElementById('m-tipo-cinema')||{value:''}).value;
+  const tempA=+(document.getElementById('m-temp-atual')||{value:0}).value||0;
+  const tempT=+(document.getElementById('m-temp-total')||{value:0}).value||0;
+  const epA=+(document.getElementById('m-ep-atual')||{value:0}).value||0;
+  const epT=+(document.getElementById('m-ep-total')||{value:0}).value||0;
+  const wC=document.getElementById('modal-progress-wrap-ci'),fC=document.getElementById('modal-progress-fill-ci'),pC=document.getElementById('modal-progress-pct-ci');
+  if(wC&&fC&&pC){
+    if(modalTracker==='cinema' && tipo==='Série' && (epT>0 || tempT>0)){
+      const p = epT>0 ? Math.min(100,Math.round(epA/epT*100)) : Math.min(100,Math.round(tempA/tempT*100));
+      wC.style.display='';
+      fC.style.width=p+'%';
+      if(epT>0){ pC.textContent=p+'% · EP '+epA+'/'+epT; }
+      else { pC.textContent=p+'% · T '+tempA+'/'+tempT; }
+    }else{
+      wC.style.display='none';
+    }
+  }
+}
+function updateCinemaTypeFields() {
+  const wrap = document.getElementById('m-cinema-serie-extra');
+  const tipo = document.getElementById('m-tipo-cinema');
+  if (!wrap || !tipo) return;
+  const showSerie = modalTracker === 'cinema' && tipo.value === 'Série';
+  wrap.style.display = showSerie ? '' : 'none';
+  updateModalProgress();
+}
+function updateFavToggle(cb) {
+  const icon = cb.nextElementSibling;
+  if (icon) icon.textContent = cb.checked ? '❤️' : '🤍';
+}
+
+// ─── OPEN / CLOSE MODAL ───────────────────────────────────────────────────
+function openModal(tracker, editId = null) {
+  modalTracker = tracker; modalEditId = editId; modalStarVal = 0; modalImgData = '';
+  const cfg = TRACKER_CFG[tracker];
+  const typeLabel = tracker==='livros'?'Livro':tracker==='cinema'?'Filme / Série':'Mangá';
+
+  document.getElementById('modal-title').innerHTML = editId ? `Editar <em>${typeLabel}</em>` : `Novo <em>${typeLabel}</em>`;
+  document.getElementById('modal-del-btn').classList.toggle('visible', !!editId);
+
+  const sel = document.getElementById('m-status');
+  sel.innerHTML = cfg.statusOpts.map(s=>`<option value="${s}">${cfg.statusLabels[s]}</option>`).join('');
+
+  document.getElementById('m-livros-extra').style.display = tracker==='livros' ? '' : 'none';
+  document.getElementById('m-cinema-extra').style.display = tracker==='cinema' ? '' : 'none';
+  document.getElementById('m-mangas-extra').style.display = tracker==='mangas' ? '' : 'none';
+
+  ['m-titulo','m-autor','m-genero','m-obs','m-paginas','m-atual-pag','m-cap-atual','m-cap-total','m-temp-atual','m-ep-atual','m-temp-total','m-ep-total']
+    .forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('m-fav').checked = false;
+  document.querySelector('.fav-toggle .fav-icon').textContent = '🤍';
+  resetModalStars(); updateModalProgress(); updateModalHeroImage('');
+
+  const heroBadge = document.getElementById('modal-hero-badge');
+  const inlineBadge = document.getElementById('modal-badge-inline');
+  if (heroBadge) heroBadge.textContent = typeLabel;
+  if (inlineBadge) inlineBadge.textContent = typeLabel;
+  const heroTitleEl = document.getElementById('modal-hero-title');
+  const pretitleEl = document.getElementById('modal-pretitle');
+  if (heroTitleEl) heroTitleEl.textContent = '';
+  if (pretitleEl) pretitleEl.textContent = '';
+
+  const zone = document.getElementById('img-zone');
+  zone.classList.remove('has-img');
+  document.getElementById('modal-preview').src = '';
+
+  const statusRow = document.getElementById('modal-status-row');
+  if (statusRow) statusRow.style.display = 'none';
+
+  if (editId) {
+    const item = S[tracker].find(x=>x.id===editId);
+    if (item) {
+      document.getElementById('m-titulo').value = item.titulo||'';
+      document.getElementById('m-autor').value  = item.autor||'';
+      document.getElementById('m-genero').value = item.genero||'';
+      document.getElementById('m-obs').value    = item.obs||'';
+      document.getElementById('m-status').value = item.status||cfg.statusOpts[0];
+      if (item.fav) { document.getElementById('m-fav').checked=true; document.querySelector('.fav-toggle .fav-icon').textContent='❤️'; }
+      if (item.nota) setModalStar(item.nota);
+      if (tracker==='livros') { document.getElementById('m-paginas').value=item.paginas||''; document.getElementById('m-atual-pag').value=item.atual||''; }
+      if (tracker==='cinema') {
+        document.getElementById('m-tipo-cinema').value=item.tipo||'Filme';
+        document.getElementById('m-temp-atual').value=item.temporadaAtual||'';
+        document.getElementById('m-ep-atual').value=item.episodioAtual||'';
+        document.getElementById('m-temp-total').value=item.temporadaTotal||'';
+        document.getElementById('m-ep-total').value=item.episodioTotal||'';
+      }
+      if (tracker==='mangas') { document.getElementById('m-cap-atual').value=item.capAtual||''; document.getElementById('m-cap-total').value=item.capTotal||''; }
+      if (item.img) { modalImgData=item.img; document.getElementById('modal-preview').src=item.img; zone.classList.add('has-img'); updateModalHeroImage(item.img); }
+      updateModalHero(); if(statusRow) statusRow.style.display='flex'; updateModalStatusPill(); updateModalProgress(); updateCinemaTypeFields();
+      renderModalRelated(tracker, item);
+    }
+  } else {
+    document.getElementById('modal-related').style.display = 'none';
+    updateCinemaTypeFields();
+  }
+
+  document.getElementById('tracker-modal').classList.add('open');
+  setTimeout(() => document.getElementById('m-titulo').focus(), 100);
+}
+
+function closeModal() { document.getElementById('tracker-modal').classList.remove('open'); }
+function closeModalOutside(e) { if(e.target.id==='tracker-modal') closeModal(); }
+
+// ─── IMAGE UPLOAD ─────────────────────────────────────────────────────────
+function handleImgUpload(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const maxW=300, maxH=450; let w=img.width, h=img.height;
+      if(w/h>maxW/maxH){w=maxW;h=Math.round(img.height*maxW/img.width);}else{h=maxH;w=Math.round(img.width*maxH/img.height);}
+      canvas.width=w; canvas.height=h; canvas.getContext('2d').drawImage(img,0,0,w,h);
+      modalImgData = canvas.toDataURL('image/jpeg', 0.82);
+      document.getElementById('modal-preview').src = modalImgData;
+      document.getElementById('img-zone').classList.add('has-img');
+      updateModalHeroImage(modalImgData);
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ─── STARS ────────────────────────────────────────────────────────────────
+function setModalStar(n) {
+  modalStarVal = n;
+  document.querySelectorAll('.mstar').forEach(b => b.classList.toggle('on', +b.dataset.v <= n));
+  const labels = ['','★ Fraco','★★ Regular','★★★ Bom','★★★★ Ótimo','★★★★★ Incrível!'];
+  document.getElementById('modal-star-label').textContent = labels[n]||'Sem nota';
+}
+function resetModalStars() {
+  modalStarVal = 0;
+  document.querySelectorAll('.mstar').forEach(b => b.classList.remove('on'));
+  document.getElementById('modal-star-label').textContent = 'Sem nota';
+}
+
+// ─── SAVE / DELETE ────────────────────────────────────────────────────────
+function saveModalItem() {
+  const titulo = document.getElementById('m-titulo').value.trim();
+  if (!titulo) { document.getElementById('m-titulo').focus(); return; }
+  const previous = modalEditId ? (S[modalTracker].find(x=>x.id===modalEditId) || null) : null;
+  const now = Date.now();
+  const item = {
+    id: modalEditId || Date.now(), titulo,
+    autor: document.getElementById('m-autor').value.trim(),
+    genero: document.getElementById('m-genero').value.trim(),
+    obs: document.getElementById('m-obs').value.trim(),
+    status: document.getElementById('m-status').value,
+    nota: modalStarVal, fav: document.getElementById('m-fav').checked, img: modalImgData,
+    createdAt: previous?.createdAt || now,
+    updatedAt: now,
+  };
+  if (modalTracker==='livros')  { item.paginas=+document.getElementById('m-paginas').value||0; item.atual=+document.getElementById('m-atual-pag').value||0; }
+  if (modalTracker==='cinema')  {
+    item.tipo=document.getElementById('m-tipo-cinema').value;
+    if (item.tipo === 'Série') {
+      item.temporadaAtual = +document.getElementById('m-temp-atual').value || 0;
+      item.episodioAtual = +document.getElementById('m-ep-atual').value || 0;
+      item.temporadaTotal = +document.getElementById('m-temp-total').value || 0;
+      item.episodioTotal = +document.getElementById('m-ep-total').value || 0;
+    }
+  }
+  if (modalTracker==='mangas')  { item.capAtual=+document.getElementById('m-cap-atual').value||0; item.capTotal=+document.getElementById('m-cap-total').value||0; }
+  if (item.status === 'concluido') item.finishedAt = previous?.finishedAt || now;
+  else item.finishedAt = previous?.finishedAt || 0;
+
+  if (modalEditId) { const idx=S[modalTracker].findIndex(x=>x.id===modalEditId); if(idx>=0) S[modalTracker][idx]=item; }
+  else { S[modalTracker].push(item); }
+  save(); renderTracker(modalTracker); closeModal();
+}
+
+function modalDeleteItem() {
+  if (!modalTracker||!modalEditId) return;
+  if (!confirm('Excluir este item?')) return;
+  S[modalTracker] = S[modalTracker].filter(x=>x.id!==modalEditId);
+  save(); renderTracker(modalTracker); closeModal();
+}
+
+// ─── FILTER SYSTEM ────────────────────────────────────────────────────────
+const FILTER_PENDING = { livros:{}, cinema:{}, mangas:{} };
+const FILTER_APPLIED = { livros:{}, cinema:{}, mangas:{} };
+const PFX_MAP = { livros:'lv', cinema:'ci', mangas:'mg' };
+
+function toggleFilterPanel(key) {
+  const pfx = PFX_MAP[key];
+  const panel = document.getElementById(pfx+'-filter-panel');
+  const btn   = document.getElementById(pfx+'-filter-btn');
+  const isOpen = panel.classList.toggle('open');
+  btn.classList.toggle('open', isOpen);
+  if (isOpen) {
+    const close = (e) => {
+      const wrap = document.getElementById(pfx+'-filter-wrap');
+      if (!wrap.contains(e.target)) { panel.classList.remove('open'); btn.classList.remove('open'); document.removeEventListener('click', close); }
+    };
+    setTimeout(()=>document.addEventListener('click', close), 0);
+  }
+}
+
+function toggleFilterChip(key, chip) {
+  const f = chip.dataset.filter, v = chip.dataset.val;
+  FILTER_PENDING[key] = {};
+  // sync all chips into PENDING
+  const pfx = PFX_MAP[key];
+  if (f === 'sort') {
+    document.querySelectorAll(`#${pfx}-filter-panel .filter-chip[data-filter="sort"]`).forEach(c => c.classList.remove('selected'));
+    chip.classList.add('selected');
+  }
+  document.querySelectorAll(`#${pfx}-filter-panel .filter-chip`).forEach(c => {
+    if (c === chip && f !== 'sort') c.classList.toggle('selected');
+    if (c.classList.contains('selected')) {
+      const ff=c.dataset.filter, vv=c.dataset.val;
+      if (!FILTER_PENDING[key][ff]) FILTER_PENDING[key][ff] = [];
+      FILTER_PENDING[key][ff].push(vv);
+    }
+  });
+}
+
+function applyFilters(key) {
+  FILTER_APPLIED[key] = JSON.parse(JSON.stringify(FILTER_PENDING[key]));
+  const count = Object.values(FILTER_APPLIED[key]).flat().length;
+  const pfx = PFX_MAP[key];
+  const btn = document.getElementById(pfx+'-filter-btn');
+  const badge = document.getElementById(pfx+'-filter-badge');
+  btn.classList.toggle('active', count>0);
+  if(badge) badge.textContent = count;
+  document.getElementById(pfx+'-filter-panel').classList.remove('open');
+  btn.classList.remove('open');
+  renderTracker(key);
+}
+
+function clearFilters(key) {
+  FILTER_PENDING[key] = {}; FILTER_APPLIED[key] = {};
+  const pfx = PFX_MAP[key];
+  document.querySelectorAll(`#${pfx}-filter-panel .filter-chip`).forEach(c=>c.classList.remove('selected'));
+  const btn = document.getElementById(pfx+'-filter-btn');
+  btn.classList.remove('active','open');
+  const badge = document.getElementById(pfx+'-filter-badge');
+  if (badge) badge.textContent = '0';
+  document.getElementById(pfx+'-filter-panel').classList.remove('open');
+  renderTracker(key);
+}
+
+function applyFilterLogic(key, items) {
+  const af = FILTER_APPLIED[key]; if (!Object.keys(af).length) return items;
+  return items.filter(item => {
+    if (af.status?.length && !af.status.includes(item.status)) return false;
+    if (af.nota?.length   && item.nota < +af.nota[0]) return false;
+    if (af.fav?.length    && !item.fav) return false;
+    if (af.comImg?.length && !item.img) return false;
+    if (af.tipo?.length   && !af.tipo.includes(item.tipo)) return false;
+    return true;
+  });
+}
+
+function applySortLogic(key, items) {
+  const af = FILTER_APPLIED[key];
+  const sort = af.sort && af.sort[0];
+  if (!sort) return items;
+  const arr = items.slice();
+  const progressOf = (item) => {
+    const p = TRACKER_CFG[key].progressFn(item);
+    return (p === null || Number.isNaN(p)) ? -1 : p;
+  };
+  const pagesOf = (item) => {
+    if (key === 'livros') return +item.paginas || 0;
+    if (key === 'mangas') return +item.capTotal || 0;
+    if (key === 'cinema') return +item.episodioTotal || 0;
+    return 0;
+  };
+  const createdOf = (item) => +item.createdAt || +item.id || 0;
+  const finishedOf = (item) => +item.finishedAt || 0;
+  const durationOf = (item) => {
+    if (item.finishedAt && item.createdAt) return Math.max(0, (+item.finishedAt) - (+item.createdAt));
+    return 0;
+  };
+  const cmpStr = (a, b) => (a || '').localeCompare((b || ''), 'pt-BR');
+  switch (sort) {
+    case 'recent': arr.sort((a,b) => createdOf(b) - createdOf(a)); break;
+    case 'title_az': arr.sort((a,b) => cmpStr(a.titulo, b.titulo)); break;
+    case 'title_za': arr.sort((a,b) => cmpStr(b.titulo, a.titulo)); break;
+    case 'author_az': arr.sort((a,b) => cmpStr(a.autor, b.autor)); break;
+    case 'pages_asc': arr.sort((a,b) => pagesOf(a) - pagesOf(b)); break;
+    case 'pages_desc': arr.sort((a,b) => pagesOf(b) - pagesOf(a)); break;
+    case 'progress_desc': arr.sort((a,b) => progressOf(b) - progressOf(a)); break;
+    case 'start_recent': arr.sort((a,b) => createdOf(b) - createdOf(a)); break;
+    case 'start_old': arr.sort((a,b) => createdOf(a) - createdOf(b)); break;
+    case 'end_recent': arr.sort((a,b) => finishedOf(b) - finishedOf(a)); break;
+    case 'rating_desc': arr.sort((a,b) => (+b.nota||0) - (+a.nota||0)); break;
+    case 'read_duration': arr.sort((a,b) => durationOf(b) - durationOf(a)); break;
+    case 'mangas_first':
+      arr.sort((a,b) => {
+        const aM = ((a.genero || '').toLowerCase().includes('mangá') || (a.genero || '').toLowerCase().includes('manga')) ? 1 : 0;
+        const bM = ((b.genero || '').toLowerCase().includes('mangá') || (b.genero || '').toLowerCase().includes('manga')) ? 1 : 0;
+        if (aM !== bM) return bM - aM;
+        return cmpStr(a.titulo, b.titulo);
+      });
+      break;
+    default: break;
+  }
+  return arr;
+}
+
+// ─── RENDER TRACKER ───────────────────────────────────────────────────────
+function renderTracker(key) {
+  const cfg = TRACKER_CFG[key];
+  const searchIds = { livros:'lv-search', cinema:'ci-search', mangas:'mg-search' };
+  const sq = (document.getElementById(searchIds[key])||{value:''}).value.toLowerCase();
+  let items = S[key].filter(x => !sq || x.titulo.toLowerCase().includes(sq) || (x.autor||'').toLowerCase().includes(sq) || (x.genero||'').toLowerCase().includes(sq));
+  items = applyFilterLogic(key, items);
+  items = applySortLogic(key, items);
+
+  // Stats
+  if (key==='livros') {
+    document.getElementById('lv-total').textContent = S.livros.length;
+    document.getElementById('lv-lendo').textContent = S.livros.filter(x=>x.status==='lendo').length;
+    const done = S.livros.filter(x=>x.status==='concluido').length;
+    document.getElementById('lv-done').textContent  = done;
+    document.getElementById('lv-fav').textContent   = S.livros.filter(x=>x.fav).length;
+    updateGoalDisplay('lv', done, TRACKER_GOALS.livros);
+    const lbl=document.getElementById('lv-count-label'); if(lbl) lbl.textContent=`${items.length} ${items.length===1?'livro':'livros'}${sq?' encontrados':''}`;
+  }
+  if (key==='cinema') {
+    document.getElementById('ci-total').textContent = S.cinema.length;
+    document.getElementById('ci-watch').textContent = S.cinema.filter(x=>x.status==='assistindo').length;
+    const done = S.cinema.filter(x=>x.status==='concluido').length;
+    document.getElementById('ci-done').textContent  = done;
+    document.getElementById('ci-fav').textContent   = S.cinema.filter(x=>x.fav).length;
+    updateGoalDisplay('ci', done, TRACKER_GOALS.cinema);
+    const lbl=document.getElementById('ci-count-label'); if(lbl) lbl.textContent=`${items.length} ${items.length===1?'título':'títulos'}${sq?' encontrados':''}`;
+  }
+  if (key==='mangas') {
+    document.getElementById('mg-total').textContent = S.mangas.length;
+    document.getElementById('mg-lendo').textContent = S.mangas.filter(x=>x.status==='lendo').length;
+    const done = S.mangas.filter(x=>x.status==='concluido').length;
+    document.getElementById('mg-done').textContent  = done;
+    document.getElementById('mg-fav').textContent   = S.mangas.filter(x=>x.fav).length;
+    updateGoalDisplay('mg', done, TRACKER_GOALS.mangas);
+    const lbl=document.getElementById('mg-count-label'); if(lbl) lbl.textContent=`${items.length} ${items.length===1?'mangá':'mangás'}${sq?' encontrados':''}`;
+  }
+
+  const totalPages = Math.max(1, Math.ceil(items.length/PER_PAGE));
+  if (!TRACKER_PAGES[key]) TRACKER_PAGES[key]=1;
+  if (TRACKER_PAGES[key]>totalPages) TRACKER_PAGES[key]=totalPages;
+  const curPage = TRACKER_PAGES[key];
+
+  const tabsEl = document.getElementById(key+'-tabs');
+  tabsEl.innerHTML = totalPages<=1 ? '' : Array.from({length:totalPages},(_,i)=>{
+    const start=i*PER_PAGE+1, end=Math.min((i+1)*PER_PAGE,items.length);
+    return `<button class="ttab ${curPage===i+1?'active':''}" onclick="goTrackerPage('${key}',${i+1})">Página ${i+1} <span style="font-size:9px;opacity:.6">(${start}–${end})</span></button>`;
+  }).join('');
+
+  const pageItems = items.slice((curPage-1)*PER_PAGE, curPage*PER_PAGE);
+  const gridEl = document.getElementById(key+'-grid');
+  if (!items.length) { gridEl.innerHTML=`<div class="empty" style="grid-column:span 5"><div class="empty-icon">${cfg.icon}</div>${sq?'Nenhum resultado para "'+sq+'"':cfg.emptyMsg}</div>`; return; }
+  gridEl.innerHTML = pageItems.map(item => buildCard(item, cfg)).join('');
+}
+
+function goTrackerPage(key, page) { TRACKER_PAGES[key]=page; renderTracker(key); }
+
+// ─── BUILD CARD ───────────────────────────────────────────────────────────
+function buildCard(item, cfg) {
+  const pct = cfg.progressFn(item);
+  const progressLabel = cfg.progressLabel(item);
+  const statusColor = cfg.statusColors[item.status]||'#7a7590';
+  const ribbonColor = cfg.ribbonColors[item.status]||'rgba(122,117,144,.6)';
+  const statusLabel = cfg.statusLabels[item.status]||item.status;
+  const stars = item.nota ? '★'.repeat(item.nota)+'☆'.repeat(5-item.nota) : '';
+  const imgSection = item.img
+    ? `<img class="mc-img" src="${item.img}" alt="${item.titulo}" loading="lazy">`
+    : `<div class="mc-img-placeholder"><div class="ph-icon">${cfg.icon}</div><div class="ph-title">${item.titulo}</div></div>`;
+  const progressSection = pct!==null ? `<div class="mc-progress-bar"><div class="mc-progress-fill" style="width:${pct}%"></div></div>` : '';
+  return `<div class="mc ${item.fav?'fav':''}" onclick="openModal('${cfg.key}',${item.id})">
+    ${imgSection}
+    <div class="mc-ribbon" style="background:${ribbonColor};color:#fff">${statusLabel}</div>
+    ${item.fav?'<div class="mc-fav-badge">⭐</div>':''}
+    <div class="mc-body">
+      <div class="mc-title">${item.titulo}</div>
+      ${item.autor?`<div class="mc-author">${item.autor}</div>`:''}
+      ${stars?`<div class="mc-stars">${stars}</div>`:''}
+      ${progressSection}
+      <div class="mc-bottom">
+        <span class="mc-status-pill" style="color:${statusColor};border-color:${statusColor}40;background:${statusColor}18">${statusLabel}</span>
+        ${progressLabel?`<span class="mc-pct">${progressLabel}</span>`:''}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ─── RELATED ITEMS ────────────────────────────────────────────────────────
+function normalizeTitle(t) {
+  return (t||'').toLowerCase()
+    .replace(/[\s:,\-–_#]+(?:vol\.?|volume|parte|part|livro|book|tomo|cap\.?|capítulo|capitulo|ep\.?|episódio|episodio|temporada|season|série|serie)\s*\d+.*/i,'')
+    .replace(/[\s:,\-–_#]+\d+\s*$/,'').replace(/\s*\([^)]*\)\s*$/,'').trim();
+}
+function titleSimilarity(a, b) {
+  const na=normalizeTitle(a), nb=normalizeTitle(b);
+  if (!na||!nb) return 0; if (na===nb) return 1;
+  const wa=new Set(na.split(/\s+/)), wb=new Set(nb.split(/\s+/));
+  return [...wa].filter(w=>wb.has(w)).length / new Set([...wa,...wb]).size;
+}
+function authorSimilarity(a, b) {
+  if(!a||!b) return 0;
+  const na=a.toLowerCase().trim(), nb=b.toLowerCase().trim();
+  if(na===nb) return 1;
+  const lA=na.split(/\s+/).pop(), lB=nb.split(/\s+/).pop();
+  return (lA&&lA.length>2&&lA===lB)?0.85:0;
+}
+function getRelatedItems(tracker, currentItem) {
+  const results=[];
+  S[tracker].forEach(item=>{
+    if(item.id===currentItem.id) return;
+    const tSim=titleSimilarity(item.titulo,currentItem.titulo);
+    const aSim=authorSimilarity(item.autor,currentItem.autor);
+    let score=0, reason='';
+    if(tSim>=0.6){score=0.9+tSim*0.1;reason='série';}
+    else if(aSim>=0.85&&currentItem.autor){score=0.5+aSim*0.3;reason='autor';}
+    else if(item.genero&&currentItem.genero&&item.genero.toLowerCase()===currentItem.genero.toLowerCase()&&aSim>=0.5){score=0.3;reason='gênero';}
+    if(score>0) results.push({item,score,reason});
+  });
+  return results.sort((a,b)=>b.score-a.score).slice(0,20);
+}
+function renderModalRelated(tracker, currentItem) {
+  const related=getRelatedItems(tracker,currentItem);
+  const section=document.getElementById('modal-related');
+  const scroll =document.getElementById('modal-related-scroll');
+  const label  =document.getElementById('modal-related-label');
+  if(!related.length){section.style.display='none';return;}
+  const hasSeries=related.some(r=>r.reason==='série');
+  const hasAuthor=related.some(r=>r.reason==='autor');
+  if(hasSeries&&hasAuthor) label.textContent='Da mesma série & autor';
+  else if(hasSeries) label.textContent='Outros da série';
+  else label.textContent='Do mesmo autor';
+  const cfg=TRACKER_CFG[tracker];
+  scroll.innerHTML=related.map(({item})=>{
+    const stars=item.nota?'★'.repeat(item.nota):'';
+    const statusColor=cfg.statusColors[item.status]||'#7a7590';
+    const thumb=item.img?`<img src="${item.img}" alt="${item.titulo}">`:`<span style="font-size:24px;opacity:.5">${cfg.icon}</span>`;
+    return `<div class="rel-card" onclick="openModal('${tracker}',${item.id})" title="${item.titulo}">
+      <div class="rel-thumb">${thumb}<div class="rel-status-bar" style="background:${statusColor}88"></div></div>
+      <div class="rel-name">${item.titulo}</div>
+      ${item.autor?`<div class="rel-meta">${item.autor}</div>`:''}
+      ${stars?`<div class="rel-stars">${stars}</div>`:''}
+    </div>`;
+  }).join('');
+  section.style.display='block';
+}
+
+// ─── STARFIELD CANVAS ─────────────────────────────────────────────────────
+(function(){
+  const canvas=document.getElementById('bg-canvas');
+  const ctx=canvas.getContext('2d');
+  let W,H,stars=[],mouse={x:-9999,y:-9999},shoots=[];
+  const STAR_COUNT=320,CONNECT_DIST=100,MOUSE_REPEL=90,SHOOT_INTERVAL=4000;
+  function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;initStars();}
+  function rand(a,b){return a+Math.random()*(b-a);}
+  function initStars(){stars=[];for(let i=0;i<STAR_COUNT;i++){const l=Math.floor(Math.random()*3);stars.push({x:rand(0,W),y:rand(0,H),vx:rand(-0.04,0.04)*(l+1),vy:rand(-0.02,0.03)*(l+1),r:rand(0.3,1.2)*(l*0.4+0.6),alpha:rand(0.3,1),tS:rand(0.005,0.025),tD:Math.random()>.5?1:-1,layer:l,hue:Math.random()<.15?(Math.random()<.5?'gold':Math.random()<.5?'violet':'sky'):'white'});}}
+  const hueMap={white:[220,215,255],gold:[200,169,110],violet:[140,120,210],sky:[120,190,240]};
+  function spawnShoot(){shoots.push({x:rand(W*.2,W),y:rand(0,H*.4),len:rand(100,200),angle:rand(20,50)*Math.PI/180,speed:rand(8,16),alpha:1});}
+  setInterval(spawnShoot,SHOOT_INTERVAL); setTimeout(spawnShoot,800);
+  function frame(){
+    ctx.clearRect(0,0,W,H);
+    const bg=ctx.createRadialGradient(W*.35,H*.3,0,W*.5,H*.5,Math.max(W,H)*.9);
+    bg.addColorStop(0,'#08082a');bg.addColorStop(0.4,'#05050f');bg.addColorStop(1,'#020208');
+    ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+    drawNebula(W*.15,H*.2,320,'rgba(80,50,180,0.035)');
+    drawNebula(W*.75,H*.6,280,'rgba(180,120,50,0.028)');
+    drawNebula(W*.5,H*.85,200,'rgba(40,120,150,0.025)');
+    // Constellations
+    ctx.save();for(let i=0;i<stars.length;i++)for(let j=i+1;j<stars.length;j++){const dx=stars[i].x-stars[j].x,dy=stars[i].y-stars[j].y,d=Math.sqrt(dx*dx+dy*dy);if(d<CONNECT_DIST&&stars[i].layer===stars[j].layer){const op=(1-d/CONNECT_DIST)*0.07;ctx.strokeStyle=`rgba(200,180,255,${op})`;ctx.lineWidth=0.4;ctx.beginPath();ctx.moveTo(stars[i].x,stars[i].y);ctx.lineTo(stars[j].x,stars[j].y);ctx.stroke();}}ctx.restore();
+    // Stars
+    for(const s of stars){
+      s.alpha+=s.tS*s.tD;if(s.alpha>=1){s.alpha=1;s.tD=-1;}if(s.alpha<=0.15){s.alpha=0.15;s.tD=1;}
+      const mx=mouse.x-s.x,my=mouse.y-s.y,md=Math.sqrt(mx*mx+my*my);
+      if(md<MOUSE_REPEL&&md>0){const f=(1-md/MOUSE_REPEL)*0.6;s.x-=(mx/md)*f;s.y-=(my/md)*f;}
+      s.x+=s.vx;s.y+=s.vy;if(s.x<-5)s.x=W+5;if(s.x>W+5)s.x=-5;if(s.y<-5)s.y=H+5;if(s.y>H+5)s.y=-5;
+      const[r,g,b]=hueMap[s.hue],glow=s.r*3,gg=ctx.createRadialGradient(s.x,s.y,0,s.x,s.y,glow);
+      gg.addColorStop(0,`rgba(${r},${g},${b},${s.alpha})`);gg.addColorStop(1,`rgba(${r},${g},${b},0)`);
+      ctx.beginPath();ctx.arc(s.x,s.y,glow,0,Math.PI*2);ctx.fillStyle=gg;ctx.fill();
+      ctx.beginPath();ctx.arc(s.x,s.y,s.r*0.6,0,Math.PI*2);ctx.fillStyle=`rgba(${r},${g},${b},${Math.min(s.alpha*1.4,1)})`;ctx.fill();
+    }
+    // Shooting stars
+    for(let i=shoots.length-1;i>=0;i--){const sh=shoots[i];sh.x-=Math.cos(sh.angle)*sh.speed;sh.y+=Math.sin(sh.angle)*sh.speed;sh.alpha-=0.012;if(sh.alpha<=0||sh.x<-50||sh.y>H+50){shoots.splice(i,1);continue;}const tx=sh.x+Math.cos(sh.angle)*sh.len,ty=sh.y-Math.sin(sh.angle)*sh.len;const grad=ctx.createLinearGradient(sh.x,sh.y,tx,ty);grad.addColorStop(0,`rgba(255,255,255,${sh.alpha})`);grad.addColorStop(0.3,`rgba(200,180,255,${sh.alpha*.6})`);grad.addColorStop(1,'rgba(255,255,255,0)');ctx.strokeStyle=grad;ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(sh.x,sh.y);ctx.lineTo(tx,ty);ctx.stroke();ctx.beginPath();ctx.arc(sh.x,sh.y,1.5,0,Math.PI*2);ctx.fillStyle=`rgba(255,255,255,${sh.alpha})`;ctx.fill();}
+    requestAnimationFrame(frame);
+  }
+  function drawNebula(cx,cy,r,color){const g=ctx.createRadialGradient(cx,cy,0,cx,cy,r);g.addColorStop(0,color);g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fill();}
+  window.addEventListener('resize',resize);
+  window.addEventListener('mousemove',e=>{mouse.x=e.clientX;mouse.y=e.clientY;});
+  window.addEventListener('mouseleave',()=>{mouse.x=-9999;mouse.y=-9999;});
+  window.addEventListener('touchmove',e=>{mouse.x=e.touches[0].clientX;mouse.y=e.touches[0].clientY;},{passive:true});
+  resize(); frame();
+})();
+
+// ─── INIT ─────────────────────────────────────────────────────────────────
+const footerYearEl = document.getElementById('footer-year');
+if (footerYearEl) footerYearEl.textContent = new Date().getFullYear();
+load();
+renderTracker('livros');
+renderTracker('cinema');
+renderTracker('mangas');
+const INITIAL_TRACKER = ['livros','cinema','mangas'].includes(document.body.dataset.page) ? document.body.dataset.page : 'livros';
+goTo(INITIAL_TRACKER);
+</script>
+
 </body>
 </html>
+
+
+
+
+

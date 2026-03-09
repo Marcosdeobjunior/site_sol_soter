@@ -31,10 +31,13 @@
       <div class="hub-accent-bar"></div>
 
       <div class="hub-nav">
-        <button class="hub-back-btn" onclick="snHubClose()">← Sonhos</button>
+        <button class="hub-back-btn" onclick="snHubClose()">
+          <svg class="icon-arrow-left" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5L8 12l6.5 6.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Sonhos</span>
+        </button>
         <div class="hub-nav-actions">
           <button class="hub-nav-btn done-btn" id="hub-nav-done-btn" onclick="hubToggleRealizado()">
-            <span id="hub-nav-done-icon">○</span><span id="hub-nav-done-lbl">Realizado</span>
+            <span id="hub-nav-done-icon" class="state-icon" aria-hidden="true"></span><span id="hub-nav-done-lbl">Realizado</span>
           </button>
           <button class="hub-nav-btn edit" id="hub-edit-toggle-btn" onclick="hubDrawerOpen()">
             ✎ <span id="hub-edit-btn-lbl">Editar</span>
@@ -127,6 +130,20 @@
             <div class="hd-field">
               <div class="hd-field-lbl">🏁 Prazo final</div>
               <input class="hd-inp" id="hd-fim" type="date">
+            </div>
+          </div>
+        </div>
+
+        <div class="hd-section">
+          <div class="hd-section-lbl">Meta financeira</div>
+          <div class="hd-row">
+            <div class="hd-field">
+              <div class="hd-field-lbl">Custo total (R$)</div>
+              <input class="hd-inp" id="hd-custo" type="number" min="0" step="0.01" placeholder="0,00">
+            </div>
+            <div class="hd-field">
+              <div class="hd-field-lbl">Já acumulado (R$)</div>
+              <input class="hd-inp" id="hd-acumulado" type="number" min="0" step="0.01" placeholder="0,00">
             </div>
           </div>
         </div>
@@ -257,7 +274,7 @@
         <!-- Marcar realizado -->
         <div class="hub-section">
           <button class="hub-done-btn pending" id="hub-done-btn" onclick="hubToggleRealizado()">
-            <span id="hub-done-icon">○</span>
+            <span id="hub-done-icon" class="state-icon" aria-hidden="true"></span>
             <span id="hub-done-lbl">Marcar como realizado</span>
           </button>
         </div>
@@ -289,6 +306,32 @@
           </div>
           <div id="hub-jornada-content"></div>
         </div>
+
+      </div>
+    </div>
+
+    <div class="hub-bottom-row">
+      <div class="hub-section" id="hub-finance-section">
+        <div class="hub-section-hd">
+          <div class="hub-section-hd-icon">💰</div>
+          <span class="hub-section-label">Meta financeira</span>
+        </div>
+        <div class="hub-fin-stats">
+          <div class="hub-fin-stat"><span>Restante</span><strong id="hub-fin-restante">R$ 0,00</strong></div>
+          <div class="hub-fin-stat"><span>Média mensal</span><strong id="hub-fin-media">R$ 0,00</strong></div>
+          <div class="hub-fin-stat"><span>Previsão</span><strong id="hub-fin-prev">—</strong></div>
+        </div>
+        <svg id="hub-fin-chart" viewBox="0 0 420 140" preserveAspectRatio="none"></svg>
+        <div class="hub-fin-legend">
+          <span><i class="hub-fin-dot aporte"></i>Aporte mensal</span>
+          <span><i class="hub-fin-dot acum"></i>Acumulado</span>
+        </div>
+        <div class="hub-fin-add">
+          <input class="hub-meta-inp" id="hub-fin-mes" type="month" title="Mês do aporte">
+          <input class="hub-meta-inp" id="hub-fin-valor" type="number" min="0" step="0.01" placeholder="Valor aportado">
+          <button class="btn btn-primary" onclick="hubAddDeposito()">+ Registrar</button>
+        </div>
+        <div class="hub-fin-list" id="hub-fin-list"></div>
       </div>
     </div>
 
@@ -302,6 +345,87 @@
         </div>
       </div>
       <div class="hub-tips-grid" id="hub-tips-grid"></div>
+    </div>
+  </div>
+
+  <!-- ══════════ SONHOS ANALYTICS ══════════ -->
+  <div id="sn-analytics">
+    <div class="san-header">
+    </div>
+    <div class="san-body">
+      <div class="san-intro">
+        <div class="san-intro-head">
+          <div class="page-title">Analytics de <span>Sonhos</span></div>
+          <button class="san-back-btn" onclick="snCloseAnalytics()">
+            <svg class="icon-arrow-left" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5L8 12l6.5 6.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span>Voltar</span>
+          </button>
+        </div>
+        <div class="page-subtitle" id="san-header-sub">Visão geral de todos os seus sonhos</div>
+      </div>
+
+      <div class="san-kpi-row" id="san-kpi-row"></div>
+
+      <div class="san-charts-row">
+        <div class="san-card">
+          <div class="san-card-title"><div class="san-card-title-icon">◈</div>Progresso por sonho</div>
+          <div class="san-bar-chart" id="san-progress-bars"></div>
+        </div>
+        <div class="san-card">
+          <div class="san-card-title"><div class="san-card-title-icon">◕</div>Distribuição por categoria</div>
+          <div class="san-donut-wrap">
+            <svg class="san-donut-svg" width="130" height="130" viewBox="0 0 130 130" id="san-donut-svg"></svg>
+            <div class="san-legend-wrap" id="san-donut-legend"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="san-charts-row-3">
+        <div class="san-card">
+          <div class="san-card-title"><div class="san-card-title-icon">♥</div>Saúde dos sonhos</div>
+          <div class="san-health-ring-wrap">
+            <div>
+              <svg width="90" height="90" viewBox="0 0 90 90" id="san-health-svg"></svg>
+              <div class="san-score-lbl" id="san-score-lbl">Score</div>
+            </div>
+            <div class="san-health-factors" id="san-health-factors"></div>
+          </div>
+        </div>
+        <div class="san-card">
+          <div class="san-card-title"><div class="san-card-title-icon">▸</div>Mais perto do prazo</div>
+          <div class="san-rank-list" id="san-deadline-list"></div>
+        </div>
+        <div class="san-card">
+          <div class="san-card-title"><div class="san-card-title-icon">⏳</div>Por horizonte temporal</div>
+          <div class="san-bar-chart" id="san-horizonte-bars"></div>
+        </div>
+      </div>
+
+      <div class="san-charts-row">
+        <div class="san-card">
+          <div class="san-card-title"><div class="san-card-title-icon">🔴</div>Metas por prioridade</div>
+          <div class="san-bar-chart" id="san-metas-prio"></div>
+        </div>
+        <div class="san-card">
+          <div class="san-card-title"><div class="san-card-title-icon">★</div>Top sonhos por progresso</div>
+          <div class="san-rank-list" id="san-top-progress"></div>
+        </div>
+      </div>
+
+      <div class="san-charts-row-3">
+        <div class="san-card">
+          <div class="san-card-title"><div class="san-card-title-icon">⚠</div>Risco de atraso (preditivo)</div>
+          <div class="san-rank-list" id="san-risk-list"></div>
+        </div>
+        <div class="san-card">
+          <div class="san-card-title"><div class="san-card-title-icon">💰</div>Meta financeira integrada</div>
+          <div class="san-rank-list" id="san-finance-list"></div>
+        </div>
+        <div class="san-card">
+          <div class="san-card-title"><div class="san-card-title-icon">🗓</div>Resumo mensal automático</div>
+          <div class="san-month-summary" id="san-month-summary"></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -357,6 +481,16 @@
             <input class="inp" id="sn-m-data-fim" type="date" style="width:100%">
           </div>
         </div>
+        <div class="form-row" style="margin-bottom:12px">
+          <div style="flex:1;min-width:120px">
+            <div style="font-size:9px;font-family:var(--font-mono);letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:5px">💰 Custo total (R$)</div>
+            <input class="inp" id="sn-m-custo" type="number" min="0" step="0.01" style="width:100%" placeholder="0,00">
+          </div>
+          <div style="flex:1;min-width:120px">
+            <div style="font-size:9px;font-family:var(--font-mono);letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:5px">🏦 Já acumulado (R$)</div>
+            <input class="inp" id="sn-m-acumulado" type="number" min="0" step="0.01" style="width:100%" placeholder="0,00">
+          </div>
+        </div>
         <!-- Metas no modal -->
         <div style="font-size:9px;font-family:var(--font-mono);letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Metas / Passos</div>
         <div id="sn-modal-metas-list" style="margin-bottom:8px"></div>
@@ -379,7 +513,10 @@
         <div class="page-title">Meus <span>Sonhos</span></div>
         <div class="page-subtitle">Visualize, planeje e conquiste cada sonho da sua vida</div>
       </div>
-      <button class="btn btn-primary" onclick="snOpenModal()">✦ &nbsp;Novo Sonho</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost" onclick="snOpenAnalytics()" style="display:flex;align-items:center;gap:6px">📊 Analytics</button>
+        <button class="btn btn-primary" onclick="snOpenModal()">✦ &nbsp;Novo Sonho</button>
+      </div>
     </div>
 
     <!-- Stats -->

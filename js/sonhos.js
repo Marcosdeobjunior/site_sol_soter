@@ -96,15 +96,62 @@ function save() {
 
 function addNotif() {}
 
+function num(v) {
+  if (v === null || v === undefined || v === "") return 0;
+  var n = Number(String(v).replace(",", "."));
+  return Number.isFinite(n) ? n : 0;
+}
+
+function ymFromDate(d) {
+  if (!d) return "";
+  var dt = new Date(d);
+  if (isNaN(dt)) return "";
+  var y = dt.getFullYear();
+  var m = String(dt.getMonth() + 1).padStart(2, "0");
+  return y + "-" + m;
+}
+
+function nowYm() {
+  var d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+}
+
+function buildFinanceInfo(s) {
+  var base = num(s.acumulado);
+  var custo = num(s.custo);
+  var hist = Array.isArray(s.financeHistory) ? s.financeHistory.slice() : [];
+  hist = hist
+    .map(function (h) { return { id: h.id || Date.now(), mes: String(h.mes || ""), valor: num(h.valor) }; })
+    .filter(function (h) { return h.mes && h.valor > 0; })
+    .sort(function (a, b) { return a.mes.localeCompare(b.mes); });
+
+  var depSum = hist.reduce(function (acc, h) { return acc + h.valor; }, 0);
+  var atual = base + depSum;
+  var restante = Math.max(0, custo - atual);
+  var media = hist.length ? (depSum / hist.length) : 0;
+  var mesesPrev = media > 0 ? Math.ceil(restante / media) : null;
+
+  return { base: base, custo: custo, hist: hist, depSum: depSum, atual: atual, restante: restante, media: media, mesesPrev: mesesPrev };
+}
+
 function snMigrateData() {
   S.sonhos = (S.sonhos || []).map(s => {
     if (!s.metas)     s.metas     = [];
     if (!s.categoria) s.categoria = 'pessoal';
     if (!s.icon)      s.icon      = '🌙';
+    if (!s.createdAt) s.createdAt = new Date(Number(s.id) || Date.now()).toISOString();
+    if (typeof s.custo !== "number") s.custo = num(s.custo);
+    if (typeof s.acumulado !== "number") s.acumulado = num(s.acumulado);
+    if (!Array.isArray(s.financeHistory)) s.financeHistory = [];
+    s.financeHistory = s.financeHistory
+      .map(function (h) { return { id: h.id || Date.now(), mes: String(h.mes || ""), valor: num(h.valor) }; })
+      .filter(function (h) { return h.mes && h.valor > 0; });
+    if (!s.realizadoAt) s.realizadoAt = '';
     s.metas = s.metas.map(m => {
       if (!m.prioridade) m.prioridade = 'media';
       if (!m.dataInicio) m.dataInicio = '';
       if (!m.prazo)      m.prazo      = '';
+      if (!m.dataConclusao) m.dataConclusao = '';
       return m;
     });
     return s;
@@ -155,8 +202,8 @@ let hubEditOpen  = false;
 
 // ── Open / Close ──────────────────────────────────────────────────────────
 function snOpenHub(id) {
-  hubSonhoId = id;
-  const s = S.sonhos.find(x => x.id === id);
+  hubSonhoId = String(id);
+  const s = S.sonhos.find(x => String(x.id) === String(id));
   if (!s) return;
   const hub = document.getElementById('sn-hub');
   hub.scrollTop = 0;
@@ -187,7 +234,7 @@ let _drawerImg = '';
 
 function hubDrawerOpen() {
   if (!hubSonhoId) return;
-  const s = S.sonhos.find(x => x.id === hubSonhoId); if (!s) return;
+  const s = S.sonhos.find(x => String(x.id) === String(hubSonhoId)); if (!s) return;
   document.getElementById('hd-titulo').value    = s.titulo      || '';
   document.getElementById('hd-icon').value      = s.icon        || '🌙';
   document.getElementById('hd-categoria').value = s.categoria   || 'pessoal';
@@ -197,6 +244,8 @@ function hubDrawerOpen() {
   document.getElementById('hd-desc').value      = s.desc        || '';
   document.getElementById('hd-intencao').value  = s.intencao    || '';
   document.getElementById('hd-nota').value      = s.nota        || '';
+  document.getElementById('hd-custo').value     = s.custo       || '';
+  document.getElementById('hd-acumulado').value = s.acumulado   || '';
   document.getElementById('hd-head-title').textContent = s.titulo || 'Editar sonho';
   _drawerImg = s.img || '';
   const zone = document.getElementById('hd-cover-zone');
@@ -247,7 +296,7 @@ function hubDrawerSalvar() {
     el.focus(); el.style.borderColor='rgba(224,107,139,.65)';
     setTimeout(()=>el.style.borderColor='',1400); return;
   }
-  const idx = S.sonhos.findIndex(x => x.id === hubSonhoId); if (idx<0) return;
+  const idx = S.sonhos.findIndex(x => String(x.id) === String(hubSonhoId)); if (idx<0) return;
   S.sonhos[idx] = Object.assign({}, S.sonhos[idx], {
     titulo,
     icon:       document.getElementById('hd-icon').value.trim() || '🌙',
@@ -258,15 +307,17 @@ function hubDrawerSalvar() {
     desc:       document.getElementById('hd-desc').value.trim(),
     intencao:   document.getElementById('hd-intencao').value.trim(),
     nota:       document.getElementById('hd-nota').value.trim(),
+    custo:      num(document.getElementById('hd-custo').value),
+    acumulado:  num(document.getElementById('hd-acumulado').value),
     img:        document.getElementById('hd-cover-zone').classList.contains('hci') ? (_drawerImg || S.sonhos[idx].img) : '',
   });
   save(); hubDrawerClose(); hubRender(S.sonhos[idx]); renderSonhos();
 }
 
 function hubDrawerDeletar() {
-  const s = S.sonhos.find(x=>x.id===hubSonhoId);
+  const s = S.sonhos.find(x=>String(x.id)===String(hubSonhoId));
   if (!confirm('Excluir "' + (s ? s.titulo : 'este sonho') + '"? Esta ação não pode ser desfeita.')) return;
-  S.sonhos = S.sonhos.filter(x=>x.id!==hubSonhoId);
+  S.sonhos = S.sonhos.filter(x=>String(x.id)!==String(hubSonhoId));
   save(); renderSonhos(); hubDrawerClose(); snHubClose();
 }
 
@@ -316,11 +367,19 @@ function hubRender(s) {
   const navDoneBtn  = document.getElementById('hub-nav-done-btn');
   const navDoneIcon = document.getElementById('hub-nav-done-icon');
   const navDoneLbl  = document.getElementById('hub-nav-done-lbl');
-  if (navDoneBtn) { navDoneBtn.classList.toggle('realizado', isReal); navDoneIcon.textContent = isReal ? '✅' : '○'; navDoneLbl.textContent = 'Realizado'; }
+  if (navDoneBtn) {
+    navDoneBtn.classList.toggle('realizado', isReal);
+    if (navDoneIcon) navDoneIcon.classList.toggle('is-done', isReal);
+    navDoneLbl.textContent = 'Realizado';
+  }
   const doneBtn  = document.getElementById('hub-done-btn');
   const doneIcon = document.getElementById('hub-done-icon');
   const doneLbl  = document.getElementById('hub-done-lbl');
-  if (doneBtn) { doneBtn.className = 'hub-done-btn ' + (isReal ? 'done-state' : 'pending'); doneIcon.textContent = isReal ? '✅' : '○'; doneLbl.textContent = isReal ? 'Realizado! (clique para desfazer)' : 'Marcar como realizado'; }
+  if (doneBtn) {
+    doneBtn.className = 'hub-done-btn ' + (isReal ? 'done-state' : 'pending');
+    if (doneIcon) doneIcon.classList.toggle('is-done', isReal);
+    doneLbl.textContent = isReal ? 'Realizado! (clique para desfazer)' : 'Marcar como realizado';
+  }
 
   // Description
   const descEl = document.getElementById('hub-desc-text');
@@ -366,6 +425,8 @@ function hubRender(s) {
 }
 
 function hubRenderExtras(s) {
+  hubRenderFinance(s);
+
   // ── Intenção do dia ──────────────────────────────────────────────
   const intEl = document.getElementById('hub-intencao-display');
   if (intEl) intEl.textContent = s.intencao || '';
@@ -407,6 +468,80 @@ function hubRenderExtras(s) {
       if (fill) fill.style.width = pct + '%';
     }, 200);
   } else if (jorSection) { jorSection.style.display = 'none'; }
+}
+
+function hubRenderFinance(s) {
+  const section = document.getElementById('hub-finance-section');
+  if (!section) return;
+  const info = buildFinanceInfo(s);
+  const fmt = function (v) { return "R$ " + num(v).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+
+  const restEl = document.getElementById('hub-fin-restante');
+  const medEl = document.getElementById('hub-fin-media');
+  const prevEl = document.getElementById('hub-fin-prev');
+  if (restEl) restEl.textContent = fmt(info.restante);
+  if (medEl) medEl.textContent = fmt(info.media);
+  if (prevEl) {
+    if (info.mesesPrev === null) prevEl.textContent = "Sem previsão";
+    else if (info.mesesPrev <= 0) prevEl.textContent = "Meta atingida";
+    else {
+      const d = new Date();
+      d.setMonth(d.getMonth() + info.mesesPrev);
+      prevEl.textContent = info.mesesPrev + " mes(es) • " + d.toLocaleDateString("pt-BR", { month: "short", year: "numeric" });
+    }
+  }
+
+  const chart = document.getElementById('hub-fin-chart');
+  if (chart) {
+    const w = 420, h = 140, p = 12;
+    const hist = info.hist.slice(-12);
+    if (!hist.length) {
+      chart.innerHTML = `<text x="${w/2}" y="${h/2}" text-anchor="middle" fill="rgba(122,117,144,.55)" font-family="var(--font-mono)" font-size="10">Sem depósitos no histórico</text>`;
+    } else {
+      let acc = info.base;
+      const aporteVals = hist.map(function (x) { return x.valor; });
+      const acumVals = hist.map(function (x) { acc += x.valor; return acc; });
+      const maxV = Math.max(...aporteVals, ...acumVals, 1);
+      const toX = function (i) { return p + (i * ((w - p * 2) / Math.max(1, hist.length - 1))); };
+      const toY = function (v) { return h - p - (v / maxV) * (h - p * 2); };
+      const line = function (vals) { return vals.map(function (v, i) { return toX(i) + "," + toY(v); }).join(" "); };
+      chart.innerHTML =
+        `<polyline points="${line(aporteVals)}" fill="none" stroke="var(--accent1)" stroke-width="2"/>` +
+        `<polyline points="${line(acumVals)}" fill="none" stroke="var(--accent3)" stroke-width="2"/>`;
+    }
+  }
+
+  const list = document.getElementById('hub-fin-list');
+  if (list) {
+    list.innerHTML = !info.hist.length
+      ? `<div class="hub-meta-empty" style="padding:10px 0">Sem aportes registrados.</div>`
+      : info.hist.slice().reverse().slice(0,12).map(function (h) {
+          return `<div class="hub-fin-item">
+            <div><div class="meta">${h.mes}</div><div class="val">${fmt(h.valor)}</div></div>
+            <button class="hub-fin-del" onclick='hubDelDeposito(${JSON.stringify(String(h.id))})' title="Remover">✕</button>
+          </div>`;
+        }).join('');
+  }
+
+  const monthInp = document.getElementById('hub-fin-mes');
+  if (monthInp && !monthInp.value) monthInp.value = nowYm();
+}
+
+function hubAddDeposito() {
+  const s = S.sonhos.find(x => String(x.id) === String(hubSonhoId)); if (!s) return;
+  const mes = (document.getElementById('hub-fin-mes') || {}).value || nowYm();
+  const valor = num((document.getElementById('hub-fin-valor') || {}).value);
+  if (!mes || valor <= 0) return;
+  if (!Array.isArray(s.financeHistory)) s.financeHistory = [];
+  s.financeHistory.push({ id: Date.now() + "_" + Math.floor(Math.random()*9999), mes: mes, valor: valor });
+  const vEl = document.getElementById('hub-fin-valor'); if (vEl) vEl.value = '';
+  save(); hubRenderFinance(s); sanRender();
+}
+
+function hubDelDeposito(depId) {
+  const s = S.sonhos.find(x => String(x.id) === String(hubSonhoId)); if (!s) return;
+  s.financeHistory = (s.financeHistory || []).filter(function (d) { return String(d.id) !== String(depId); });
+  save(); hubRenderFinance(s); sanRender();
 }
 
 function hubRenderDates(s) {
@@ -534,7 +669,7 @@ function hubToggleMetaForm() {
 function hubAddMeta() {
   const texto = document.getElementById('hub-meta-texto').value.trim();
   if (!texto || !hubSonhoId) return;
-  const s = S.sonhos.find(x => x.id === hubSonhoId);
+  const s = S.sonhos.find(x => String(x.id) === String(hubSonhoId));
   if (!s) return;
   if (!s.metas) s.metas = [];
   s.metas.push({
@@ -552,20 +687,21 @@ function hubAddMeta() {
 }
 
 function hubToggleMeta(metaId) {
-  const s = S.sonhos.find(x => x.id === hubSonhoId); if (!s) return;
+  const s = S.sonhos.find(x => String(x.id) === String(hubSonhoId)); if (!s) return;
   const m = (s.metas||[]).find(x => x.id === metaId); if (!m) return;
   m.feita = !m.feita;
+  m.dataConclusao = m.feita ? new Date().toISOString() : '';
   save(); hubRender(s); renderSonhos();
 }
 
 function hubDelMeta(metaId) {
-  const s = S.sonhos.find(x => x.id === hubSonhoId); if (!s) return;
+  const s = S.sonhos.find(x => String(x.id) === String(hubSonhoId)); if (!s) return;
   s.metas = (s.metas||[]).filter(x => x.id !== metaId);
   save(); hubRender(s); renderSonhos();
 }
 
 function hubToggleRealizado() {
-  const s = S.sonhos.find(x => x.id === hubSonhoId); if (!s) return;
+  const s = S.sonhos.find(x => String(x.id) === String(hubSonhoId)); if (!s) return;
   s.realizado = !s.realizado;
   if (s.realizado) addNotif('Sonho realizado! 🎉', '"'+s.titulo+'"', 'sonho');
   save(); hubRender(s); renderSonhos();
@@ -587,6 +723,8 @@ function snOpenModal(editId) {
 
   ['sn-m-titulo','sn-m-icon','sn-m-desc','sn-m-data-inicio','sn-m-data-fim']
     .forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  ['sn-m-custo','sn-m-acumulado']
+    .forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('sn-m-horizonte').value = '1 ano';
   document.getElementById('sn-m-categoria').value = 'pessoal';
   coverZone.classList.remove('has-img'); coverImg.src='';
@@ -601,6 +739,8 @@ function snOpenModal(editId) {
     document.getElementById('sn-m-horizonte').value = s.horizonte || '1 ano';
     document.getElementById('sn-m-categoria').value = s.categoria || 'pessoal';
     document.getElementById('sn-m-desc').value      = s.desc      || '';
+    document.getElementById('sn-m-custo').value     = s.custo     || '';
+    document.getElementById('sn-m-acumulado').value = s.acumulado || '';
     const di=document.getElementById('sn-m-data-inicio'); if(di) di.value=s.dataInicio||'';
     const df=document.getElementById('sn-m-data-fim');    if(df) df.value=s.dataFim||'';
     snModalMetas = (s.metas||[]).map(m=>Object.assign({},m));
@@ -670,29 +810,35 @@ function snSalvar() {
     categoria:document.getElementById('sn-m-categoria').value,
     desc:document.getElementById('sn-m-desc').value.trim(),
     dataInicio:di?di.value:'', dataFim:df?df.value:'',
+    custo:num(document.getElementById('sn-m-custo').value),
+    acumulado:num(document.getElementById('sn-m-acumulado').value),
     img:snImgData,
     metas:snModalMetas.map(m=>Object.assign({},m)),
-    realizado:snEditId?(S.sonhos.find(x=>x.id===snEditId)||{}).realizado||false:false,
+    realizado:snEditId?(S.sonhos.find(x=>String(x.id)===String(snEditId))||{}).realizado||false:false,
+    createdAt: snEditId ? (S.sonhos.find(x=>String(x.id)===String(snEditId))||{}).createdAt || new Date().toISOString() : new Date().toISOString(),
+    realizadoAt: snEditId ? (S.sonhos.find(x=>String(x.id)===String(snEditId))||{}).realizadoAt || '' : '',
+    financeHistory: snEditId ? (S.sonhos.find(x=>String(x.id)===String(snEditId))||{}).financeHistory || [] : [],
   };
-  if(snEditId){const idx=S.sonhos.findIndex(x=>x.id===snEditId);if(idx>=0)S.sonhos[idx]=item;else S.sonhos.push(item);}
+  if(snEditId){const idx=S.sonhos.findIndex(x=>String(x.id)===String(snEditId));if(idx>=0)S.sonhos[idx]=item;else S.sonhos.push(item);}
   else{S.sonhos.push(item);addNotif('Sonho adicionado','"'+titulo+'"','sonho');}
   save(); renderSonhos(); snCloseModal();
-  if(hubSonhoId===item.id) hubRender(item);
+  if(String(hubSonhoId)===String(item.id)) hubRender(item);
 }
 
 function snDeletar(){
   if(!snEditId)return;
-  const s=S.sonhos.find(x=>x.id===snEditId);
+  const s=S.sonhos.find(x=>String(x.id)===String(snEditId));
   if(!confirm('Excluir "'+(s?s.titulo:'este sonho')+'"?'))return;
-  S.sonhos=S.sonhos.filter(x=>x.id!==snEditId);
+  S.sonhos=S.sonhos.filter(x=>String(x.id)!==String(snEditId));
   save();renderSonhos();snCloseModal();
-  if(hubSonhoId===snEditId)snHubClose();
+  if(String(hubSonhoId)===String(snEditId))snHubClose();
 }
 
 function snToggleRealizado(id,e){
   e.stopPropagation();
   const s=S.sonhos.find(x=>x.id===id);if(!s)return;
   s.realizado=!s.realizado;
+  s.realizadoAt = s.realizado ? new Date().toISOString() : '';
   if(s.realizado)addNotif('Sonho realizado! 🎉','"'+s.titulo+'"','sonho');
   save();snMigrateData();renderSonhos();
 }
@@ -700,7 +846,9 @@ function snToggleMeta(sonhoId,metaId,e){
   e.stopPropagation();
   const s=S.sonhos.find(x=>x.id===sonhoId);if(!s)return;
   const m=(s.metas||[]).find(x=>x.id===metaId);if(!m)return;
-  m.feita=!m.feita;save();renderSonhos();
+  m.feita=!m.feita;
+  m.dataConclusao = m.feita ? new Date().toISOString() : '';
+  save();renderSonhos();
 }
 
 // ── Render cards ──────────────────────────────────────────────────────────
@@ -764,6 +912,349 @@ function renderSonhos() {
       '</div>'+
     '</div>';
   }).join('');
+
+  const analytics = document.getElementById("sn-analytics");
+  if (analytics && analytics.classList.contains("open")) sanRender();
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// SONHOS ANALYTICS
+// ══════════════════════════════════════════════════════════════════════════
+
+function snOpenAnalytics() {
+  const el = document.getElementById('sn-analytics');
+  if (!el) return;
+  el.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  sanRender();
+}
+function snCloseAnalytics() {
+  const el = document.getElementById('sn-analytics');
+  if (!el) return;
+  el.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function sanRender() {
+  const sonhos = S.sonhos || [];
+  const total  = sonhos.length;
+  const kpiRow = document.getElementById('san-kpi-row');
+  if (!kpiRow) return;
+  if (!total) {
+    kpiRow.innerHTML =
+      '<div class="san-kpi" style="grid-column:1/-1;text-align:center;color:var(--muted);font-family:var(--font-mono);font-size:12px;padding:40px">Nenhum sonho cadastrado ainda. Adicione seus primeiros sonhos para ver os analytics!</div>';
+    ['san-progress-bars','san-donut-legend','san-health-factors','san-deadline-list','san-horizonte-bars','san-metas-prio','san-top-progress']
+      .forEach(id => { const el=document.getElementById(id); if(el) el.innerHTML=''; });
+    return;
+  }
+
+  const realizados = sonhos.filter(s => s.realizado).length;
+  const emAndamento = sonhos.filter(s => !s.realizado).length;
+  const allMetas   = sonhos.flatMap(s => s.metas||[]);
+  const totalMetas = allMetas.length;
+  const doneMetas  = allMetas.filter(m => m.feita).length;
+  const lateMetas  = allMetas.filter(m => snIsLate(m.prazo, m.feita)).length;
+  const pctGeral   = total > 0 ? Math.round(
+    sonhos.reduce((acc, s) => {
+      const m = s.metas||[]; return acc + (m.length ? m.filter(x=>x.feita).length/m.length : 0);
+    }, 0) / total * 100
+  ) : 0;
+
+  const kpis = [
+    { lbl:'Total de sonhos',  val: total,       sub: realizados+' realizados', icon:'🌙', color:'rgba(124,111,205,.5)' },
+    { lbl:'Em andamento',     val: emAndamento, sub: 'sonhos ativos',           icon:'⚡', color:'rgba(200,169,110,.5)' },
+    { lbl:'Realizados',       val: realizados,  sub: total>0?Math.round(realizados/total*100)+'% do total':'',  icon:'✅', color:'rgba(94,196,168,.5)' },
+    { lbl:'Metas concluídas', val: doneMetas,   sub: totalMetas+' no total',   icon:'◈',  color:'rgba(74,176,232,.5)' },
+    { lbl:'Progresso geral',  val: pctGeral+'%',sub: lateMetas>0 ? lateMetas+' metas atrasadas':'Todas em dia', icon:'◎', color: lateMetas>0?'rgba(224,107,139,.5)':'rgba(94,196,168,.5)' },
+  ];
+  kpiRow.innerHTML = kpis.map(k =>
+    `<div class="san-kpi" style="--kpi-color:${k.color}">
+      <div class="san-kpi-icon">${k.icon}</div>
+      <div class="san-kpi-lbl">${k.lbl}</div>
+      <div class="san-kpi-val">${k.val}</div>
+      <div class="san-kpi-sub">${k.sub}</div>
+    </div>`
+  ).join('');
+
+  const progressData = sonhos.map(s => {
+    const m = s.metas||[];
+    const pct = m.length ? Math.round(m.filter(x=>x.feita).length/m.length*100) : 0;
+    return { nome: s.titulo, icon: s.icon||'🌙', pct, cat: s.categoria||'pessoal', real: s.realizado };
+  }).sort((a,b) => b.pct - a.pct).slice(0, 8);
+
+  const pbEl = document.getElementById('san-progress-bars');
+  if (pbEl) {
+    pbEl.innerHTML = progressData.map(d => {
+      const color = SN_CAT_COLORS[d.cat] || '#7c6fcd';
+      const fill  = d.real ? 'rgba(94,196,168,.6)' : color;
+      return `<div class="san-bar-item">
+        <div class="san-bar-label">${d.icon} ${d.nome}</div>
+        <div class="san-bar-track"><div class="san-bar-fill" style="width:0%;background:${fill}" data-w="${d.pct}"></div></div>
+        <div class="san-bar-val">${d.pct}%</div>
+      </div>`;
+    }).join('');
+    setTimeout(() => pbEl.querySelectorAll('.san-bar-fill').forEach(el => el.style.width = el.dataset.w+'%'), 80);
+  }
+
+  const catCount = {};
+  sonhos.forEach(s => { const c2 = s.categoria||'pessoal'; catCount[c2] = (catCount[c2]||0)+1; });
+  const catEntries = Object.entries(catCount).sort((a,b)=>b[1]-a[1]);
+  const donutR = 44, donutCx = 65, donutCy = 65, strokeW = 18;
+  const circum = 2*Math.PI*donutR;
+  let offset = 0;
+  const donutSegs = catEntries.map(([cat, cnt]) => {
+    const pct  = cnt / total;
+    const dash = pct * circum;
+    const seg  = { cat, cnt, pct, dash, offset };
+    offset += dash;
+    return seg;
+  });
+  const svgEl = document.getElementById('san-donut-svg');
+  if (svgEl) {
+    svgEl.innerHTML = `<circle cx="${donutCx}" cy="${donutCy}" r="${donutR}" fill="none" stroke="rgba(255,255,255,.04)" stroke-width="${strokeW}"/>` +
+      donutSegs.map(seg => {
+        const color = SN_CAT_COLORS[seg.cat] || '#7c6fcd';
+        return `<circle cx="${donutCx}" cy="${donutCy}" r="${donutR}" fill="none"
+          stroke="${color}" stroke-width="${strokeW}"
+          stroke-dasharray="${seg.dash} ${circum - seg.dash}"
+          stroke-dashoffset="${circum - seg.offset}"
+          transform="rotate(-90 ${donutCx} ${donutCy})"
+          opacity=".85"/>`;
+      }).join('') +
+      `<text x="${donutCx}" y="${donutCy-3}" text-anchor="middle" fill="var(--text)" font-family="var(--font-display)" font-size="20" font-weight="700">${total}</text>
+       <text x="${donutCx}" y="${donutCy+13}" text-anchor="middle" fill="var(--muted)" font-family="var(--font-mono)" font-size="9" letter-spacing="1">sonhos</text>`;
+  }
+  const legendEl = document.getElementById('san-donut-legend');
+  if (legendEl) {
+    legendEl.className = 'san-donut-legend';
+    legendEl.innerHTML = catEntries.slice(0, 6).map(([cat, cnt]) =>
+      `<div class="san-legend-item">
+        <div class="san-legend-dot" style="background:${SN_CAT_COLORS[cat]||'#7c6fcd'}"></div>
+        <span class="san-legend-lbl">${SN_CAT_LABELS[cat]||cat}</span>
+        <span class="san-legend-val">${cnt}</span>
+      </div>`
+    ).join('');
+  }
+
+  const factors = [
+    { lbl:'Com imagem de capa', score: sonhos.filter(s=>!!s.img).length/total, color:'rgba(200,169,110,.7)' },
+    { lbl:'Com descrição',      score: sonhos.filter(s=>!!s.desc).length/total, color:'rgba(124,111,205,.7)' },
+    { lbl:'Com metas definidas',score: sonhos.filter(s=>(s.metas||[]).length>0).length/total, color:'rgba(74,176,232,.7)' },
+    { lbl:'Com prazo definido', score: sonhos.filter(s=>!!s.dataFim).length/total, color:'rgba(94,196,168,.7)' },
+    { lbl:'Sem metas atrasadas',score: sonhos.filter(s=>!(s.metas||[]).some(m=>snIsLate(m.prazo,m.feita))).length/total, color:'rgba(232,134,74,.7)' },
+  ];
+  const healthScore = Math.round(factors.reduce((a,f)=>a+f.score,0)/factors.length*100);
+  const healthColor = healthScore >= 80 ? 'rgba(94,196,168,.8)' : healthScore >= 50 ? 'rgba(200,169,110,.8)' : 'rgba(224,107,139,.8)';
+  const healthLabel = healthScore >= 80 ? 'Excelente' : healthScore >= 60 ? 'Bom' : healthScore >= 40 ? 'Regular' : 'Atenção';
+
+  const hsvg = document.getElementById('san-health-svg');
+  if (hsvg) {
+    const hR = 36, hCx = 45, hCy = 45, hW = 10, hCirc = 2*Math.PI*hR;
+    hsvg.innerHTML =
+      `<circle cx="${hCx}" cy="${hCy}" r="${hR}" fill="none" stroke="rgba(255,255,255,.05)" stroke-width="${hW}"/>` +
+      `<circle cx="${hCx}" cy="${hCy}" r="${hR}" fill="none" stroke="${healthColor}" stroke-width="${hW}"
+        stroke-dasharray="${healthScore/100*hCirc} ${hCirc}"
+        stroke-dashoffset="${hCirc/4}"
+        transform="rotate(-90 ${hCx} ${hCy})"
+        style="transition:stroke-dasharray 1.3s cubic-bezier(.22,1,.36,1)"/>` +
+      `<text x="${hCx}" y="${hCy-2}" text-anchor="middle" fill="var(--text)" font-family="var(--font-display)" font-size="16" font-weight="700">${healthScore}</text>
+       <text x="${hCx}" y="${hCy+12}" text-anchor="middle" fill="${healthColor}" font-family="var(--font-mono)" font-size="8">${healthLabel}</text>`;
+  }
+  const hfEl = document.getElementById('san-health-factors');
+  if (hfEl) {
+    hfEl.innerHTML = factors.map(f =>
+      `<div class="san-health-factor">
+        <div class="san-health-factor-row">
+          <span class="san-health-factor-lbl">${f.lbl}</span>
+          <span class="san-health-factor-val">${Math.round(f.score*100)}%</span>
+        </div>
+        <div class="san-health-bar"><div class="san-health-fill" style="width:0%;background:${f.color}" data-w="${f.score*100}"></div></div>
+      </div>`
+    ).join('');
+    const lbl = document.getElementById('san-score-lbl');
+    if (lbl) lbl.textContent = healthLabel;
+    setTimeout(() => hfEl.querySelectorAll('.san-health-fill').forEach(el => el.style.width = el.dataset.w+'%'), 100);
+  }
+
+  const comPrazo = sonhos.filter(s => s.dataFim && !s.realizado)
+    .map(s => ({ ...s, diff: snDaysDiff(s.dataFim) }))
+    .sort((a,b) => a.diff - b.diff)
+    .slice(0, 5);
+  const dlEl = document.getElementById('san-deadline-list');
+  if (dlEl) {
+    if (!comPrazo.length) { dlEl.innerHTML = '<div style="color:var(--muted);font-size:12px;font-family:var(--font-mono)">Nenhum sonho com prazo definido.</div>'; }
+    else dlEl.innerHTML = comPrazo.map((s, i) => {
+      const diff = s.diff;
+      const diffTxt = diff < 0 ? `${Math.abs(diff)}d atrasado` : diff === 0 ? 'Vence hoje' : `${diff}d restantes`;
+      const diffColor = diff < 0 ? 'var(--accent4)' : diff <= 7 ? 'var(--accent1)' : 'var(--muted)';
+      const metas = s.metas||[];
+      const pct   = metas.length ? Math.round(metas.filter(m=>m.feita).length/metas.length*100) : 0;
+      return `<div class="san-rank-item" onclick="snOpenHub('${String(s.id)}');snCloseAnalytics()">
+        <div class="san-rank-pos">${i+1}</div>
+        <div class="san-rank-icon">${s.icon||'🌙'}</div>
+        <div class="san-rank-info">
+          <div class="san-rank-name">${s.titulo}</div>
+          <div class="san-rank-meta" style="color:${diffColor}">${diffTxt}</div>
+        </div>
+        <div class="san-rank-pct" style="color:${SN_CAT_COLORS[s.categoria]||'#7c6fcd'}">${pct}%</div>
+      </div>`;
+    }).join('');
+  }
+
+  const horizMap = {};
+  sonhos.forEach(s => { const h = s.horizonte||'Longo prazo'; horizMap[h]=(horizMap[h]||0)+1; });
+  const hOrder = ['1 ano','3 anos','5 anos','10 anos','Longo prazo'];
+  const hEntries = hOrder.filter(h=>horizMap[h]).map(h=>[h,horizMap[h]]);
+  const maxH = Math.max(...hEntries.map(e=>e[1]), 1);
+  const hEl = document.getElementById('san-horizonte-bars');
+  if (hEl) {
+    hEl.innerHTML = hEntries.map(([h,n]) =>
+      `<div class="san-bar-item">
+        <div class="san-bar-label" style="width:90px">⏳ ${h}</div>
+        <div class="san-bar-track"><div class="san-bar-fill" style="width:0%;background:rgba(124,111,205,.6)" data-w="${n/maxH*100}"></div></div>
+        <div class="san-bar-val">${n}</div>
+      </div>`
+    ).join('');
+    setTimeout(() => hEl.querySelectorAll('.san-bar-fill').forEach(el => el.style.width = el.dataset.w+'%'), 120);
+  }
+
+  const prioMap = {alta:0, media:0, baixa:0};
+  allMetas.forEach(m => { prioMap[m.prioridade||'media']++; });
+  const maxPr = Math.max(...Object.values(prioMap), 1);
+  const prioColors = {alta:'rgba(224,107,139,.6)',media:'rgba(200,169,110,.6)',baixa:'rgba(94,196,168,.6)'};
+  const prioLabels = {alta:'🔴 Alta prioridade',media:'🟡 Média prioridade',baixa:'🟢 Baixa prioridade'};
+  const mpEl = document.getElementById('san-metas-prio');
+  if (mpEl) {
+    mpEl.innerHTML = ['alta','media','baixa'].map(p =>
+      `<div class="san-bar-item">
+        <div class="san-bar-label">${prioLabels[p]}</div>
+        <div class="san-bar-track"><div class="san-bar-fill" style="width:0%;background:${prioColors[p]}" data-w="${prioMap[p]/maxPr*100}"></div></div>
+        <div class="san-bar-val">${prioMap[p]}</div>
+      </div>`
+    ).join('');
+    setTimeout(() => mpEl.querySelectorAll('.san-bar-fill').forEach(el => el.style.width = el.dataset.w+'%'), 140);
+  }
+
+  const tpEl = document.getElementById('san-top-progress');
+  if (tpEl) {
+    const ranked = sonhos.map(s => {
+      const m = s.metas||[];
+      const pct = m.length ? Math.round(m.filter(x=>x.feita).length/m.length*100) : 0;
+      return { ...s, pct };
+    }).sort((a,b)=>b.pct-a.pct).slice(0,5);
+    tpEl.innerHTML = ranked.map((s,i) =>
+      `<div class="san-rank-item" onclick="snOpenHub('${String(s.id)}');snCloseAnalytics()">
+        <div class="san-rank-pos">${i+1}</div>
+        <div class="san-rank-icon">${s.icon||'🌙'}</div>
+        <div class="san-rank-info">
+          <div class="san-rank-name">${s.titulo}</div>
+          <div class="san-rank-meta">${SN_CAT_LABELS[s.categoria]||s.categoria} · ${s.horizonte||'—'}</div>
+        </div>
+        <div class="san-rank-pct" style="color:${s.realizado?'var(--accent3)':SN_CAT_COLORS[s.categoria]||'#7c6fcd'}">${s.pct}%</div>
+      </div>`
+    ).join('');
+  }
+
+  // ── Risco de atraso (preditivo) ────────────────────────────────────────
+  const riskWrap = document.getElementById('san-risk-list');
+  if (riskWrap) {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const riskData = sonhos.filter(s => !s.realizado).map(s => {
+      const metas = s.metas || [];
+      const progresso = metas.length ? Math.round(metas.filter(m => m.feita).length / metas.length * 100) : 0;
+      let elapsed = 0;
+      let score = 0;
+      if (s.dataInicio && s.dataFim) {
+        const ini = new Date(s.dataInicio + 'T00:00:00');
+        const fim = new Date(s.dataFim + 'T00:00:00');
+        const span = Math.max(1, (fim - ini));
+        elapsed = Math.max(0, Math.min(100, Math.round(((today - ini) / span) * 100)));
+        score = Math.max(0, elapsed - progresso);
+        if (today > fim) score += 45;
+      } else if (s.dataFim) {
+        score = Math.max(0, 30 - Math.max(0, snDaysDiff(s.dataFim)));
+      } else {
+        score = 5;
+      }
+      let label = 'Baixo';
+      let cls = 'risk-low';
+      if (score >= 45) { label = 'Alto'; cls = 'risk-high'; }
+      else if (score >= 20) { label = 'Médio'; cls = 'risk-mid'; }
+      return { sonho: s, progresso, score, label, cls };
+    }).sort((a,b)=>b.score-a.score).slice(0,5);
+
+    riskWrap.innerHTML = !riskData.length
+      ? '<div style="color:var(--muted);font-size:12px;font-family:var(--font-mono)">Sem sonhos ativos para análise de risco.</div>'
+      : riskData.map((r, i) =>
+        `<div class="san-rank-item" onclick="snOpenHub('${String(r.sonho.id)}');snCloseAnalytics()">
+          <div class="san-rank-pos">${i+1}</div>
+          <div class="san-rank-icon">${r.sonho.icon||'🌙'}</div>
+          <div class="san-rank-info">
+            <div class="san-rank-name">${r.sonho.titulo}</div>
+            <div class="san-rank-meta">Progresso ${r.progresso}%</div>
+          </div>
+          <span class="risk-chip ${r.cls}">${r.label}</span>
+        </div>`
+      ).join('');
+  }
+
+  // ── Meta financeira integrada ──────────────────────────────────────────
+  const financeWrap = document.getElementById('san-finance-list');
+  if (financeWrap) {
+    const money = sonhos.filter(s => num(s.custo) > 0).map(s => {
+      const fi = buildFinanceInfo(s);
+      return { sonho: s, restante: fi.restante, media: fi.media, meses: fi.mesesPrev };
+    }).sort((a,b)=>b.restante-a.restante).slice(0,5);
+
+    financeWrap.innerHTML = !money.length
+      ? '<div style="color:var(--muted);font-size:12px;font-family:var(--font-mono)">Defina custo no sonho para ver projeções financeiras.</div>'
+      : money.map((m, i) => {
+        const restTxt = 'R$ ' + m.restante.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const prevTxt = m.meses === null ? 'sem histórico' : (m.meses + ' mes(es)');
+        return `<div class="san-rank-item" onclick="snOpenHub('${String(m.sonho.id)}');snCloseAnalytics()">
+          <div class="san-rank-pos">${i+1}</div>
+          <div class="san-rank-icon">${m.sonho.icon||'🌙'}</div>
+          <div class="san-rank-info">
+            <div class="san-rank-name">${m.sonho.titulo}</div>
+            <div class="san-rank-meta">Falta ${restTxt} • previsão: ${prevTxt}</div>
+          </div>
+          <div class="san-rank-pct" style="color:var(--accent1)">${m.media>0 ? 'R$ '+m.media.toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : '—'}</div>
+        </div>`;
+      }).join('');
+  }
+
+  // ── Resumo mensal automático ───────────────────────────────────────────
+  const monthWrap = document.getElementById('san-month-summary');
+  if (monthWrap) {
+    const now = new Date();
+    const m0 = new Date(now.getFullYear(), now.getMonth(), 1);
+    const m1 = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const metasMes = sonhos.reduce((acc, s) => acc + (s.metas||[]).filter(m => m.dataConclusao && new Date(m.dataConclusao) >= m0 && new Date(m.dataConclusao) < m1).length, 0);
+    const sonhosMes = sonhos.filter(s => s.createdAt && new Date(s.createdAt) >= m0 && new Date(s.createdAt) < m1).length;
+    const realizadosMes = sonhos.filter(s => s.realizadoAt && new Date(s.realizadoAt) >= m0 && new Date(s.realizadoAt) < m1).length;
+    const criticos = sonhos.filter(s => !s.realizado && s.dataFim).filter(s => {
+      const d = snDaysDiff(s.dataFim);
+      return d >= 0 && d <= 30;
+    }).length;
+
+    monthWrap.innerHTML =
+      `<div class="san-summary-item">
+        <div class="san-summary-title">Metas concluídas no mês</div>
+        <div class="san-summary-value">${metasMes}</div>
+      </div>
+      <div class="san-summary-item">
+        <div class="san-summary-title">Sonhos criados no mês</div>
+        <div class="san-summary-value">${sonhosMes}</div>
+      </div>
+      <div class="san-summary-item">
+        <div class="san-summary-title">Sonhos realizados no mês</div>
+        <div class="san-summary-value">${realizadosMes}</div>
+      </div>
+      <div class="san-summary-item">
+        <div class="san-summary-title">Prazos críticos (30 dias)</div>
+        <div class="san-summary-value" style="color:${criticos>0?'var(--accent4)':'var(--accent3)'}">${criticos}</div>
+      </div>`;
+  }
 }
 
 (function initSonhosPage() {
@@ -781,6 +1272,7 @@ function renderSonhos() {
     if (e.key === "Escape") {
       snCloseModal();
       hubDrawerClose();
+      snCloseAnalytics();
     }
   });
 }());
@@ -797,6 +1289,8 @@ Object.assign(globalThis, {
   snDeletar: snDeletar,
   snOpenHub: snOpenHub,
   snHubClose: snHubClose,
+  snOpenAnalytics: snOpenAnalytics,
+  snCloseAnalytics: snCloseAnalytics,
   snToggleRealizado: snToggleRealizado,
   snToggleMeta: snToggleMeta,
   hubDrawerOpen: hubDrawerOpen,
@@ -807,6 +1301,8 @@ Object.assign(globalThis, {
   hubDrawerDeletar: hubDrawerDeletar,
   hubToggleMetaForm: hubToggleMetaForm,
   hubAddMeta: hubAddMeta,
+  hubAddDeposito: hubAddDeposito,
+  hubDelDeposito: hubDelDeposito,
   hubToggleMeta: hubToggleMeta,
   hubDelMeta: hubDelMeta,
   hubToggleRealizado: hubToggleRealizado

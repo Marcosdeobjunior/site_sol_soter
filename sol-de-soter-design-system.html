@@ -4,24 +4,24 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/png" href="img/soldesoter_logo.png">
-<title>SÃ³l de SÃ³ter â€” Design System</title>
+<title>Sól de Sóter — Design System</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
 <style>
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   SÃ“L DE SÃ“TER â€” DESIGN SYSTEM
+/* """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+   SL DE STER — DESIGN SYSTEM
    Copie o bloco :root abaixo para qualquer projeto.
-   As fontes sÃ£o carregadas via Google Fonts (linha acima no <head>).
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+   As fontes são carregadas via Google Fonts (linha acima no <head>).
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""" */
 
-/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-   VARIÃVEIS â€” copie este bloco :root no seu CSS
-â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ——————————————————————————————————————————————————————————————————
+   VARIÃVEIS — copie este bloco :root no seu CSS
+—————————————————————————————————————————————————————————————————— */
 :root {
   /* Fundos */
   --bg:    #0d0d12;   /* fundo principal */
-  --bg2:   #13131c;   /* fundo secundÃ¡rio */
-  --bg3:   #1a1a27;   /* fundo terciÃ¡rio */
+  --bg2:   #13131c;   /* fundo secundário */
+  --bg3:   #1a1a27;   /* fundo terciário */
   --card:  #16161f;   /* cards */
 
   /* Bordas e texto */
@@ -34,7 +34,7 @@
   --accent2: #7c6fcd; /* violeta */
   --accent3: #5ec4a8; /* teal */
   --accent4: #e06b8b; /* rose */
-  --accent5: #e8864a; /* Ã¢mbar */
+  --accent5: #e8864a; /* âmbar */
   --accent6: #4ab0e8; /* sky */
 
   /* Tipografia */
@@ -46,9 +46,9 @@
   --radius: 16px;
 }
 
-/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+/* ——————————————————————————————————————————————————————————————————
    RESET MÃNIMO
-â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+—————————————————————————————————————————————————————————————————— */
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
 html, body {
@@ -60,11 +60,11 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-   CLASSES DE TIPOGRAFIA â€” use diretamente no HTML
-â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ——————————————————————————————————————————————————————————————————
+   CLASSES DE TIPOGRAFIA — use diretamente no HTML
+—————————————————————————————————————————————————————————————————— */
 
-/* TÃ­tulos */
+/* Títulos */
 .font-display          { font-family: var(--font-display); }
 .font-ui               { font-family: var(--font-ui); }
 .font-mono             { font-family: var(--font-mono); }
@@ -92,9 +92,9 @@ html, body {
 .text-amber            { color: var(--accent5); }
 .text-sky              { color: var(--accent6); }
 
-/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+/* ——————————————————————————————————————————————————————————————————
    COMPONENTES BASE
-â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+—————————————————————————————————————————————————————————————————— */
 
 /* Card */
 .card {
@@ -175,9 +175,9 @@ html, body {
   margin: 12px 0;
 }
 
-/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-   ESTILOS DA PÃGINA DE DOCUMENTAÃ‡ÃƒO (apenas para exibiÃ§Ã£o)
-â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ——————————————————————————————————————————————————————————————————
+   ESTILOS DA PÃGINA DE DOCUMENTA!Ã’O (apenas para exibição)
+—————————————————————————————————————————————————————————————————— */
 .ds-page {
   max-width: 900px;
   margin: 0 auto;
@@ -316,21 +316,21 @@ hr.ds-hr {
 
 <div class="ds-page">
 
-  <!-- â”€â”€ CabeÃ§alho â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+  <!-- —— Cabeçalho —————————————————————————————————————————————— -->
   <div style="margin-bottom:56px">
     <div class="ds-eyebrow">design system</div>
     <h1 class="text-display-xl" style="margin-bottom:8px">
-      <em class="font-display" style="color:var(--accent1)">SÃ³l</em> de SÃ³ter
+      <em class="font-display" style="color:var(--accent1)">Sól</em> de Sóter
     </h1>
-    <p class="text-mono-md text-muted">Fontes Â· Paleta Â· VariÃ¡veis CSS Â· Componentes</p>
+    <p class="text-mono-md text-muted">Fontes · Paleta · Variáveis CSS · Componentes</p>
     <div class="divider" style="margin-top:20px"></div>
   </div>
 
-  <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-       1. IMPORTAÃ‡ÃƒO DAS FONTES
-  â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+  <!-- """"""""""""""""""""""""""""""""""
+       1. IMPORTA!Ã’O DAS FONTES
+  """""""""""""""""""""""""""""""""" -->
   <div class="ds-section">
-    <div class="ds-eyebrow">01 â€” fontes</div>
+    <div class="ds-eyebrow">01 — fontes</div>
     <h2 class="ds-title">Tipografia</h2>
 
     <p class="ds-subtitle">Cole no &lt;head&gt; do seu HTML:</p>
@@ -342,15 +342,15 @@ hr.ds-hr {
     <!-- Playfair Display -->
     <div class="font-specimen">
       <div class="specimen-meta">
-        <span class="specimen-name">Playfair Display â€” var(--font-display)</span>
-        <span class="specimen-import">display Â· titles Â· quotes</span>
+        <span class="specimen-name">Playfair Display — var(--font-display)</span>
+        <span class="specimen-import">display · titles · quotes</span>
       </div>
       <div class="specimen-sample">
         <div style="font-family:'Playfair Display',serif;font-size:2.6rem;line-height:1.15;margin-bottom:10px">
-          O universo que vive em vocÃª
+          O universo que vive em você
         </div>
         <div style="font-family:'Playfair Display',serif;font-size:1.5rem;font-style:italic;color:var(--muted)">
-          "Ler Ã© sonhar pela mÃ£o de outrem."
+          "Ler é sonhar pela mão de outrem."
         </div>
       </div>
       <div class="specimen-weights">
@@ -364,15 +364,15 @@ hr.ds-hr {
     <!-- Syne -->
     <div class="font-specimen">
       <div class="specimen-meta">
-        <span class="specimen-name">Syne â€” var(--font-ui)</span>
-        <span class="specimen-import">UI Â· navigation Â· labels Â· body</span>
+        <span class="specimen-name">Syne — var(--font-ui)</span>
+        <span class="specimen-import">UI · navigation · labels · body</span>
       </div>
       <div class="specimen-sample">
         <div style="font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;letter-spacing:-.02em;margin-bottom:8px">
           SYNE EIGHT HUNDRED
         </div>
         <div style="font-family:'Syne',sans-serif;font-size:1rem;font-weight:400;color:var(--muted)">
-          Fonte geomÃ©trica de alta legibilidade para interfaces modernas e espaÃ§osas.
+          Fonte geométrica de alta legibilidade para interfaces modernas e espaçosas.
         </div>
       </div>
       <div class="specimen-weights">
@@ -386,15 +386,15 @@ hr.ds-hr {
     <!-- DM Mono -->
     <div class="font-specimen">
       <div class="specimen-meta">
-        <span class="specimen-name">DM Mono â€” var(--font-mono)</span>
-        <span class="specimen-import">code Â· labels Â· numbers Â· metadata</span>
+        <span class="specimen-name">DM Mono — var(--font-mono)</span>
+        <span class="specimen-import">code · labels · numbers · metadata</span>
       </div>
       <div class="specimen-sample">
         <div style="font-family:'DM Mono',monospace;font-size:1.1rem;font-weight:300;margin-bottom:8px">
           --accent1: #c8a96e; /* ouro */
         </div>
         <div style="font-family:'DM Mono',monospace;font-size:.85rem;color:var(--muted)">
-          01 Â· 02 Â· 03 Â· 99.9% Â· 3.141 Â· KB Â· MB Â· px
+          01 · 02 · 03 · 99.9% · 3.141 · KB · MB · px
         </div>
       </div>
       <div class="specimen-weights">
@@ -403,20 +403,20 @@ hr.ds-hr {
       </div>
     </div>
 
-    <!-- Escala tipogrÃ¡fica -->
-    <h3 style="font-size:13px;font-weight:700;margin:24px 0 12px">Escala tipogrÃ¡fica â€” classes utilitÃ¡rias</h3>
+    <!-- Escala tipográfica -->
+    <h3 style="font-size:13px;font-weight:700;margin:24px 0 12px">Escala tipográfica — classes utilitárias</h3>
     <div class="card" style="padding:0 20px">
       <div class="type-scale-row">
         <span class="type-scale-label">.text-display-xl</span>
-        <span class="text-display-xl">TÃ­tulo Principal</span>
+        <span class="text-display-xl">Título Principal</span>
       </div>
       <div class="type-scale-row">
         <span class="type-scale-label">.text-display-lg</span>
-        <span class="text-display-lg">TÃ­tulo SeÃ§Ã£o</span>
+        <span class="text-display-lg">Título Seção</span>
       </div>
       <div class="type-scale-row">
         <span class="type-scale-label">.text-display-md</span>
-        <span class="text-display-md">SubtÃ­tulo elegante</span>
+        <span class="text-display-md">Subtítulo elegante</span>
       </div>
       <div class="type-scale-row">
         <span class="type-scale-label">.text-display-sm</span>
@@ -432,34 +432,34 @@ hr.ds-hr {
       </div>
       <div class="type-scale-row">
         <span class="type-scale-label">.text-ui-md</span>
-        <span class="text-ui-md">UI Medium â€” labels</span>
+        <span class="text-ui-md">UI Medium — labels</span>
       </div>
       <div class="type-scale-row">
         <span class="type-scale-label">.text-ui-sm</span>
-        <span class="text-ui-sm">UI Small â€” corpo de texto</span>
+        <span class="text-ui-sm">UI Small — corpo de texto</span>
       </div>
       <div class="type-scale-row">
         <span class="type-scale-label">.text-ui-xs</span>
-        <span class="text-ui-xs">UI XSmall â€” eyebrow</span>
+        <span class="text-ui-xs">UI XSmall — eyebrow</span>
       </div>
       <div class="type-scale-row">
         <span class="type-scale-label">.text-mono-md</span>
-        <span class="text-mono-md">mono Â· 3.141 Â· #c8a96e</span>
+        <span class="text-mono-md">mono · 3.141 · #c8a96e</span>
       </div>
       <div class="type-scale-row" style="border:none">
         <span class="type-scale-label">.text-mono-sm</span>
-        <span class="text-mono-sm">mono sm Â· KB Â· 99% Â· 2024</span>
+        <span class="text-mono-sm">mono sm · KB · 99% · 2024</span>
       </div>
     </div>
   </div>
 
   <hr class="ds-hr">
 
-  <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  <!-- """"""""""""""""""""""""""""""""""
        2. PALETA DE CORES
-  â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+  """""""""""""""""""""""""""""""""" -->
   <div class="ds-section">
-    <div class="ds-eyebrow">02 â€” cores</div>
+    <div class="ds-eyebrow">02 — cores</div>
     <h2 class="ds-title">Paleta <em>de Acentos</em></h2>
 
     <div class="palette-grid">
@@ -498,7 +498,7 @@ hr.ds-hr {
       <div class="swatch">
         <div class="swatch-color" style="background:#e8864a"></div>
         <div class="swatch-info">
-          <div class="swatch-name" style="color:#e8864a">Ã‚mbar</div>
+          <div class="swatch-name" style="color:#e8864a">mbar</div>
           <div class="swatch-var">--accent5</div>
           <div class="swatch-hex">#e8864a</div>
         </div>
@@ -513,7 +513,7 @@ hr.ds-hr {
       </div>
     </div>
 
-    <h3 style="font-size:13px;font-weight:700;margin:24px 0 12px">Fundos &amp; SuperfÃ­cies</h3>
+    <h3 style="font-size:13px;font-weight:700;margin:24px 0 12px">Fundos &amp; Superfícies</h3>
     <div class="swatch-bg-grid">
       <div class="bg-swatch">
         <div class="bg-swatch-color" style="background:#020208;border:1px solid rgba(255,255,255,.12)"></div>
@@ -616,23 +616,23 @@ hr.ds-hr {
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px">
       <div style="border-radius:12px;overflow:hidden;border:1px solid var(--border)">
         <div style="height:60px;background:linear-gradient(135deg,var(--accent1),var(--accent2))"></div>
-        <div style="padding:10px 12px;background:var(--card);font-family:var(--font-mono);font-size:10px;color:var(--muted)">accent1 â†’ accent2</div>
+        <div style="padding:10px 12px;background:var(--card);font-family:var(--font-mono);font-size:10px;color:var(--muted)">accent1   accent2</div>
       </div>
       <div style="border-radius:12px;overflow:hidden;border:1px solid var(--border)">
         <div style="height:60px;background:linear-gradient(135deg,var(--accent2),var(--accent4))"></div>
-        <div style="padding:10px 12px;background:var(--card);font-family:var(--font-mono);font-size:10px;color:var(--muted)">accent2 â†’ accent4</div>
+        <div style="padding:10px 12px;background:var(--card);font-family:var(--font-mono);font-size:10px;color:var(--muted)">accent2   accent4</div>
       </div>
       <div style="border-radius:12px;overflow:hidden;border:1px solid var(--border)">
         <div style="height:60px;background:linear-gradient(90deg,var(--accent1),var(--accent3))"></div>
-        <div style="padding:10px 12px;background:var(--card);font-family:var(--font-mono);font-size:10px;color:var(--muted)">accent1 â†’ accent3</div>
+        <div style="padding:10px 12px;background:var(--card);font-family:var(--font-mono);font-size:10px;color:var(--muted)">accent1   accent3</div>
       </div>
       <div style="border-radius:12px;overflow:hidden;border:1px solid var(--border)">
         <div style="height:60px;background:linear-gradient(90deg,var(--accent3),var(--accent6))"></div>
-        <div style="padding:10px 12px;background:var(--card);font-family:var(--font-mono);font-size:10px;color:var(--muted)">accent3 â†’ accent6</div>
+        <div style="padding:10px 12px;background:var(--card);font-family:var(--font-mono);font-size:10px;color:var(--muted)">accent3   accent6</div>
       </div>
       <div style="border-radius:12px;overflow:hidden;border:1px solid var(--border)">
         <div style="height:60px;background:linear-gradient(180deg,#08082a,#020208)"></div>
-        <div style="padding:10px 12px;background:var(--card);font-family:var(--font-mono);font-size:10px;color:var(--muted)">espaÃ§o profundo</div>
+        <div style="padding:10px 12px;background:var(--card);font-family:var(--font-mono);font-size:10px;color:var(--muted)">espaço profundo</div>
       </div>
       <div style="border-radius:12px;overflow:hidden;border:1px solid var(--border)">
         <div style="height:60px;background:linear-gradient(135deg,rgba(124,111,205,.18),rgba(200,169,110,.1))"></div>
@@ -643,50 +643,50 @@ hr.ds-hr {
 
   <hr class="ds-hr">
 
-  <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-       3. CSS VARIÃVEIS â€” BLOCO PARA COPIAR
-  â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+  <!-- """"""""""""""""""""""""""""""""""
+       3. CSS VARIÃVEIS — BLOCO PARA COPIAR
+  """""""""""""""""""""""""""""""""" -->
   <div class="ds-section">
-    <div class="ds-eyebrow">03 â€” variÃ¡veis</div>
+    <div class="ds-eyebrow">03 — variáveis</div>
     <h2 class="ds-title">Bloco <em>:root</em> para copiar</h2>
-    <p class="ds-subtitle">Cole no inÃ­cio do seu arquivo CSS:</p>
+    <p class="ds-subtitle">Cole no início do seu arquivo CSS:</p>
     <div class="ds-code"><span class="ck">:root</span> {
-  <span class="cm">/* â”€â”€ Fundos â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */</span>
+  <span class="cm">/* —— Fundos ———————————————————— */</span>
   <span class="ck">--bg</span>:    <span class="cv">#0d0d12</span>;   <span class="cm">/* fundo principal */</span>
-  <span class="ck">--bg2</span>:   <span class="cv">#13131c</span>;   <span class="cm">/* fundo secundÃ¡rio */</span>
-  <span class="ck">--bg3</span>:   <span class="cv">#1a1a27</span>;   <span class="cm">/* fundo terciÃ¡rio */</span>
+  <span class="ck">--bg2</span>:   <span class="cv">#13131c</span>;   <span class="cm">/* fundo secundário */</span>
+  <span class="ck">--bg3</span>:   <span class="cv">#1a1a27</span>;   <span class="cm">/* fundo terciário */</span>
   <span class="ck">--card</span>:  <span class="cv">#16161f</span>;   <span class="cm">/* cards */</span>
 
-  <span class="cm">/* â”€â”€ Bordas & texto â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */</span>
+  <span class="cm">/* —— Bordas & texto ———————————— */</span>
   <span class="ck">--border</span>: <span class="cv">rgba(255,255,255,0.07)</span>;
   <span class="ck">--text</span>:   <span class="cv">#e8e4f0</span>;
   <span class="ck">--muted</span>:  <span class="cv">#7a7590</span>;
 
-  <span class="cm">/* â”€â”€ Acentos â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */</span>
+  <span class="cm">/* —— Acentos ——————————————————— */</span>
   <span class="ck">--accent1</span>: <span class="cv">#c8a96e</span>; <span class="cm">/* ouro    */</span>
   <span class="ck">--accent2</span>: <span class="cv">#7c6fcd</span>; <span class="cm">/* violeta */</span>
   <span class="ck">--accent3</span>: <span class="cv">#5ec4a8</span>; <span class="cm">/* teal    */</span>
   <span class="ck">--accent4</span>: <span class="cv">#e06b8b</span>; <span class="cm">/* rose    */</span>
-  <span class="ck">--accent5</span>: <span class="cv">#e8864a</span>; <span class="cm">/* Ã¢mbar   */</span>
+  <span class="ck">--accent5</span>: <span class="cv">#e8864a</span>; <span class="cm">/* âmbar   */</span>
   <span class="ck">--accent6</span>: <span class="cv">#4ab0e8</span>; <span class="cm">/* sky     */</span>
 
-  <span class="cm">/* â”€â”€ Tipografia â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */</span>
+  <span class="cm">/* —— Tipografia ———————————————— */</span>
   <span class="ck">--font-display</span>: <span class="cv">'Playfair Display'</span>, Georgia, serif;
   <span class="ck">--font-ui</span>:      <span class="cv">'Syne'</span>, system-ui, sans-serif;
   <span class="ck">--font-mono</span>:    <span class="cv">'DM Mono'</span>, 'Courier New', monospace;
 
-  <span class="cm">/* â”€â”€ Misc â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */</span>
+  <span class="cm">/* —— Misc —————————————————————— */</span>
   <span class="ck">--radius</span>: <span class="cv">16px</span>;
 }</div>
   </div>
 
   <hr class="ds-hr">
 
-  <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  <!-- """"""""""""""""""""""""""""""""""
        4. COMPONENTES
-  â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+  """""""""""""""""""""""""""""""""" -->
   <div class="ds-section">
-    <div class="ds-eyebrow">04 â€” componentes</div>
+    <div class="ds-eyebrow">04 — componentes</div>
     <h2 class="ds-title">Componentes <em>Base</em></h2>
 
     <!-- BotÃµes -->
@@ -707,7 +707,7 @@ hr.ds-hr {
       <span class="badge text-violet">Violeta</span>
       <span class="badge text-teal">Teal</span>
       <span class="badge text-rose">Rose</span>
-      <span class="badge text-amber">Ã‚mbar</span>
+      <span class="badge text-amber">mbar</span>
       <span class="badge text-sky">Sky</span>
       <span class="badge text-muted">Muted</span>
     </div>
@@ -716,9 +716,9 @@ hr.ds-hr {
     <h3 style="font-size:13px;font-weight:700;margin:20px 0 12px">Cards</h3>
     <div class="comp-grid">
       <div class="card">
-        <div class="text-ui-xs text-muted" style="margin-bottom:4px">card padrÃ£o</div>
-        <div class="text-display-md">TÃ­tulo do Card</div>
-        <p class="text-ui-sm text-muted" style="margin-top:8px">ConteÃºdo do card com texto secundÃ¡rio usando a fonte UI.</p>
+        <div class="text-ui-xs text-muted" style="margin-bottom:4px">card padrão</div>
+        <div class="text-display-md">Título do Card</div>
+        <p class="text-ui-sm text-muted" style="margin-top:8px">Conteúdo do card com texto secundário usando a fonte UI.</p>
       </div>
       <div class="glass" style="padding:20px">
         <div class="text-ui-xs text-muted" style="margin-bottom:4px">glass panel</div>
@@ -730,14 +730,14 @@ hr.ds-hr {
     <!-- Inputs -->
     <h3 style="font-size:13px;font-weight:700;margin:20px 0 12px">Inputs</h3>
     <div style="display:flex;flex-direction:column;gap:10px;max-width:400px">
-      <input class="inp" placeholder="Placeholder padrÃ£o">
+      <input class="inp" placeholder="Placeholder padrão">
       <input class="inp" value="Valor preenchido" style="border-color:rgba(200,169,110,.4)">
-      <textarea class="inp" placeholder="Textareaâ€¦" style="min-height:70px;resize:vertical"></textarea>
+      <textarea class="inp" placeholder="Textareaâ¬¦" style="min-height:70px;resize:vertical"></textarea>
     </div>
 
     <!-- Gradiente de texto -->
     <h3 style="font-size:13px;font-weight:700;margin:20px 0 12px">Gradiente de texto</h3>
-    <div class="text-display-lg gradient-text" style="margin-bottom:8px">Gradiente accent1 â†’ accent2</div>
+    <div class="text-display-lg gradient-text" style="margin-bottom:8px">Gradiente accent1   accent2</div>
     <div class="ds-code">&lt;<span class="ck">span</span> <span class="cv">class</span>=<span class="cv">"gradient-text"</span>&gt;Seu texto aqui&lt;/<span class="ck">span</span>&gt;</div>
 
     <!-- Divisor -->
@@ -746,9 +746,9 @@ hr.ds-hr {
     <div class="ds-code">&lt;<span class="ck">div</span> <span class="cv">class</span>=<span class="cv">"divider"</span>&gt;&lt;/<span class="ck">div</span>&gt;</div>
   </div>
 
-  <!-- â”€â”€ RodapÃ© â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+  <!-- —— Rodapé ————————————————————————————————————————————————— -->
   <div style="text-align:center;padding-top:20px;border-top:1px solid var(--border)">
-    <div class="text-mono-sm text-muted">SÃ³l de SÃ³ter Â· Design System Â· <span id="year"></span></div>
+    <div class="text-mono-sm text-muted">Sól de Sóter · Design System · <span id="year"></span></div>
   </div>
 
 </div>
@@ -756,4 +756,6 @@ hr.ds-hr {
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
 </body>
 </html>
+
+
 

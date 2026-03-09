@@ -14,7 +14,7 @@
     background: #020208;
   }
 
-  /* â”€â”€ Canvas fixo, cobre tudo â”€â”€ */
+  /* —— Canvas fixo, cobre tudo —— */
   #bg-canvas {
     position: fixed;
     inset: 0;
@@ -24,8 +24,8 @@
     z-index: 0;
   }
 
-  /* â”€â”€ Exemplo de conteÃºdo sobre o fundo â”€â”€
-     Remova ou substitua pelo seu prÃ³prio HTML */
+  /* —— Exemplo de conteúdo sobre o fundo ——
+     Remova ou substitua pelo seu próprio HTML */
   .demo-content {
     position: relative;
     z-index: 1;
@@ -54,43 +54,43 @@
     letter-spacing: .12em;
     font-style: italic;
   }
-  /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* ——————————————————————————————————— */
 </style>
 </head>
 <body>
 
 <canvas id="bg-canvas"></canvas>
 
-<!-- Substitua este bloco pelo seu prÃ³prio conteÃºdo -->
+<!-- Substitua este bloco pelo seu próprio conteúdo -->
 <div class="demo-content">
-  <h1>Seu conteÃºdo aqui</h1>
+  <h1>Seu conteúdo aqui</h1>
   <p>mova o mouse para interagir com as estrelas</p>
 </div>
 
 <script>
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-//  STARFIELD BACKGROUND â€” standalone, sem dependÃªncias
+// """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+//  STARFIELD BACKGROUND — standalone, sem dependências
 //  
 //  COMO USAR:
 //    1. Inclua <canvas id="bg-canvas"></canvas> no seu HTML
 //    2. Adicione ao CSS:  #bg-canvas { position:fixed; inset:0; z-index:0; }
 //    3. Cole este <script> antes do </body>
 //
-//  CONFIGURAÃ‡Ã•ES (edite as constantes abaixo):
-//    STAR_COUNT    â€” quantidade de estrelas (padrÃ£o 320)
-//    SHOOT_INTERVAL â€” intervalo entre estrelas cadentes em ms (padrÃ£o 4000)
-//    CONNECT_DIST  â€” distÃ¢ncia mÃ¡xima para linhas de constelaÃ§Ã£o (padrÃ£o 100)
-//    MOUSE_REPEL   â€” raio de repulsÃ£o do mouse em px (padrÃ£o 90)
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+//  CONFIGURA!"ES (edite as constantes abaixo):
+//    STAR_COUNT    — quantidade de estrelas (padrão 320)
+//    SHOOT_INTERVAL — intervalo entre estrelas cadentes em ms (padrão 4000)
+//    CONNECT_DIST  — distância máxima para linhas de constelação (padrão 100)
+//    MOUSE_REPEL   — raio de repulsão do mouse em px (padrão 90)
+// """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 (function () {
 
-  // â”€â”€ ConfiguraÃ§Ãµes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // —— ConfiguraçÃµes ——————————————————————————————————————————————
   const STAR_COUNT     = 320;
   const PARALLAX_LAYERS = 3;
   const SHOOT_INTERVAL = 4000;   // ms entre estrelas cadentes
-  const CONNECT_DIST   = 100;    // px para linhas de constelaÃ§Ã£o
-  const MOUSE_REPEL    = 90;     // px de raio de repulsÃ£o
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  const CONNECT_DIST   = 100;    // px para linhas de constelação
+  const MOUSE_REPEL    = 90;     // px de raio de repulsão
+  // ———————————————————————————————————————————————————————————————
 
   const canvas = document.getElementById('bg-canvas');
   const ctx    = canvas.getContext('2d');
@@ -107,7 +107,7 @@
 
   function rand(a, b) { return a + Math.random() * (b - a); }
 
-  // â”€â”€ Inicializa estrelas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // —— Inicializa estrelas ———————————————————————————————————————
   function initStars() {
     stars = [];
     for (let i = 0; i < STAR_COUNT; i++) {
@@ -128,7 +128,7 @@
     }
   }
 
-  // â”€â”€ Estrela cadente â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // —— Estrela cadente ——————————————————————————————————————————
   function spawnShoot() {
     shoots.push({
       x:     rand(W * 0.2, W),
@@ -142,7 +142,7 @@
   setInterval(spawnShoot, SHOOT_INTERVAL);
   setTimeout(spawnShoot, 800);
 
-  // â”€â”€ Nebulosas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // —— Nebulosas ————————————————————————————————————————————————
   function drawNebula(cx, cy, r, color) {
     const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
     g.addColorStop(0, color);
@@ -153,7 +153,7 @@
     ctx.fill();
   }
 
-  // â”€â”€ Linhas de constelaÃ§Ã£o â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // —— Linhas de constelação ————————————————————————————————————
   function drawConstellations() {
     ctx.save();
     for (let i = 0; i < stars.length; i++) {
@@ -175,7 +175,7 @@
     ctx.restore();
   }
 
-  // â”€â”€ Brilho do mouse â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // —— Brilho do mouse ——————————————————————————————————————————
   function drawMouseGlow() {
     if (mouse.x < 0 || mouse.x > W) return;
     const grad = ctx.createRadialGradient(
@@ -190,11 +190,11 @@
     ctx.fill();
   }
 
-  // â”€â”€ Loop principal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // —— Loop principal ———————————————————————————————————————————
   function frame() {
     ctx.clearRect(0, 0, W, H);
 
-    // Gradiente de fundo â€” espaÃ§o profundo
+    // Gradiente de fundo — espaço profundo
     const bg = ctx.createRadialGradient(
       W * 0.35, H * 0.3, 0,
       W * 0.5,  H * 0.5, Math.max(W, H) * 0.9
@@ -215,12 +215,12 @@
 
     // Estrelas
     for (const s of stars) {
-      // CintilaÃ§Ã£o
+      // Cintilação
       s.alpha += s.twinkleSpeed * s.twinkleDir;
       if (s.alpha >= 1)    { s.alpha = 1;    s.twinkleDir = -1; }
       if (s.alpha <= 0.15) { s.alpha = 0.15; s.twinkleDir =  1; }
 
-      // RepulsÃ£o do mouse
+      // Repulsão do mouse
       const mx = mouse.x - s.x;
       const my = mouse.y - s.y;
       const md = Math.sqrt(mx * mx + my * my);
@@ -285,14 +285,14 @@
     requestAnimationFrame(frame);
   }
 
-  // â”€â”€ Resize â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // —— Resize ———————————————————————————————————————————————————
   function resize() {
     W = canvas.width  = window.innerWidth;
     H = canvas.height = window.innerHeight;
     initStars();
   }
 
-  // â”€â”€ Eventos â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // —— Eventos ——————————————————————————————————————————————————
   window.addEventListener('resize', resize);
   window.addEventListener('mousemove',  e => { mouse.x = e.clientX; mouse.y = e.clientY; });
   window.addEventListener('mouseleave', () => { mouse.x = -9999; mouse.y = -9999; });
@@ -302,7 +302,7 @@
   }, { passive: true });
   window.addEventListener('touchend', () => { mouse.x = -9999; mouse.y = -9999; });
 
-  // â”€â”€ Inicializa â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // —— Inicializa ———————————————————————————————————————————————
   resize();
   frame();
 
@@ -310,4 +310,6 @@
 </script>
 </body>
 </html>
+
+
 

@@ -28,8 +28,181 @@ body {
 }
 
 .app-content {
-  max-width: 1180px;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
+  padding-top: 58px;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.dreams-carousel {
+  position: relative;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  margin-bottom: 24px;
+}
+
+.dreams-carousel::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 120px;
+  pointer-events: none;
+  z-index: 4;
+  background: linear-gradient(180deg, rgba(13, 13, 18, 0) 0%, rgba(13, 13, 18, 0.62) 55%, var(--bg) 100%);
+}
+
+.dreams-stage {
+  position: relative;
+  min-height: 560px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  border-bottom: 0;
+  background: radial-gradient(circle at 20% 35%, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.03) 34%, rgba(8, 8, 14, 0.92) 68%),
+    linear-gradient(120deg, rgba(18, 16, 10, 0.88), rgba(8, 12, 22, 0.88));
+  overflow: hidden;
+}
+
+.dreams-stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 15%, rgba(255, 255, 255, 0.2), transparent 38%);
+  filter: blur(10px);
+}
+
+.dreams-stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(6, 6, 10, 0.12) 0%, rgba(6, 6, 10, 0.76) 100%);
+}
+
+.dreams-frame {
+  position: relative;
+  z-index: 2;
+  width: min(1180px, 92vw);
+  min-height: 490px;
+  margin: 34px auto;
+  border: 2px solid rgba(255, 255, 255, 0.56);
+  display: flex;
+  align-items: flex-end;
+  padding: 44px 38px;
+}
+
+.dreams-inner-line {
+  position: absolute;
+  inset: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  pointer-events: none;
+}
+
+.dreams-content {
+  position: relative;
+  max-width: 760px;
+  z-index: 2;
+}
+
+.dreams-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  padding: 0 10px;
+  background: #d2d839;
+  color: #111;
+  font-family: var(--font-ui);
+  font-weight: 800;
+  font-size: 13px;
+  text-transform: capitalize;
+  margin-bottom: 12px;
+}
+
+.dreams-content h2 {
+  font-size: clamp(38px, 5.4vw, 76px);
+  line-height: 0.94;
+  font-family: var(--font-ui);
+  font-weight: 800;
+  color: #fff;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+  letter-spacing: -0.02em;
+}
+
+.dreams-content p {
+  font-size: clamp(18px, 2.2vw, 34px);
+  color: rgba(255, 255, 255, 0.92);
+  font-family: var(--font-ui);
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.dreams-cta {
+  display: inline-block;
+  text-decoration: none;
+  color: #fff;
+  font-family: var(--font-ui);
+  font-size: 28px;
+  font-weight: 800;
+  text-transform: uppercase;
+  border-bottom: 4px solid #d2d839;
+  line-height: 1;
+  padding-bottom: 5px;
+}
+
+.dreams-thumbs {
+  position: absolute;
+  right: 28px;
+  bottom: 16px;
+  display: flex;
+  gap: 8px;
+  z-index: 2;
+}
+
+.dream-thumb {
+  width: 84px;
+  height: 44px;
+  border: 2px solid transparent;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.dream-thumb.active {
+  border-color: #d2d839;
+}
+
+.dream-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.dreams-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 3;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.44);
+  color: #fff;
+  font-size: 30px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.dreams-nav.prev {
+  left: 18px;
+}
+
+.dreams-nav.next {
+  right: 18px;
 }
 
 .hero {
@@ -40,7 +213,8 @@ body {
   border-radius: var(--radius);
   padding: clamp(28px, 5vw, 56px);
   text-align: center;
-  margin-bottom: 18px;
+  margin: 0 auto 18px;
+  width: min(1180px, calc(100vw - 80px));
 }
 
 .hero-eyebrow {
@@ -78,6 +252,8 @@ body {
   display: grid;
   gap: 12px;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: min(1180px, calc(100vw - 80px));
+  margin: 0 auto;
 }
 
 .card {
@@ -102,6 +278,42 @@ body {
 }
 
 @media (max-width: 900px) {
+  .app-content {
+    padding-top: 58px;
+  }
+
+  .dreams-carousel::after {
+    height: 92px;
+  }
+
+  .hero,
+  .cards-grid {
+    width: min(1180px, calc(100vw - 32px));
+  }
+
+  .dreams-stage {
+    min-height: 460px;
+  }
+
+  .dreams-frame {
+    min-height: 390px;
+    padding: 26px 22px;
+  }
+
+  .dreams-content p {
+    font-size: clamp(14px, 4vw, 22px);
+  }
+
+  .dreams-cta {
+    font-size: 20px;
+    border-bottom-width: 3px;
+  }
+
+  .dream-thumb {
+    width: 62px;
+    height: 34px;
+  }
+
   .cards-grid {
     grid-template-columns: 1fr;
   }

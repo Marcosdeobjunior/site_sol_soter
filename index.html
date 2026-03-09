@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/png" href="img/soldesoter_logo.png">
-  <title>Sol de SÃ³ter</title>
+  <title>Sol de Sóter</title>
   <script>
     (function () {
       var allow = sessionStorage.getItem("soter_allow_index");
@@ -26,24 +26,41 @@
   <div data-app-header></div>
 
   <main class="app-content">
+    <section class="dreams-carousel" id="dreams-carousel">
+      <div class="dreams-stage" id="dreams-stage">
+        <button class="dreams-nav prev" id="dreams-prev" type="button" aria-label="Anterior">‹</button>
+        <button class="dreams-nav next" id="dreams-next" type="button" aria-label="Próximo">›</button>
+        <div class="dreams-frame">
+          <div class="dreams-inner-line"></div>
+          <div class="dreams-content">
+            <span class="dreams-tag" id="dreams-tag">Pessoal</span>
+            <h2 id="dreams-title">Nenhum sonho cadastrado</h2>
+            <p id="dreams-subtitle">Adicione seus sonhos para exibir aqui.</p>
+            <a class="dreams-cta" id="dreams-cta" href="sonhos.html">Abrir sonhos</a>
+          </div>
+          <div class="dreams-thumbs" id="dreams-thumbs"></div>
+        </div>
+      </div>
+    </section>
+
     <section class="hero">
-      <p class="hero-eyebrow">âœ¦ ESPAÃ‡O PESSOAL âœ¦</p>
-      <h1><em>SÃ³l</em> de SÃ³ter</h1>
-      <p class="hero-subtitle">O universo que vive em vocÃª</p>
+      <p class="hero-eyebrow">✦ ESPAÇO PESSOAL ✦</p>
+      <h1><em>Sól</em> de Sóter</h1>
+      <p class="hero-subtitle">O universo que vive em você</p>
     </section>
 
     <section class="cards-grid">
       <article class="card">
         <h2>Biblioteca</h2>
-        <p>Livros, filmes e mangÃ¡s em um sÃ³ lugar.</p>
+        <p>Livros, filmes e mangás em um só lugar.</p>
       </article>
       <article class="card">
         <h2>Pessoal</h2>
-        <p>Sonhos, viagens, wishlist e finanÃ§as.</p>
+        <p>Sonhos, viagens, wishlist e finanças.</p>
       </article>
       <article class="card">
         <h2>Planejamento</h2>
-        <p>Tarefas, metas e progresso diÃ¡rio.</p>
+        <p>Tarefas, metas e progresso diário.</p>
       </article>
     </section>
   </main>
@@ -53,4 +70,5 @@
   <script src="js/index.js"></script>
 </body>
 </html>
+
 

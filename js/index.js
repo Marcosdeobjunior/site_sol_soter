@@ -196,8 +196,127 @@
     }
   }, { passive: true });
 
+  function getDreamItems() {
+    var state = window.SoterStorage && window.SoterStorage.getState ? window.SoterStorage.getState() : null;
+    var data = state && state.data ? state.data : {};
+    var raw = null;
+    var keys = ["sonhos", "sonhosItems", "dreams", "dreamItems", "listaSonhos"];
+    for (var i = 0; i < keys.length; i += 1) {
+      if (Array.isArray(data[keys[i]])) {
+        raw = data[keys[i]];
+        break;
+      }
+    }
+    if (!raw || !raw.length) return [];
+
+    return raw.map(function (item, idx) {
+      var title = String(item.titulo || item.title || item.nome || item.name || ("Sonho " + (idx + 1)));
+      var description = String(item.descricao || item.description || item.resumo || item.obs || "Sem descrição.");
+      var tag = String(item.categoria || item.area || item.tipo || "Pessoal");
+      var image = item.imagem || item.image || item.img || item.capa || "";
+      return {
+        title: title,
+        description: description,
+        tag: tag,
+        image: image
+      };
+    });
+  }
+
+  function defaultDreamGradient(index) {
+    var presets = [
+      "radial-gradient(circle at 20% 35%, rgba(255,255,255,0.26), rgba(255,255,255,0.05) 34%, rgba(8,8,14,0.92) 68%), linear-gradient(120deg, rgba(38,28,12,0.85), rgba(8,12,22,0.88))",
+      "radial-gradient(circle at 68% 28%, rgba(255,255,255,0.2), rgba(255,255,255,0.04) 36%, rgba(8,8,14,0.92) 70%), linear-gradient(120deg, rgba(22,34,46,0.86), rgba(28,18,40,0.88))",
+      "radial-gradient(circle at 50% 24%, rgba(255,255,255,0.22), rgba(255,255,255,0.05) 33%, rgba(8,8,14,0.92) 69%), linear-gradient(120deg, rgba(30,18,12,0.85), rgba(16,28,18,0.88))"
+    ];
+    return presets[index % presets.length];
+  }
+
+  function initDreamCarousel() {
+    var stage = document.getElementById("dreams-stage");
+    var title = document.getElementById("dreams-title");
+    var subtitle = document.getElementById("dreams-subtitle");
+    var tag = document.getElementById("dreams-tag");
+    var cta = document.getElementById("dreams-cta");
+    var thumbs = document.getElementById("dreams-thumbs");
+    var prev = document.getElementById("dreams-prev");
+    var next = document.getElementById("dreams-next");
+    if (!stage || !title || !subtitle || !tag || !cta || !thumbs || !prev || !next) return;
+
+    var items = getDreamItems();
+    var hasItems = items.length > 0;
+    var idx = 0;
+
+    if (!hasItems) {
+      items = [{
+        title: "Nenhum sonho cadastrado",
+        description: "Adicione seus sonhos para exibir aqui.",
+        tag: "Pessoal",
+        image: ""
+      }];
+      prev.style.display = "none";
+      next.style.display = "none";
+      thumbs.style.display = "none";
+    }
+
+    function renderThumbs() {
+      if (!hasItems) return;
+      thumbs.innerHTML = items.slice(0, 6).map(function (item, thumbIdx) {
+        var active = thumbIdx === idx ? "active" : "";
+        if (item.image) {
+          return '<button class="dream-thumb ' + active + '" type="button" data-idx="' + thumbIdx + '"><img src="' + item.image + '" alt=""></button>';
+        }
+        return '<button class="dream-thumb ' + active + '" type="button" data-idx="' + thumbIdx + '" style="background:' + defaultDreamGradient(thumbIdx) + '"></button>';
+      }).join("");
+      thumbs.querySelectorAll("[data-idx]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          idx = Number(btn.getAttribute("data-idx")) || 0;
+          render();
+        });
+      });
+    }
+
+    function render() {
+      var item = items[idx];
+      title.textContent = item.title.toUpperCase();
+      subtitle.textContent = item.description;
+      tag.textContent = item.tag;
+      cta.textContent = hasItems ? "Ver sonhos" : "Abrir sonhos";
+      cta.href = "sonhos.html";
+      if (item.image) {
+        stage.style.backgroundImage = "linear-gradient(180deg, rgba(6,6,10,0.1), rgba(6,6,10,0.75)), url('" + item.image.replace(/'/g, "\\'") + "')";
+        stage.style.backgroundSize = "cover";
+        stage.style.backgroundPosition = "center";
+      } else {
+        stage.style.backgroundImage = defaultDreamGradient(idx);
+        stage.style.backgroundSize = "auto";
+        stage.style.backgroundPosition = "center";
+      }
+      renderThumbs();
+    }
+
+    prev.addEventListener("click", function () {
+      idx = (idx - 1 + items.length) % items.length;
+      render();
+    });
+    next.addEventListener("click", function () {
+      idx = (idx + 1) % items.length;
+      render();
+    });
+
+    if (hasItems && items.length > 1) {
+      setInterval(function () {
+        idx = (idx + 1) % items.length;
+        render();
+      }, 5000);
+    }
+
+    render();
+  }
+
   resize();
   setInterval(spawnShoot, SHOOT_INTERVAL);
   setTimeout(spawnShoot, 800);
+  initDreamCarousel();
   frame();
 }());

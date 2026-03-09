@@ -398,6 +398,9 @@
   .upload-hint .uh-text { line-height:1.5; font-size:11px; }
   .upload-hint .uh-sub { font-size:9px; opacity:.4; font-family:var(--font-mono); letter-spacing:1px; }
   #modal-img-input { display:none; }
+  .img-url-row { display:flex; gap:6px; width:100%; }
+  .img-url-row .inp { min-width:0; font-size:11px; padding:7px 9px; }
+  .img-url-row .btn { padding:7px 10px; font-size:11px; white-space:nowrap; }
   .img-change-btn { position:absolute; bottom:8px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,.8); border:1px solid rgba(255,255,255,.18); color:rgba(255,255,255,.85); font-size:10px; font-family:var(--font-mono); letter-spacing:.8px; padding:4px 12px; border-radius:20px; cursor:pointer; display:none; white-space:nowrap; z-index:2; transition:all .2s; backdrop-filter:blur(4px); }
   .img-upload-zone.has-img:hover .img-change-btn { display:block; }
 
@@ -605,6 +608,10 @@
           <div class="img-change-btn">✎ trocar</div>
         </div>
         <input type="file" id="modal-img-input" accept="image/*" onchange="handleImgUpload(event)">
+        <div class="img-url-row">
+          <input class="inp" id="m-img-url" type="url" placeholder="https://... capa da web" onkeydown="if(event.key==='Enter'){event.preventDefault();applyImgUrl();}">
+          <button class="btn btn-ghost" type="button" onclick="applyImgUrl()">Usar</button>
+        </div>
         <label class="fav-toggle">
           <input type="checkbox" id="m-fav" onchange="updateFavToggle(this)">
           <span class="fav-icon">🤍</span>
@@ -1592,6 +1599,8 @@ function openModal(tracker, editId = null) {
 
   ['m-titulo','m-autor','m-genero','m-obs','m-paginas','m-atual-pag','m-cap-atual','m-cap-total','m-temp-atual','m-ep-atual','m-temp-total','m-ep-total']
     .forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  const imgUrlInput = document.getElementById('m-img-url');
+  if (imgUrlInput) imgUrlInput.value = '';
   document.getElementById('m-fav').checked = false;
   document.querySelector('.fav-toggle .fav-icon').textContent = '🤍';
   resetModalStars(); updateModalProgress(); updateModalHeroImage('');
@@ -1632,6 +1641,7 @@ function openModal(tracker, editId = null) {
       }
       if (tracker==='mangas') { document.getElementById('m-cap-atual').value=item.capAtual||''; document.getElementById('m-cap-total').value=item.capTotal||''; }
       if (item.img) { modalImgData=item.img; document.getElementById('modal-preview').src=item.img; zone.classList.add('has-img'); updateModalHeroImage(item.img); }
+      if (imgUrlInput && /^https?:\/\//i.test(item.img || '')) imgUrlInput.value = item.img;
       updateModalHero(); updateModalStatusPill(); updateModalProgress(); updateCinemaTypeFields();
       renderModalRelated(tracker, item);
     }
@@ -1668,6 +1678,16 @@ function handleImgUpload(e) {
   };
   reader.readAsDataURL(file);
 }
+function applyImgUrl() {
+  const input = document.getElementById('m-img-url');
+  if (!input) return;
+  const url = input.value.trim();
+  if (!url) return;
+  modalImgData = url;
+  document.getElementById('modal-preview').src = url;
+  document.getElementById('img-zone').classList.add('has-img');
+  updateModalHeroImage(url);
+}
 
 // ─── STARS ────────────────────────────────────────────────────────────────
 function setModalStar(n) {
@@ -1686,6 +1706,8 @@ function resetModalStars() {
 function saveModalItem() {
   const titulo = document.getElementById('m-titulo').value.trim();
   if (!titulo) { document.getElementById('m-titulo').focus(); return; }
+  const imgUrlInput = document.getElementById('m-img-url');
+  if (imgUrlInput && imgUrlInput.value.trim()) applyImgUrl();
   const previous = modalEditId ? (S[modalTracker].find(x=>x.id===modalEditId) || null) : null;
   const now = Date.now();
   const item = {

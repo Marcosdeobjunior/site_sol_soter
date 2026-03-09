@@ -47,8 +47,77 @@
     }
   }
 
+  function isQuotaError(err) {
+    if (!err) return false;
+    if (err.name === "QuotaExceededError" || err.name === "NS_ERROR_DOM_QUOTA_REACHED") return true;
+    return typeof err.message === "string" && err.message.toLowerCase().indexOf("quota") >= 0;
+  }
+
+  function pruneDataUrls(input) {
+    var clone = deepClone(input);
+    var removed = 0;
+    var imageKeyHints = {
+      img: true,
+      imagem: true,
+      image: true,
+      capa: true,
+      cover: true,
+      avatar: true,
+      foto: true,
+      photo: true
+    };
+
+    function walk(node, parent, key) {
+      if (!node) return;
+      if (typeof node === "string") {
+        var isDataUrl = node.indexOf("data:image/") === 0;
+        if (isDataUrl && parent) {
+          parent[key] = "";
+          removed += 1;
+        }
+        return;
+      }
+      if (Array.isArray(node)) {
+        node.forEach(function (item, idx) { walk(item, node, idx); });
+        return;
+      }
+      if (typeof node === "object") {
+        Object.keys(node).forEach(function (k) {
+          var value = node[k];
+          if (typeof value === "string" && imageKeyHints[String(k).toLowerCase()] && value.indexOf("data:image/") === 0) {
+            node[k] = "";
+            removed += 1;
+            return;
+          }
+          walk(value, node, k);
+        });
+      }
+    }
+
+    walk(clone, null, null);
+    return { state: clone, removed: removed };
+  }
+
   function saveState(state) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(ensureStateShape(state)));
+    var shaped = ensureStateShape(state);
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(shaped));
+      return;
+    } catch (err) {
+      if (!isQuotaError(err)) throw err;
+      var pruned = pruneDataUrls(shaped);
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(pruned.state));
+        if (pruned.removed > 0) {
+          console.warn("[SoterStorage] Storage cheio: " + pruned.removed + " imagem(ns) foram removidas para salvar os dados.");
+        }
+        return;
+      } catch (err2) {
+        if (!isQuotaError(err2)) throw err2;
+        console.error("[SoterStorage] Falha ao salvar: limite de armazenamento excedido mesmo apos limpeza.");
+        throw err2;
+      }
+    }
   }
 
   function getInitials(name) {

@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/design-system.css">
   <link rel="stylesheet" href="css/app-shell.css">
-  <link rel="stylesheet" href="css/livros.css">
+  <link rel="stylesheet" href="css/mangas.css">
   <link rel="stylesheet" href="css/sonhos.css">
   <style>
   /* ══════════════════════════════════════════
@@ -238,19 +238,25 @@
   .tracker-count { font-family: var(--font-mono); font-size: 10px; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; }
 
   .tracker-tabs { display: flex; gap: 5px; margin-bottom: 20px; flex-wrap: wrap; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
-  .quick-tabs { display:flex; gap:14px; align-items:center; flex-wrap:wrap; margin:8px 0 10px; padding-bottom:10px; border-bottom:1px solid var(--border); }
+  .quick-tabs {
+    display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin:10px 0 14px; padding:10px;
+    border:1px solid rgba(255,255,255,.08); border-radius:18px;
+    background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.015));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.04), 0 14px 32px rgba(0,0,0,.14);
+  }
   .quick-tab {
-    background:none; border:none; color:var(--muted); cursor:pointer;
-    font-size:19px; font-weight:700; font-family:var(--font-ui);
-    padding:4px 0; position:relative; transition:color .18s;
+    background:rgba(255,255,255,.02); border:1px solid transparent; color:var(--muted); cursor:pointer;
+    font-size:14px; font-weight:700; font-family:var(--font-ui);
+    padding:10px 16px; border-radius:999px; position:relative;
+    transition:color .18s, background .18s, border-color .18s, transform .18s;
   }
   .quick-tab::after {
-    content:''; position:absolute; left:0; right:0; bottom:-11px; height:2px;
+    content:''; position:absolute; left:14px; right:14px; bottom:7px; height:2px;
     background:var(--accent1); transform:scaleX(0); transform-origin:left;
     transition:transform .2s cubic-bezier(.22,1,.36,1);
   }
-  .quick-tab:hover { color:var(--text); }
-  .quick-tab.active { color:var(--text); }
+  .quick-tab:hover { color:var(--text); background:rgba(255,255,255,.05); border-color:rgba(255,255,255,.12); transform:translateY(-1px); }
+  .quick-tab.active { color:var(--text); background:rgba(200,169,110,.12); border-color:rgba(200,169,110,.3); }
   .quick-tab.active::after { transform:scaleX(1); }
   .genre-strip {
     display:none; margin:0 0 14px; padding:12px; border-radius:12px;
@@ -269,6 +275,87 @@
   .ttab.active { background:rgba(200,169,110,.12); color:var(--accent1); border-color:rgba(200,169,110,.35); font-weight:700; }
 
   .tracker-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 16px; }
+  .collection-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+  .collection-card {
+    position:relative; min-height:320px; padding:18px; border-radius:22px; overflow:hidden; cursor:pointer;
+    background:
+      radial-gradient(circle at top right, rgba(200,169,110,.12), transparent 30%),
+      linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.018));
+    border:1px solid rgba(255,255,255,.09); box-shadow:0 24px 54px rgba(0,0,0,.24);
+    transition:transform .22s ease, border-color .22s ease, box-shadow .22s ease;
+  }
+  .collection-card:hover { transform:translateY(-3px); border-color:rgba(200,169,110,.28); box-shadow:0 30px 66px rgba(0,0,0,.28); }
+  .collection-stack {
+    position:relative; height:188px; margin-bottom:18px; display:flex; align-items:flex-start; justify-content:center;
+    overscroll-behavior:contain;
+  }
+  .collection-cover {
+    position:absolute; width:132px; aspect-ratio:2/3; border-radius:18px; overflow:hidden;
+    border:4px solid #0b0b12; box-shadow:0 18px 30px rgba(0,0,0,.3);
+    background:linear-gradient(160deg,rgba(28,22,48,.95),rgba(10,8,20,.98));
+    transition:transform .28s cubic-bezier(.22,1,.36,1), opacity .22s, box-shadow .22s;
+    animation:collectionCardIn .36s cubic-bezier(.22,1,.36,1) both;
+  }
+  .collection-cover img { width:100%; height:100%; object-fit:cover; display:block; }
+  .collection-cover::before {
+    content:''; position:absolute; inset:0; border-radius:14px; pointer-events:none;
+    box-shadow:inset 0 0 0 2px rgba(255,255,255,.04);
+  }
+  .collection-cover.c1 { left:calc(50% - 64px); top:14px; transform:translateX(18px); z-index:1; opacity:.92; }
+  .collection-cover.c2 { left:calc(50% - 64px); top:7px; transform:translateX(9px); z-index:2; opacity:.97; }
+  .collection-cover.c3 { left:calc(50% - 64px); top:0; transform:translateX(0); z-index:3; opacity:1; }
+  .collection-card.is-cycling-next .collection-cover.c3 { animation:collectionTopNext .36s cubic-bezier(.22,1,.36,1) both; }
+  .collection-card.is-cycling-prev .collection-cover.c3 { animation:collectionTopPrev .36s cubic-bezier(.22,1,.36,1) both; }
+  .collection-cover.cc-yellow { background:#f2e600; }
+  .collection-cover.cc-red { background:#f04343; }
+  .collection-cover.cc-blue { background:#3f5bff; }
+  .collection-cover:not(.has-img) { display:grid; place-items:center; }
+  .collection-fallback { width:100%; height:100%; display:grid; place-items:center; font-size:30px; color:rgba(255,255,255,.45); }
+  .collection-type {
+    display:inline-flex; padding:6px 10px; border-radius:999px; font-size:10px; font-family:var(--font-mono);
+    letter-spacing:1px; text-transform:uppercase; color:var(--accent1);
+    border:1px solid rgba(200,169,110,.28); background:rgba(200,169,110,.08);
+  }
+  .collection-name { font-size:22px; font-weight:700; line-height:1.02; margin:12px 0 10px; }
+  .collection-meta { display:flex; justify-content:space-between; gap:8px; color:var(--muted); font-size:11px; padding-bottom:10px; border-bottom:1px solid rgba(255,255,255,.06); }
+  .collection-items-preview { margin-top:12px; display:grid; gap:5px; font-size:12px; color:var(--text); }
+  @keyframes collectionCardIn {
+    from { opacity:0; transform:translateY(8px) scale(.98); }
+    to { opacity:1; }
+  }
+  @keyframes collectionTopNext {
+    0% { transform:translateX(0) translateY(0) scale(1); opacity:1; }
+    49% { transform:translateX(24px) translateY(6px) scale(.96); opacity:.2; }
+    50% { transform:translateX(-8px) translateY(18px) scale(.92); opacity:0; }
+    100% { transform:translateX(0) translateY(0) scale(1); opacity:1; }
+  }
+  @keyframes collectionTopPrev {
+    0% { transform:translateX(0) translateY(0) scale(1); opacity:1; }
+    49% { transform:translateX(-24px) translateY(6px) scale(.96); opacity:.2; }
+    50% { transform:translateX(8px) translateY(18px) scale(.92); opacity:0; }
+    100% { transform:translateX(0) translateY(0) scale(1); opacity:1; }
+  }
+  .hub-timeline, .hub-history-list { display:grid; gap:10px; }
+  .hub-timeline-row, .hub-history-row {
+    display:grid; grid-template-columns:auto 1fr auto; gap:12px; align-items:center;
+    padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.06); background:rgba(255,255,255,.03);
+  }
+  .hub-timeline-dot, .hub-history-dot {
+    width:10px; height:10px; border-radius:50%; background:var(--accent1); box-shadow:0 0 0 4px rgba(200,169,110,.12);
+  }
+  .hub-timeline-label, .hub-history-label { font-size:12px; font-weight:700; }
+  .hub-timeline-date, .hub-history-date { font-size:10px; font-family:var(--font-mono); color:var(--muted); letter-spacing:.8px; text-transform:uppercase; }
+  .hub-history-row { grid-template-columns:auto 1fr auto auto; }
+  .hub-history-value { font-size:11px; color:var(--accent3); font-family:var(--font-mono); }
+  .adapt-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
+  .adapt-card {
+    display:grid; grid-template-columns:64px 1fr; gap:12px; align-items:center; cursor:pointer;
+    padding:12px; border-radius:14px; border:1px solid rgba(255,255,255,.06); background:rgba(255,255,255,.03);
+  }
+  .adapt-thumb { width:64px; aspect-ratio:2/3; border-radius:10px; overflow:hidden; background:rgba(255,255,255,.04); display:grid; place-items:center; }
+  .adapt-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+  .adapt-title { font-size:12px; font-weight:700; }
+  .adapt-meta { margin-top:4px; font-size:10px; color:var(--muted); font-family:var(--font-mono); }
 
   /* ── MEDIA CARD ── */
   .mc {
@@ -951,6 +1038,14 @@
         </div>
         <div class="related-scroll" id="th-related-scroll"></div>
       </div>
+
+      <div class="hub-section" id="th-adapt-section" style="display:none">
+        <div class="hub-section-hd">
+          <div class="hub-section-hd-icon">⇄</div>
+          <span class="hub-section-label">Origem & adaptações</span>
+        </div>
+        <div class="adapt-grid" id="th-adapt-grid"></div>
+      </div>
     </div>
 
     <div>
@@ -1001,6 +1096,22 @@
           <span id="th-fav-icon">🤍</span>
           <span id="th-fav-lbl">Adicionar aos favoritos</span>
         </button>
+      </div>
+
+      <div class="hub-section" id="th-timeline-section">
+        <div class="hub-section-hd">
+          <div class="hub-section-hd-icon">⏺</div>
+          <span class="hub-section-label">Timeline</span>
+        </div>
+        <div class="hub-timeline" id="th-timeline"></div>
+      </div>
+
+      <div class="hub-section" id="th-history-section">
+        <div class="hub-section-hd">
+          <div class="hub-section-hd-icon">▤</div>
+          <span class="hub-section-label">Histórico de progresso</span>
+        </div>
+        <div class="hub-history-list" id="th-history"></div>
       </div>
     </div>
   </div>
@@ -1079,6 +1190,16 @@
         <div class="hub-bars" id="hub-authors"></div>
       </div>
     </div>
+    <div class="hub-grid-2" style="margin-top:12px">
+      <div class="hub-panel">
+        <div class="hub-panel-title">Melhores Avaliações</div>
+        <div class="hub-bars" id="hub-top-rated"></div>
+      </div>
+      <div class="hub-panel">
+        <div class="hub-panel-title">Próximo Para Você</div>
+        <div id="hub-recommendation"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1128,9 +1249,11 @@
                   <div class="filter-section-title">Status</div>
                   <div class="filter-chips" id="lv-chips-status">
                     <button class="filter-chip" data-filter="status" data-val="lendo" onclick="toggleFilterChip('livros',this)">Lendo</button>
+                    <button class="filter-chip" data-filter="status" data-val="relendo" onclick="toggleFilterChip('livros',this)">Relendo</button>
                     <button class="filter-chip" data-filter="status" data-val="concluido" onclick="toggleFilterChip('livros',this)">Concluído</button>
                     <button class="filter-chip" data-filter="status" data-val="quero" onclick="toggleFilterChip('livros',this)">Quero ler</button>
                     <button class="filter-chip" data-filter="status" data-val="pausado" onclick="toggleFilterChip('livros',this)">Pausado</button>
+                    <button class="filter-chip" data-filter="status" data-val="abandonado" onclick="toggleFilterChip('livros',this)">Abandonado</button>
                   </div>
                   <div class="filter-section-title">Avaliação mínima</div>
                   <div class="filter-chips" id="lv-chips-nota">
@@ -1226,8 +1349,11 @@
                   <div class="filter-section-title">Status</div>
                   <div class="filter-chips">
                     <button class="filter-chip" data-filter="status" data-val="assistindo" onclick="toggleFilterChip('cinema',this)">Assistindo</button>
+                    <button class="filter-chip" data-filter="status" data-val="reassistindo" onclick="toggleFilterChip('cinema',this)">Reassistindo</button>
                     <button class="filter-chip" data-filter="status" data-val="concluido" onclick="toggleFilterChip('cinema',this)">Concluído</button>
                     <button class="filter-chip" data-filter="status" data-val="quero" onclick="toggleFilterChip('cinema',this)">Quero ver</button>
+                    <button class="filter-chip" data-filter="status" data-val="pausado" onclick="toggleFilterChip('cinema',this)">Pausado</button>
+                    <button class="filter-chip" data-filter="status" data-val="abandonado" onclick="toggleFilterChip('cinema',this)">Abandonado</button>
                   </div>
                   <div class="filter-section-title">Tipo</div>
                   <div class="filter-chips">
@@ -1328,9 +1454,11 @@
                   <div class="filter-section-title">Status</div>
                   <div class="filter-chips">
                     <button class="filter-chip" data-filter="status" data-val="lendo" onclick="toggleFilterChip('mangas',this)">Lendo</button>
+                    <button class="filter-chip" data-filter="status" data-val="relendo" onclick="toggleFilterChip('mangas',this)">Relendo</button>
                     <button class="filter-chip" data-filter="status" data-val="concluido" onclick="toggleFilterChip('mangas',this)">Concluído</button>
                     <button class="filter-chip" data-filter="status" data-val="pausado" onclick="toggleFilterChip('mangas',this)">Pausado</button>
                     <button class="filter-chip" data-filter="status" data-val="quero" onclick="toggleFilterChip('mangas',this)">Quero ler</button>
+                    <button class="filter-chip" data-filter="status" data-val="abandonado" onclick="toggleFilterChip('mangas',this)">Abandonado</button>
                   </div>
                   <div class="filter-section-title">Avaliação mínima</div>
                   <div class="filter-chips">
@@ -1428,6 +1556,97 @@ function loadHubState() {
     }
   } catch (e) {}
 }
+function fmtDate(ts) {
+  return ts ? new Date(ts).toLocaleDateString('pt-BR', { day:'2-digit', month:'short', year:'numeric' }) : 'Sem data';
+}
+function progressValueByTracker(tracker, item) {
+  const pct = TRACKER_CFG[tracker].progressFn(item);
+  if (pct !== null && !Number.isNaN(pct)) return Math.max(0, pct);
+  return item.status === 'concluido' ? 100 : 0;
+}
+function progressSnapshotValue(tracker, item) {
+  if (tracker === 'livros') return +item.atual || 0;
+  if (tracker === 'mangas') return +item.capAtual || 0;
+  if (tracker === 'cinema' && item.tipo === 'Série') return +item.episodioAtual || +item.temporadaAtual || 0;
+  return item.status === 'concluido' ? 1 : 0;
+}
+function progressSnapshotLabel(tracker, item, value) {
+  if (tracker === 'livros') return `Página ${value}`;
+  if (tracker === 'mangas') return `Capítulo ${value}`;
+  if (tracker === 'cinema' && item.tipo === 'Série') return `Episódio ${value}`;
+  return value > 0 ? 'Concluído' : 'Sem progresso';
+}
+function ensureProgressHistory(item) {
+  if (!Array.isArray(item.progressHistory)) item.progressHistory = [];
+  item.progressHistory = item.progressHistory.slice(0, 24);
+}
+function pushProgressHistory(tracker, item, at = Date.now()) {
+  ensureProgressHistory(item);
+  const value = progressSnapshotValue(tracker, item);
+  const last = item.progressHistory[0];
+  if (last && last.value === value) return;
+  item.progressHistory.unshift({ at, value, pct: progressValueByTracker(tracker, item), label: progressSnapshotLabel(tracker, item, value) });
+  item.progressHistory = item.progressHistory.slice(0, 18);
+}
+function ensureTimeline(item) {
+  if (!Array.isArray(item.timeline)) item.timeline = [];
+  item.timeline = item.timeline.slice(0, 24);
+}
+function pushTimeline(item, label, at = Date.now(), tone = 'default') {
+  ensureTimeline(item);
+  item.timeline.unshift({ at, label, tone });
+  item.timeline = item.timeline.slice(0, 18);
+}
+function getTimelineRows(item) {
+  const rows = Array.isArray(item.timeline) ? item.timeline.slice() : [];
+  if (item.createdAt) rows.push({ at:item.createdAt, label:'Adicionado ao tracker', tone:'default' });
+  if (item.finishedAt) rows.push({ at:item.finishedAt, label:'Marcado como concluído', tone:'done' });
+  const seen = new Set();
+  return rows.filter(r => {
+    const key = `${r.label}|${r.at}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).sort((a,b)=>b.at-a.at).slice(0,8);
+}
+function getBaseTitle(title) {
+  return normalizeTitle(title)
+    .replace(/\b(?:part|parte|vol\.?|volume|livro|book|tomo|temporada|season|cap\.?|capitulo|capítulo|episodio|episódio|ep)\s*[ivxlcdm\d]+\b.*$/i,'')
+    .replace(/\b[ivxlcdm\d]+\b$/i,'')
+    .trim();
+}
+function getCrossTrackerAdaptations(tracker, item) {
+  const base = getBaseTitle(item.titulo);
+  return ['livros','cinema','mangas'].filter(k => k !== tracker).flatMap(k => {
+    return (S[k] || []).map(other => {
+      const sameBase = base && getBaseTitle(other.titulo) === base;
+      const sameAuthor = normalizeTitle(other.autor || '') && normalizeTitle(other.autor || '') === normalizeTitle(item.autor || '');
+      const score = sameBase ? 2 : (sameAuthor && titleSimilarity(other.titulo, item.titulo) >= 0.4 ? 1 : 0);
+      return score ? { tracker:k, item:other, score } : null;
+    }).filter(Boolean);
+  }).sort((a,b)=>b.score-a.score).slice(0,4);
+}
+function getCollectionGroups(tracker, items) {
+  const groups = [];
+  const bySeries = new Map();
+  const byAuthor = new Map();
+  items.forEach(item => {
+    const base = getBaseTitle(item.titulo);
+    if (base) {
+      if (!bySeries.has(base)) bySeries.set(base, []);
+      bySeries.get(base).push(item);
+    }
+    const author = (item.autor || '').trim();
+    if (author) {
+      const key = normalizeTitle(author);
+      if (!byAuthor.has(key)) byAuthor.set(key, { label: author, items: [] });
+      byAuthor.get(key).items.push(item);
+    }
+  });
+  bySeries.forEach((arr, title) => { if (arr.length > 1) groups.push({ id:'series-'+title, title, type:'Saga', items:arr }); });
+  byAuthor.forEach((entry, key) => { if (entry.items.length > 1 && !groups.some(g => g.type === 'Saga' && g.items.some(i => normalizeTitle(i.autor||'') === key))) groups.push({ id:'author-'+key, title:entry.label, type:'Autor', items:entry.items }); });
+  return groups.sort((a,b)=>b.items.length-a.items.length || a.title.localeCompare(b.title,'pt-BR'));
+}
 function getActiveQuote() {
   if (!HUB_STATE.quotes.length) return { text: 'Sem citação cadastrada.', author: 'Sol de Sóter' };
   const found = HUB_STATE.quotes.find(q => q.id === HUB_STATE.activeQuoteId);
@@ -1471,19 +1690,19 @@ function closeMobileNav() {
 const TRACKER_CFG = {
   livros: {
     key: 'livros', icon: '📚', emptyMsg: 'Adicione seu primeiro livro!',
-    statusOpts: ['lendo','concluido','quero','pausado'],
-    statusLabels: { lendo:'Lendo', concluido:'Concluído', quero:'Quero ler', pausado:'Pausado' },
-    statusColors: { lendo:'#c8a96e', concluido:'#5ec4a8', quero:'#7c6fcd', pausado:'#7a7590' },
-    ribbonColors: { lendo:'rgba(200,169,110,.8)', concluido:'rgba(94,196,168,.8)', quero:'rgba(124,111,205,.8)', pausado:'rgba(122,117,144,.6)' },
+    statusOpts: ['lendo','relendo','concluido','quero','pausado','abandonado'],
+    statusLabels: { lendo:'Lendo', relendo:'Relendo', concluido:'Concluído', quero:'Quero ler', pausado:'Pausado', abandonado:'Abandonado' },
+    statusColors: { lendo:'#c8a96e', relendo:'#f0bf6b', concluido:'#5ec4a8', quero:'#7c6fcd', pausado:'#7a7590', abandonado:'#d66d6d' },
+    ribbonColors: { lendo:'rgba(200,169,110,.8)', relendo:'rgba(240,191,107,.84)', concluido:'rgba(94,196,168,.8)', quero:'rgba(124,111,205,.8)', pausado:'rgba(122,117,144,.6)', abandonado:'rgba(214,109,109,.7)' },
     progressFn: (item) => item.paginas ? Math.round((item.atual||0)/item.paginas*100) : null,
     progressLabel: (item) => item.paginas ? `Pág. ${item.atual||0}/${item.paginas}` : null,
   },
   cinema: {
     key: 'cinema', icon: '🎬', emptyMsg: 'Adicione um filme ou série!',
-    statusOpts: ['assistindo','concluido','quero'],
-    statusLabels: { assistindo:'Assistindo', concluido:'Concluído', quero:'Quero ver' },
-    statusColors: { assistindo:'#e8864a', concluido:'#5ec4a8', quero:'#4ab0e8' },
-    ribbonColors: { assistindo:'rgba(232,134,74,.8)', concluido:'rgba(94,196,168,.8)', quero:'rgba(74,176,232,.8)' },
+    statusOpts: ['assistindo','reassistindo','concluido','quero','pausado','abandonado'],
+    statusLabels: { assistindo:'Assistindo', reassistindo:'Reassistindo', concluido:'Concluído', quero:'Quero ver', pausado:'Pausado', abandonado:'Abandonado' },
+    statusColors: { assistindo:'#e8864a', reassistindo:'#f0bf6b', concluido:'#5ec4a8', quero:'#4ab0e8', pausado:'#7a7590', abandonado:'#d66d6d' },
+    ribbonColors: { assistindo:'rgba(232,134,74,.8)', reassistindo:'rgba(240,191,107,.84)', concluido:'rgba(94,196,168,.8)', quero:'rgba(74,176,232,.8)', pausado:'rgba(122,117,144,.6)', abandonado:'rgba(214,109,109,.7)' },
     progressFn: (item) => {
       if (item.tipo !== 'Série') return null;
       const epTotal = +item.episodioTotal || 0;
@@ -1509,10 +1728,10 @@ const TRACKER_CFG = {
   },
   mangas: {
     key: 'mangas', icon: '📖', emptyMsg: 'Adicione seu primeiro mangá!',
-    statusOpts: ['lendo','concluido','pausado','quero'],
-    statusLabels: { lendo:'Lendo', concluido:'Concluído', pausado:'Pausado', quero:'Quero ler' },
-    statusColors: { lendo:'#e06b8b', concluido:'#5ec4a8', pausado:'#7a7590', quero:'#7c6fcd' },
-    ribbonColors: { lendo:'rgba(224,107,139,.8)', concluido:'rgba(94,196,168,.8)', pausado:'rgba(122,117,144,.6)', quero:'rgba(124,111,205,.8)' },
+    statusOpts: ['lendo','relendo','concluido','pausado','quero','abandonado'],
+    statusLabels: { lendo:'Lendo', relendo:'Relendo', concluido:'Concluído', pausado:'Pausado', quero:'Quero ler', abandonado:'Abandonado' },
+    statusColors: { lendo:'#e06b8b', relendo:'#f0bf6b', concluido:'#5ec4a8', pausado:'#7a7590', quero:'#7c6fcd', abandonado:'#d66d6d' },
+    ribbonColors: { lendo:'rgba(224,107,139,.8)', relendo:'rgba(240,191,107,.84)', concluido:'rgba(94,196,168,.8)', pausado:'rgba(122,117,144,.6)', quero:'rgba(124,111,205,.8)', abandonado:'rgba(214,109,109,.7)' },
     progressFn: (item) => item.capTotal ? Math.round((item.capAtual||0)/item.capTotal*100) : null,
     progressLabel: (item) => item.capTotal ? `Cap. ${item.capAtual||0}/${item.capTotal}` : (item.capAtual ? `Cap. ${item.capAtual}` : null),
   }
@@ -1667,6 +1886,18 @@ function renderHubBars(containerId, rows) {
     return `<div class="hub-bar"><div>${row.label}</div><div class="hub-bar-track"><div class="hub-bar-fill" style="width:${pct}%"></div></div><div>${row.count}</div></div>`;
   }).join('');
 }
+function renderGoalRecommendation(tracker) {
+  const el = document.getElementById('hub-recommendation');
+  if (!el) return;
+  const items = (S[tracker] || []).filter(item => item.status !== 'concluido');
+  const rec = items.sort((a,b) => progressValueByTracker(tracker, b) - progressValueByTracker(tracker, a) || (+b.nota||0) - (+a.nota||0))[0];
+  if (!rec) {
+    el.innerHTML = '<div class="tracker-count">Nada pendente por aqui.</div>';
+    return;
+  }
+  const meta = [rec.autor, rec.genero, TRACKER_CFG[tracker].statusLabels[rec.status] || rec.status].filter(Boolean).join(' • ');
+  el.innerHTML = `<div style="display:grid;gap:8px"><div style="font-size:16px;font-weight:700">${rec.titulo}</div><div class="tracker-count">${meta || 'Sem metadados'}</div><div style="font-size:12px;color:var(--text)">Maior potencial agora por progresso e prioridade atual.</div><button class="btn btn-primary" type="button" onclick="openModal('${tracker}',${rec.id})">Abrir item</button></div>`;
+}
 function renderGoalHub(tracker) {
   const year = new Date().getFullYear();
   const cfgTitle = tracker === 'livros' ? 'Meta de Leitura' : (tracker === 'cinema' ? 'Meta de Cinema' : 'Meta de Mangás');
@@ -1717,6 +1948,7 @@ function renderGoalHub(tracker) {
   });
   const genreRows = Object.entries(byGenre).map(([label, count]) => ({ label, count })).sort((a,b) => b.count - a.count);
   const authorRows = Object.entries(byAuthor).map(([label, count]) => ({ label, count })).sort((a,b) => b.count - a.count);
+  const ratedRows = items.filter(i => +i.nota > 0).sort((a,b) => (+b.nota||0)-(+a.nota||0)).slice(0,5).map(i => ({ label:i.titulo, count:+i.nota||0 }));
   const titleEl = document.getElementById('goal-hub-title');
   if (titleEl) titleEl.textContent = cfgTitle + ' ' + year;
   document.getElementById('hub-meta-main').textContent = done + '/' + target;
@@ -1731,6 +1963,8 @@ function renderGoalHub(tracker) {
   renderHeatmap('hub-heatmap', dailyCounts, year);
   renderHubBars('hub-genres', genreRows);
   renderHubBars('hub-authors', authorRows);
+  renderHubBars('hub-top-rated', ratedRows);
+  renderGoalRecommendation(tracker);
 }
 
 // ─── MODAL STATE ──────────────────────────────────────────────────────────
@@ -1765,6 +1999,8 @@ function updateModalStatusPill() {
   row.style.display = 'flex';
 }
 function getAutoStatusForItem(tracker, item, fallbackStatus = 'quero') {
+  const stickyStatuses = new Set(['pausado','abandonado','relendo','reassistindo']);
+  if (stickyStatuses.has(fallbackStatus)) return fallbackStatus;
   if (tracker === 'livros') {
     const total = +item.paginas || 0;
     const atual = +item.atual || 0;
@@ -2004,6 +2240,8 @@ function saveModalItem() {
     nota: modalStarVal, fav: document.getElementById('m-fav').checked, img: modalImgData,
     createdAt: previous?.createdAt || now,
     updatedAt: now,
+    timeline: Array.isArray(previous?.timeline) ? previous.timeline.slice(0, 18) : [],
+    progressHistory: Array.isArray(previous?.progressHistory) ? previous.progressHistory.slice(0, 18) : [],
   };
   if (modalTracker==='livros')  { item.paginas=+document.getElementById('m-paginas').value||0; item.atual=+document.getElementById('m-atual-pag').value||0; }
   if (modalTracker==='cinema')  {
@@ -2019,6 +2257,11 @@ function saveModalItem() {
   item.status = getAutoStatusForItem(modalTracker, item, previous?.status || item.status);
   if (item.status === 'concluido') item.finishedAt = previous?.finishedAt || now;
   else item.finishedAt = previous?.finishedAt || 0;
+  if (!previous) pushTimeline(item, 'Adicionado ao tracker', now);
+  else pushTimeline(item, 'Item atualizado', now);
+  if (item.status === 'concluido' && previous?.status !== 'concluido') pushTimeline(item, 'Marcado como concluído', item.finishedAt || now, 'done');
+  if (item.fav && !previous?.fav) pushTimeline(item, 'Adicionado aos favoritos', now, 'fav');
+  pushProgressHistory(modalTracker, item, now);
 
   if (modalEditId) { const idx=S[modalTracker].findIndex(x=>x.id===modalEditId); if(idx>=0) S[modalTracker][idx]=item; }
   else { S[modalTracker].push(item); }
@@ -2060,6 +2303,35 @@ function thClose() {
   const header = document.querySelector('.site-header');
   if (header) header.style.zIndex = '';
   thTracker = null; thItemId = null;
+}
+function renderHubTimeline(item) {
+  const el = document.getElementById('th-timeline');
+  if (!el) return;
+  const rows = getTimelineRows(item);
+  el.innerHTML = rows.length
+    ? rows.map(row => `<div class="hub-timeline-row"><div class="hub-timeline-dot"></div><div class="hub-timeline-label">${row.label}</div><div class="hub-timeline-date">${fmtDate(row.at)}</div></div>`).join('')
+    : '<div class="th-obs-empty">Sem eventos registrados.</div>';
+}
+function renderHubHistory(tracker, item) {
+  const el = document.getElementById('th-history');
+  if (!el) return;
+  const rows = Array.isArray(item.progressHistory) ? item.progressHistory.slice(0, 6) : [];
+  el.innerHTML = rows.length
+    ? rows.map(row => `<div class="hub-history-row"><div class="hub-history-dot"></div><div class="hub-history-label">${row.label}</div><div class="hub-history-value">${row.pct ?? 0}%</div><div class="hub-history-date">${fmtDate(row.at)}</div></div>`).join('')
+    : '<div class="th-obs-empty">Sem histórico suficiente ainda.</div>';
+}
+function renderHubAdaptations(tracker, item) {
+  const section = document.getElementById('th-adapt-section');
+  const grid = document.getElementById('th-adapt-grid');
+  if (!section || !grid) return;
+  const rows = getCrossTrackerAdaptations(tracker, item);
+  if (!rows.length) { section.style.display = 'none'; return; }
+  section.style.display = '';
+  grid.innerHTML = rows.map(row => {
+    const cfg = TRACKER_CFG[row.tracker];
+    const kind = row.tracker === 'cinema' ? 'Adaptação audiovisual' : row.tracker === 'mangas' ? 'Mangá relacionado' : 'Obra de origem';
+    return `<div class="adapt-card" onclick="openModal('${row.tracker}',${row.item.id})"><div class="adapt-thumb">${row.item.img ? `<img src="${row.item.img}" alt="${row.item.titulo}">` : cfg.icon}</div><div><div class="adapt-title">${row.item.titulo}</div><div class="adapt-meta">${kind}</div></div></div>`;
+  }).join('');
 }
 
 function thRender(item, cfg) {
@@ -2162,6 +2434,9 @@ function thRender(item, cfg) {
   }
 
   thRenderRelated(thTracker, item);
+  renderHubAdaptations(thTracker, item);
+  renderHubTimeline(item);
+  renderHubHistory(thTracker, item);
 }
 
 function thRenderRelated(tracker, item) {
@@ -2183,6 +2458,7 @@ function thToggleFav() {
   const item = (S[thTracker] || []).find(x => x.id === thItemId);
   if (!item) return;
   item.fav = !item.fav;
+  pushTimeline(item, item.fav ? 'Adicionado aos favoritos' : 'Removido dos favoritos', Date.now(), item.fav ? 'fav' : 'default');
   save(); renderTracker(thTracker);
   const isFav = item.fav;
   document.getElementById('th-fav-btn').className = 'th-fav-btn' + (isFav ? ' is-fav' : '');
@@ -2296,10 +2572,16 @@ function thDrawerSalvar() {
     status: document.getElementById('th-status').value,
     nota: thStarVal,
     img: document.getElementById('th-cover-zone').classList.contains('hci') ? (thImgData || S[thTracker][idx].img) : '',
+    updatedAt: Date.now(),
   };
   if (thTracker === 'livros') { updated.paginas = +document.getElementById('th-prog-total').value || 0; updated.atual = +document.getElementById('th-prog-atual').value || 0; }
   if (thTracker === 'cinema') updated.tipo = document.getElementById('th-tipo').value;
   if (thTracker === 'mangas') { updated.capTotal = +document.getElementById('th-prog-total').value || 0; updated.capAtual = +document.getElementById('th-prog-atual').value || 0; }
+  updated.status = getAutoStatusForItem(thTracker, updated, updated.status);
+  if (updated.status === 'concluido' && !updated.finishedAt) updated.finishedAt = updated.updatedAt;
+  pushTimeline(updated, 'Item atualizado', updated.updatedAt);
+  if (updated.status === 'concluido') pushTimeline(updated, 'Marcado como concluído', updated.finishedAt || updated.updatedAt, 'done');
+  pushProgressHistory(thTracker, updated, updated.updatedAt);
   S[thTracker][idx] = updated;
   save();
   renderTracker(thTracker);
@@ -2323,16 +2605,55 @@ function thDeleteItem() {
 const FILTER_PENDING = { livros:{}, cinema:{}, mangas:{} };
 const FILTER_APPLIED = { livros:{}, cinema:{}, mangas:{} };
 const PFX_MAP = { livros:'lv', cinema:'ci', mangas:'mg' };
+const COLLECTION_STACK_STATE = {};
 const QUICK_VIEW = {
   livros: { tab: 'all', genre: 'all' },
   cinema: { tab: 'all', genre: 'all' },
   mangas: { tab: 'all', genre: 'all' }
 };
+function getCollectionVisibleItems(group) {
+  const items = group.items || [];
+  if (!items.length) return [];
+  const state = COLLECTION_STACK_STATE[group.id];
+  const start = (((state && state.index) || 0) % items.length + items.length) % items.length;
+  const count = Math.min(3, items.length);
+  return Array.from({ length: count }, (_, offset) => items[(start + offset) % items.length]).filter(Boolean);
+}
+function cycleCollection(event, tracker, groupId, direction) {
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  const groups = getCollectionGroups(tracker, S[tracker] || []);
+  const group = groups.find(g => g.id === groupId);
+  if (!group || !group.items.length) return;
+  const current = (COLLECTION_STACK_STATE[groupId] && COLLECTION_STACK_STATE[groupId].index) || 0;
+  const next = (current + direction + group.items.length) % group.items.length;
+  COLLECTION_STACK_STATE[groupId] = { index: next, dir: direction > 0 ? 'next' : 'prev', stamp: Date.now() };
+  renderTracker(tracker);
+}
+function wheelCollection(event, tracker, groupId) {
+  const direction = event.deltaY > 0 ? 1 : -1;
+  cycleCollection(event, tracker, groupId, direction);
+}
+function openCollectionTop(event, tracker, groupId) {
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  const groups = getCollectionGroups(tracker, S[tracker] || []);
+  const group = groups.find(g => g.id === groupId);
+  if (!group || !group.items.length) return;
+  const state = COLLECTION_STACK_STATE[groupId];
+  const index = (((state && state.index) || 0) % group.items.length + group.items.length) % group.items.length;
+  openModal(tracker, group.items[index].id);
+}
 
 function getQuickTabsConfig(key) {
   if (key === 'cinema') {
     return [
       { id: 'all', label: 'Todos' },
+      { id: 'collections', label: 'Coleções' },
       { id: 'fav', label: 'Favoritos' },
       { id: 'reading', label: 'Assistindo' },
       { id: 'want', label: 'Quero ver' },
@@ -2343,6 +2664,7 @@ function getQuickTabsConfig(key) {
   if (key === 'mangas') {
     return [
       { id: 'all', label: 'Todos' },
+      { id: 'collections', label: 'Coleções' },
       { id: 'fav', label: 'Favoritos' },
       { id: 'reading', label: 'Lendo' },
       { id: 'want', label: 'Quero ler' },
@@ -2352,6 +2674,7 @@ function getQuickTabsConfig(key) {
   }
   return [
     { id: 'all', label: 'Todos' },
+    { id: 'collections', label: 'Coleções' },
     { id: 'fav', label: 'Favoritos' },
     { id: 'reading', label: 'A ler' },
     { id: 'want', label: 'Quero ler' },
@@ -2549,7 +2872,8 @@ function renderTracker(key) {
   const sq = (document.getElementById(searchIds[key])||{value:''}).value.toLowerCase();
   let items = S[key].filter(x => !sq || x.titulo.toLowerCase().includes(sq) || (x.autor||'').toLowerCase().includes(sq) || (x.genero||'').toLowerCase().includes(sq));
   items = applyFilterLogic(key, items);
-  items = applyQuickView(key, items);
+  const isCollectionTab = QUICK_VIEW[key]?.tab === 'collections';
+  if (!isCollectionTab) items = applyQuickView(key, items);
   items = applySortLogic(key, items);
 
   // Stats
@@ -2587,13 +2911,25 @@ function renderTracker(key) {
   const curPage = TRACKER_PAGES[key];
 
   const tabsEl = document.getElementById(key+'-tabs');
+  const gridEl = document.getElementById(key+'-grid');
+  if (isCollectionTab) {
+    const groups = getCollectionGroups(key, items);
+    const countEl = document.getElementById(PFX_MAP[key] + '-count-label');
+    if (countEl) countEl.textContent = `${groups.length} ${groups.length === 1 ? 'coleção' : 'coleções'}`;
+    const collectionPages = Math.max(1, Math.ceil(groups.length / 12));
+    if (TRACKER_PAGES[key] > collectionPages) TRACKER_PAGES[key] = collectionPages;
+    tabsEl.innerHTML = collectionPages<=1 ? '' : Array.from({length:collectionPages},(_,i)=>`<button class="ttab ${TRACKER_PAGES[key]===i+1?'active':''}" onclick="goTrackerPage('${key}',${i+1})">Página ${i+1}</button>`).join('');
+    if (!groups.length) { gridEl.className = 'collection-grid'; gridEl.innerHTML=`<div class="empty" style="grid-column:span 4"><div class="empty-icon">${cfg.icon}</div>Nenhuma coleção formada ainda.</div>`; return; }
+    gridEl.className = 'collection-grid';
+    gridEl.innerHTML = groups.slice((TRACKER_PAGES[key]-1)*12, TRACKER_PAGES[key]*12).map(group => buildCollectionCard(key, group)).join('');
+    return;
+  }
   tabsEl.innerHTML = totalPages<=1 ? '' : Array.from({length:totalPages},(_,i)=>{
     const start=i*PER_PAGE+1, end=Math.min((i+1)*PER_PAGE,items.length);
     return `<button class="ttab ${curPage===i+1?'active':''}" onclick="goTrackerPage('${key}',${i+1})">Página ${i+1} <span style="font-size:9px;opacity:.6">(${start}–${end})</span></button>`;
   }).join('');
-
   const pageItems = items.slice((curPage-1)*PER_PAGE, curPage*PER_PAGE);
-  const gridEl = document.getElementById(key+'-grid');
+  gridEl.className = 'tracker-grid';
   if (!items.length) { gridEl.innerHTML=`<div class="empty" style="grid-column:span 5"><div class="empty-icon">${cfg.icon}</div>${sq?'Nenhum resultado para "'+sq+'"':cfg.emptyMsg}</div>`; return; }
   gridEl.innerHTML = pageItems.map(item => buildCard(item, cfg)).join('');
 }
@@ -2628,39 +2964,131 @@ function buildCard(item, cfg) {
     </div>
   </div>`;
 }
+function buildCollectionCard(tracker, group) {
+  const cfg = TRACKER_CFG[tracker];
+  const covers = getCollectionVisibleItems(group);
+  const toneClasses = ['cc-yellow','cc-red','cc-blue'];
+  const state = COLLECTION_STACK_STATE[group.id];
+  const cycleClass = state && state.stamp && Date.now() - state.stamp < 550 ? ` is-cycling-${state.dir}` : '';
+  return `<div class="collection-card${cycleClass}" onclick="openCollectionTop(event,'${tracker}','${group.id.replace(/'/g, "\\'")}')">
+    <div class="collection-stack" onwheel="wheelCollection(event,'${tracker}','${group.id.replace(/'/g, "\\'")}')">
+      ${covers.map((item, idx) => `<div class="collection-cover c${idx+1} ${toneClasses[idx] || ''} ${item.img ? 'has-img' : ''}">${item.img ? `<img src="${item.img}" alt="${item.titulo}">` : `<div class="collection-fallback">${cfg.icon}</div>`}</div>`).join('')}
+    </div>
+    <div class="collection-type">${group.type}</div>
+    <div class="collection-name">${group.title}</div>
+    <div class="collection-meta"><span>${group.items.length} itens</span><span>${group.items.filter(i=>i.fav).length} favs</span></div>
+    <div class="collection-items-preview">${group.items.slice(0,3).map(item => `<div>• ${item.titulo}</div>`).join('')}</div>
+  </div>`;
+}
 
 // ─── RELATED ITEMS ────────────────────────────────────────────────────────
 function normalizeTitle(t) {
-  return (t||'').toLowerCase()
-    .replace(/[\s:,\-–_#]+(?:vol\.?|volume|parte|part|livro|book|tomo|cap\.?|capítulo|capitulo|ep\.?|episódio|episodio|temporada|season|série|serie)\s*\d+.*/i,'')
-    .replace(/[\s:,\-–_#]+\d+\s*$/,'').replace(/\s*\([^)]*\)\s*$/,'').trim();
+  return (t || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s*\([^)]*\)\s*$/g, ' ')
+    .replace(/[:\-–_#.,]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+function romanToInt(token) {
+  const map = { i: 1, v: 5, x: 10, l: 50, c: 100 };
+  const value = (token || '').toLowerCase();
+  if (!/^[ivxlc]+$/.test(value)) return NaN;
+  let total = 0;
+  let prev = 0;
+  for (let i = value.length - 1; i >= 0; i -= 1) {
+    const curr = map[value[i]] || 0;
+    total += curr < prev ? -curr : curr;
+    prev = curr;
+  }
+  return total;
+}
+function parseOrdinalToken(token) {
+  if (!token) return NaN;
+  const clean = String(token).toLowerCase().replace(/[º°ª.]/g, '').trim();
+  if (/^\d+$/.test(clean)) return Number(clean);
+  return romanToInt(clean);
+}
+function extractContinuationIndex(title) {
+  const normalized = normalizeTitle(title);
+  if (!normalized) return NaN;
+  const tagged = normalized.match(/\b(?:part|parte|vol|volume|livro|book|tomo|temporada|season|seasons?|cap|capitulo|capitulos|episodio|episodios|ep)\s+([ivxlc]+|\d+)\b/i);
+  if (tagged) return parseOrdinalToken(tagged[1]);
+  const trailing = normalized.match(/\b([ivxlc]+|\d+)\b$/i);
+  if (trailing && normalized.split(/\s+/).length > 1) return parseOrdinalToken(trailing[1]);
+  return NaN;
+}
+function extractSeriesBaseTitle(title) {
+  return normalizeTitle(title)
+    .replace(/\b(?:part|parte|vol|volume|livro|book|tomo|temporada|season|seasons?|cap|capitulo|capitulos|episodio|episodios|ep)\s+([ivxlc]+|\d+)\b.*$/i, '')
+    .replace(/\b([ivxlc]+|\d+)\b$/i, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 function titleSimilarity(a, b) {
-  const na=normalizeTitle(a), nb=normalizeTitle(b);
-  if (!na||!nb) return 0; if (na===nb) return 1;
-  const wa=new Set(na.split(/\s+/)), wb=new Set(nb.split(/\s+/));
-  return [...wa].filter(w=>wb.has(w)).length / new Set([...wa,...wb]).size;
+  const na = extractSeriesBaseTitle(a);
+  const nb = extractSeriesBaseTitle(b);
+  if (!na || !nb) return 0;
+  if (na === nb) return 1;
+  const wa = new Set(na.split(/\s+/).filter(Boolean));
+  const wb = new Set(nb.split(/\s+/).filter(Boolean));
+  const shared = [...wa].filter(w => wb.has(w)).length;
+  const union = new Set([...wa, ...wb]).size || 1;
+  return shared / union;
 }
 function authorSimilarity(a, b) {
-  if(!a||!b) return 0;
-  const na=a.toLowerCase().trim(), nb=b.toLowerCase().trim();
-  if(na===nb) return 1;
-  const lA=na.split(/\s+/).pop(), lB=nb.split(/\s+/).pop();
-  return (lA&&lA.length>2&&lA===lB)?0.85:0;
+  if (!a || !b) return 0;
+  const na = normalizeTitle(a);
+  const nb = normalizeTitle(b);
+  if (na === nb) return 1;
+  const lastA = na.split(/\s+/).pop();
+  const lastB = nb.split(/\s+/).pop();
+  if (lastA && lastA.length > 2 && lastA === lastB) return 0.85;
+  const partsA = new Set(na.split(/\s+/).filter(p => p.length > 2));
+  const partsB = new Set(nb.split(/\s+/).filter(p => p.length > 2));
+  const shared = [...partsA].filter(p => partsB.has(p)).length;
+  return shared >= 2 ? 0.92 : 0;
 }
 function getRelatedItems(tracker, currentItem) {
-  const results=[];
-  S[tracker].forEach(item=>{
-    if(item.id===currentItem.id) return;
-    const tSim=titleSimilarity(item.titulo,currentItem.titulo);
-    const aSim=authorSimilarity(item.autor,currentItem.autor);
-    let score=0, reason='';
-    if(tSim>=0.6){score=0.9+tSim*0.1;reason='série';}
-    else if(aSim>=0.85&&currentItem.autor){score=0.5+aSim*0.3;reason='autor';}
-    else if(item.genero&&currentItem.genero&&item.genero.toLowerCase()===currentItem.genero.toLowerCase()&&aSim>=0.5){score=0.3;reason='gênero';}
-    if(score>0) results.push({item,score,reason});
+  const results = [];
+  const currentBase = extractSeriesBaseTitle(currentItem.titulo);
+  const currentSeq = extractContinuationIndex(currentItem.titulo);
+  S[tracker].forEach(item => {
+    if (item.id === currentItem.id) return;
+    const itemBase = extractSeriesBaseTitle(item.titulo);
+    const itemSeq = extractContinuationIndex(item.titulo);
+    const tSim = titleSimilarity(item.titulo, currentItem.titulo);
+    const aSim = authorSimilarity(item.autor, currentItem.autor);
+    const sameBase = currentBase && itemBase && currentBase === itemBase;
+    const seqDistance = Number.isFinite(currentSeq) && Number.isFinite(itemSeq) ? Math.abs(currentSeq - itemSeq) : NaN;
+    let score = 0;
+    let reason = '';
+    if (sameBase && Number.isFinite(seqDistance)) {
+      score = 1.1 - Math.min(seqDistance, 6) * 0.06;
+      reason = 'continuação';
+    } else if (sameBase) {
+      score = 0.98;
+      reason = 'série';
+    } else if (tSim >= 0.7) {
+      score = 0.84 + tSim * 0.08;
+      reason = 'série';
+    } else if (aSim >= 0.85 && currentItem.autor) {
+      score = 0.58 + aSim * 0.22;
+      reason = 'autor';
+    } else if (
+      item.genero &&
+      currentItem.genero &&
+      normalizeTitle(item.genero) === normalizeTitle(currentItem.genero) &&
+      aSim >= 0.85
+    ) {
+      score = 0.5;
+      reason = 'autor';
+    }
+    if (score > 0) results.push({ item, score, reason });
   });
-  return results.sort((a,b)=>b.score-a.score).slice(0,20);
+  return results.sort((a, b) => b.score - a.score).slice(0, 20);
 }
 function renderModalRelated(tracker, currentItem) {
   const related=getRelatedItems(tracker,currentItem);
@@ -2668,9 +3096,12 @@ function renderModalRelated(tracker, currentItem) {
   const scroll =document.getElementById('modal-related-scroll');
   const label  =document.getElementById('modal-related-label');
   if(!related.length){section.style.display='none';return;}
-  const hasSeries=related.some(r=>r.reason==='série');
+  const hasSeries=related.some(r=>r.reason==='série'||r.reason==='continuação');
   const hasAuthor=related.some(r=>r.reason==='autor');
-  if(hasSeries&&hasAuthor) label.textContent='Da mesma série & autor';
+  const hasContinuation=related.some(r=>r.reason==='continuação');
+  if(hasContinuation&&hasAuthor) label.textContent='Continuações & mesmo autor';
+  else if(hasContinuation) label.textContent='Continuações da obra';
+  else if(hasSeries&&hasAuthor) label.textContent='Da mesma série & autor';
   else if(hasSeries) label.textContent='Outros da série';
   else label.textContent='Do mesmo autor';
   const cfg=TRACKER_CFG[tracker];
@@ -2755,6 +3186,8 @@ goTo(INITIAL_TRACKER);
 
 </body>
 </html>
+
+
 
 
 

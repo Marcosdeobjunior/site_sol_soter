@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/png" href="img/soldesoter_logo.png">
-  <title>Sol de Sóter · RPG</title>
+  <title>Sol de Soter · RPG</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/design-system.css">
@@ -16,24 +16,133 @@
   <div data-app-header></div>
 
   <main class="app-content">
-    <section class="page-shell">
-      <p class="page-eyebrow">✦ Espaço Pessoal ✦</p>
-      <h1 class="page-title"><em>Sól</em> de Sóter · RPG</h1>
-      <p class="page-subtitle">Evolua seu perfil com níveis e atributos.</p>
+    <section class="rpg-page-shell">
+      <div class="rpg-page-header">
+        <div class="rpg-page-eyebrow">Sistema de Personagem</div>
+        <h1 class="rpg-page-title">Meu <span>Personagem</span></h1>
+        <p class="rpg-page-subtitle">Atributos · Conquistas · Habilidades · Progresso</p>
+      </div>
 
-      <div class="placeholder-grid">
-        <article class="placeholder-card">
-          <h3>Painel</h3>
-          <p>Área pronta para os dados desta página.</p>
-        </article>
-        <article class="placeholder-card">
-          <h3>Itens</h3>
-          <p>Listas, cartões e formulários podem entrar aqui.</p>
-        </article>
-        <article class="placeholder-card">
-          <h3>Resumo</h3>
-          <p>Indicadores e progresso desta seção.</p>
-        </article>
+      <input type="file" id="rpg-avatar-input" accept="image/*" style="display:none" onchange="handleAvatarUpload(event)">
+
+      <div class="rpg-layout">
+        <div>
+          <div class="rpg-char-card">
+            <div class="rpg-char-banner">
+              <div class="rpg-char-banner-bg"></div>
+              <div class="rpg-char-banner-particles"></div>
+              <div class="rpg-char-banner-runes"></div>
+              <div class="rpg-class-badge" id="rpg-class-badge">Explorador</div>
+            </div>
+
+            <div class="rpg-char-identity">
+              <div class="rpg-char-avatar-wrap" id="rpg-avatar" onclick="document.getElementById('rpg-avatar-input').click()" title="Clique para trocar foto">
+                <img id="rpg-avatar-img" src="" alt="">
+                <span class="avatar-initials" id="rpg-initials">?</span>
+              </div>
+              <div class="rpg-char-identity-info">
+                <div class="rpg-char-name" id="rpg-hero-name">Usuario</div>
+                <div class="rpg-char-title" id="rpg-hero-title">⚔ Viajante · Nivel 1</div>
+              </div>
+              <div class="rpg-level-orb">
+                <div class="rpg-level-orb-label">NV</div>
+                <div class="rpg-level-orb-num" id="rpg-orb-level">1</div>
+              </div>
+            </div>
+
+            <div class="rpg-char-body">
+              <div class="rpg-xp-section">
+                <div class="rpg-xp-header">
+                  <span class="rpg-xp-label">Experiencia</span>
+                  <span class="rpg-xp-val" id="rpg-xp-label">0 XP</span>
+                </div>
+                <div class="rpg-xp-track">
+                  <div class="rpg-xp-bar" id="rpg-xp-bar" style="width:0%"></div>
+                </div>
+                <div class="rpg-xp-next" id="rpg-xp-next-label">— XP para o proximo nivel</div>
+              </div>
+
+              <div class="rpg-divider"><span class="rpg-divider-rune">✦ ✦ ✦</span></div>
+
+              <span class="rpg-class-lbl-txt">Atributos</span>
+              <div class="rpg-attrs" id="rpg-attrs"></div>
+
+              <div class="rpg-divider"><span class="rpg-divider-rune">✦ ✦ ✦</span></div>
+
+              <div class="rpg-class-select">
+                <span class="rpg-class-lbl-txt">Classe</span>
+                <div class="rpg-classes">
+                  <div class="rpg-class-opt active" data-class="scholar" onclick="rpgSetClass('scholar')"><span class="rpg-class-opt-icon">📚</span><div class="rpg-class-opt-name">Sabio</div></div>
+                  <div class="rpg-class-opt" data-class="warrior" onclick="rpgSetClass('warrior')"><span class="rpg-class-opt-icon">⚔</span><div class="rpg-class-opt-name">Guerreiro</div></div>
+                  <div class="rpg-class-opt" data-class="explorer" onclick="rpgSetClass('explorer')"><span class="rpg-class-opt-icon">🧭</span><div class="rpg-class-opt-name">Explorador</div></div>
+                  <div class="rpg-class-opt" data-class="artist" onclick="rpgSetClass('artist')"><span class="rpg-class-opt-icon">🎨</span><div class="rpg-class-opt-name">Artista</div></div>
+                  <div class="rpg-class-opt" data-class="mage" onclick="rpgSetClass('mage')"><span class="rpg-class-opt-icon">🔮</span><div class="rpg-class-opt-name">Mago</div></div>
+                  <div class="rpg-class-opt" data-class="ranger" onclick="rpgSetClass('ranger')"><span class="rpg-class-opt-icon">🏹</span><div class="rpg-class-opt-name">Ranger</div></div>
+                </div>
+              </div>
+
+              <div class="rpg-divider"><span class="rpg-divider-rune">✦ ✦ ✦</span></div>
+
+              <div class="rpg-quick-stats">
+                <div class="rpg-qs"><div class="rpg-qs-val" id="rpg-qs-livros">0</div><div class="rpg-qs-lbl">📚 Livros</div></div>
+                <div class="rpg-qs"><div class="rpg-qs-val" id="rpg-qs-cinema">0</div><div class="rpg-qs-lbl">🎬 Filmes</div></div>
+                <div class="rpg-qs"><div class="rpg-qs-val" id="rpg-qs-gym">0</div><div class="rpg-qs-lbl">💪 Treinos</div></div>
+                <div class="rpg-qs"><div class="rpg-qs-val" id="rpg-qs-tarefas">0</div><div class="rpg-qs-lbl">✅ Tarefas</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="rpg-right">
+          <div class="rpg-level-panel">
+            <div class="rpg-level-rune-bg"></div>
+            <div class="rpg-level-row">
+              <div class="rpg-level-big" id="rpg-level-big">1</div>
+              <div class="rpg-level-info">
+                <div class="rpg-level-eyebrow">Nivel atual</div>
+                <div class="rpg-level-title" id="rpg-level-title">Iniciante</div>
+                <div class="rpg-level-subtitle" id="rpg-level-sub">Comece sua jornada</div>
+              </div>
+            </div>
+            <div class="rpg-xp-sources" id="rpg-xp-sources"></div>
+          </div>
+
+          <div class="rpg-panel">
+            <div class="rpg-section-hd">
+              <div class="rpg-section-hd-icon">⚡</div>
+              <div class="rpg-section-title">Missoes do Dia</div>
+              <span class="rpg-section-sub" id="rpg-missions-sub"></span>
+            </div>
+            <div class="rpg-missions" id="rpg-missions"></div>
+          </div>
+
+          <div class="rpg-panel">
+            <div class="rpg-section-hd">
+              <div class="rpg-section-hd-icon">✨</div>
+              <div class="rpg-section-title">Habilidades</div>
+              <span class="rpg-section-sub" id="rpg-skills-sub"></span>
+            </div>
+            <div class="rpg-skills-grid" id="rpg-skills-grid"></div>
+          </div>
+
+          <div class="rpg-panel">
+            <div class="rpg-section-hd">
+              <div class="rpg-section-hd-icon">🏆</div>
+              <div class="rpg-section-title">Conquistas</div>
+              <span class="rpg-section-sub" id="rpg-ach-sub"></span>
+            </div>
+            <div class="rpg-ach-grid" id="rpg-achievements"></div>
+          </div>
+
+          <div class="rpg-panel">
+            <div class="rpg-section-hd">
+              <div class="rpg-section-hd-icon">📜</div>
+              <div class="rpg-section-title">Log de Atividade</div>
+              <span class="rpg-section-sub">Ultimos eventos</span>
+            </div>
+            <div class="rpg-log" id="rpg-log"></div>
+          </div>
+        </div>
       </div>
     </section>
   </main>
@@ -45,4 +154,3 @@
   <script src="js/rpg.js"></script>
 </body>
 </html>
-

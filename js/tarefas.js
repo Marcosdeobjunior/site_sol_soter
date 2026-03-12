@@ -59,6 +59,32 @@ const TK_PRIOR_LABEL  = { alta:'🔴 Alta', media:'🟡 Média', baixa:'🟢 Bai
 const TK_MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
                    'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const TK_MONTHS_SHORT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const TK_RECURRENCE_LABEL = {
+  none: 'Nao recorrente',
+  daily: 'Diariamente',
+  weekly: 'Semanalmente',
+  monthly: 'Mensalmente',
+  semiannual: 'Semestralmente',
+  yearly: 'Anualmente'
+};
+const TK_RECURRENCE_LIMIT = { daily: 30, weekly: 16, monthly: 12, semiannual: 6, yearly: 4 };
+const tkCalendarSelection = {
+  ids: new Set(),
+  boxActive: false,
+  dragTaskId: null,
+  dragDate: null,
+  dragIds: [],
+  justDragged: false,
+  pointerCardId: null,
+  pointerStartX: 0,
+  pointerStartY: 0,
+  pointerDragging: false,
+  hoverDate: null
+};
+var tkCalDragGhost = null;
+const taskLinkBoardState = { x: 18, y: 18, scale: 1, dragging: false, startX: 0, startY: 0 };
+const taskLinkPickerState = { open: false, kind: null };
+var taskLinkPendingCreate = null;
 
 // ── Helpers ──────────────────────────────────────────────────────────
 function tkToday() { return new Date().toISOString().slice(0,10); }
@@ -77,6 +103,119 @@ function tkDaysFromNow(ds) {
   return Math.round((d - n) / 86400000);
 }
 
+function tkParseDate(ds) {
+  return ds ? new Date(ds + 'T00:00:00') : null;
+}
+
+function tkToDateString(date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function tkAddDays(ds, amount) {
+  const date = tkParseDate(ds);
+  if (!date) return ds;
+  date.setDate(date.getDate() + amount);
+  return tkToDateString(date);
+}
+
+function tkAddMonths(ds, amount) {
+  const date = tkParseDate(ds);
+  if (!date) return ds;
+  const day = date.getDate();
+  date.setDate(1);
+  date.setMonth(date.getMonth() + amount);
+  const maxDay = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  date.setDate(Math.min(day, maxDay));
+  return tkToDateString(date);
+}
+
+function tkAdvanceRecurrence(ds, recurrence, step) {
+  if (!ds || recurrence === 'none' || !step) return ds;
+  if (recurrence === 'daily') return tkAddDays(ds, step);
+  if (recurrence === 'weekly') return tkAddDays(ds, step * 7);
+  if (recurrence === 'monthly') return tkAddMonths(ds, step);
+  if (recurrence === 'semiannual') return tkAddMonths(ds, step * 6);
+  if (recurrence === 'yearly') return tkAddMonths(ds, step * 12);
+  return ds;
+}
+
+function tkDiffDays(fromDate, toDate) {
+  const a = tkParseDate(fromDate);
+  const b = tkParseDate(toDate);
+  if (!a || !b) return 0;
+  return Math.round((b - a) / 86400000);
+}
+
+function tkGetChildren(taskId) {
+  return S.tasks.filter(function (item) { return item.parentId === taskId; });
+}
+
+function tkHasOpenChildren(task) {
+  return tkGetChildren(task.id).some(function (child) { return !child.done; });
+}
+
+function tkWouldCreateCycle(taskId, parentId) {
+  var current = parentId;
+  while (current) {
+    if (current === taskId) return true;
+    var task = S.tasks.find(function (item) { return item.id === current; });
+    current = task ? task.parentId : null;
+  }
+  return false;
+}
+
+function tkSelectionHas(id) {
+  return tkCalendarSelection.ids.has(id);
+}
+
+function tkClearSelection() {
+  tkCalendarSelection.ids.clear();
+}
+
+function tkCanCompleteTask(task) {
+  return !task || !tkHasOpenChildren(task);
+}
+
+function tkSyncRecurringSeries(masterId) {
+  var master = S.tasks.find(function (item) { return item.id === masterId; });
+  if (!master || master.isRecurringClone) return;
+  S.tasks = S.tasks.filter(function (item) {
+    return !(item.isRecurringClone && item.recurrenceMasterId === masterId);
+  });
+  var limit = TK_RECURRENCE_LIMIT[master.recurrence] || 0;
+  if (!master.recurrence || master.recurrence === 'none' || !limit) return;
+  for (var i = 1; i <= limit; i++) {
+    S.tasks.push({
+      id: Date.now() + Math.floor(Math.random() * 100000) + i,
+      nome: master.nome,
+      nota: master.nota,
+      prior: master.prior,
+      cat: master.cat,
+      hora: master.hora,
+      data: tkAdvanceRecurrence(master.data, master.recurrence, i),
+      cor: master.cor,
+      done: false,
+      subtarefas: tkCloneSubtasks(master.subtarefas),
+      recurrence: master.recurrence,
+      parentId: null,
+      isRecurringClone: true,
+      recurrenceMasterId: master.id,
+      recurrenceIndex: i
+    });
+  }
+}
+
+function tkMoveTaskSeries(ids, dayDelta) {
+  if (!dayDelta || !ids.length) return;
+  var normalizedIds = ids.map(function (id) { return Number(id); });
+  S.tasks.forEach(function (task) {
+    if (normalizedIds.indexOf(Number(task.id)) >= 0 && task.data) {
+      task.data = tkAddDays(task.data, dayDelta);
+    }
+  });
+}
+
+
 // ── Migrar dados antigos ─────────────────────────────────────────────
 function tkMigrate() {
   S.tasks = (S.tasks || []).map(t => {
@@ -85,8 +224,58 @@ function tkMigrate() {
     if (!t.cor)  t.cor  = TK_COLORS[0];
     if (!t.nota) t.nota = '';
     if (!t.hora) t.hora = '';
+    if (!t.recurrence) t.recurrence = 'none';
+    if (typeof t.parentId === 'undefined') t.parentId = null;
+    if (typeof t.isRecurringClone === 'undefined') t.isRecurringClone = false;
+    if (typeof t.recurrenceMasterId === 'undefined' || t.recurrenceMasterId === null) t.recurrenceMasterId = t.isRecurringClone ? null : t.id;
+    if (typeof t.recurrenceIndex === 'undefined') t.recurrenceIndex = 0;
     return t;
   });
+  tkEnsureRecurringTasks();
+}
+
+function tkCloneSubtasks(subs) {
+  return (subs || []).map(function (sub) {
+    return { texto: sub.texto, done: false };
+  });
+}
+
+function tkEnsureRecurringTasks() {
+  var existingKeys = new Set();
+  S.tasks.forEach(function (task) {
+    if (task.recurrenceMasterId) existingKeys.add(task.recurrenceMasterId + ':' + task.recurrenceIndex);
+  });
+
+  var additions = [];
+  S.tasks.forEach(function (task) {
+    if (task.isRecurringClone || !task.recurrence || task.recurrence === 'none') return;
+    task.recurrenceMasterId = task.id;
+    task.recurrenceIndex = 0;
+    var limit = TK_RECURRENCE_LIMIT[task.recurrence] || 0;
+    for (var i = 1; i <= limit; i++) {
+      var key = task.id + ':' + i;
+      if (existingKeys.has(key)) continue;
+      additions.push({
+        id: Date.now() + Math.floor(Math.random() * 100000) + i,
+        nome: task.nome,
+        nota: task.nota,
+        prior: task.prior,
+        cat: task.cat,
+        hora: task.hora,
+        data: tkAdvanceRecurrence(task.data, task.recurrence, i),
+        cor: task.cor,
+        done: false,
+        subtarefas: tkCloneSubtasks(task.subtarefas),
+        recurrence: task.recurrence,
+        parentId: null,
+        isRecurringClone: true,
+        recurrenceMasterId: task.id,
+        recurrenceIndex: i
+      });
+      existingKeys.add(key);
+    }
+  });
+  if (additions.length) S.tasks = S.tasks.concat(additions);
 }
 
 // ── KPIs ────────────────────────────────────────────────────────────
@@ -175,9 +364,45 @@ function tkRenderFocus() {
 // LISTA COM ABAS
 // ══════════════════════════════════════════════════════════════════════
 let tkListTab = 'pendentes';
+let tkListPage = 1;
+
+function tkGetListPageSize() {
+  const width = window.innerWidth || 1280;
+  if (width <= 900) return 2;
+  if (width <= 1300) return 4;
+  return 6;
+}
+
+function tkRenderListPagination(totalItems, pageSize, currentPage) {
+  const pagination = document.getElementById('tk-list-pagination');
+  if (!pagination) return;
+
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  pagination.dataset.totalPages = String(totalPages);
+  if (totalPages <= 1) {
+    pagination.className = 'tk-list-pagination';
+    pagination.innerHTML = '';
+    return;
+  }
+
+  pagination.className = 'tk-list-pagination visible';
+  pagination.innerHTML = `
+    <span class="tk-list-page-indicator">Pagina ${currentPage} de ${totalPages}</span>
+    <button class="tk-list-page-btn" type="button" onclick="tkListGoToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>‹</button>
+    <button class="tk-list-page-btn" type="button" onclick="tkListGoToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>›</button>
+  `;
+}
+
+function tkListGoToPage(page) {
+  const pagination = document.getElementById('tk-list-pagination');
+  const totalPages = pagination ? Number(pagination.dataset.totalPages || '1') : 1;
+  tkListPage = Math.min(Math.max(1, page), totalPages);
+  tkRenderList();
+}
 
 function tkListSetTab(tab) {
   tkListTab = tab;
+  tkListPage = 1;
   document.querySelectorAll('.tk-list-tab').forEach(el => {
     el.classList.toggle('active', el.dataset.tab === tab);
   });
@@ -223,10 +448,17 @@ function tkRenderList() {
       <div class="tk-list-empty-icon">${tkListTab==='vencidas'?'✅':tkListTab==='concluidas'?'🏆':'📋'}</div>
       ${msgs[tkListTab]||'Nenhuma tarefa.'}
     </div>`;
+    tkRenderListPagination(0, 1, 1);
     return;
   }
 
-  grid.innerHTML = items.map(t => {
+  const pageSize = tkGetListPageSize();
+  const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
+  tkListPage = Math.min(tkListPage, totalPages);
+  const start = (tkListPage - 1) * pageSize;
+  const visibleItems = items.slice(start, start + pageSize);
+
+  grid.innerHTML = visibleItems.map(t => {
     const color  = t.cor || TK_PRIOR_COLOR[t.prior] || '#c8a96e';
     const pColor = TK_PRIOR_COLOR[t.prior] || color;
     const subs   = t.subtarefas || [];
@@ -261,6 +493,8 @@ function tkRenderList() {
       </div>` : ''}
     </div>`;
   }).join('');
+
+  tkRenderListPagination(items.length, pageSize, tkListPage);
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -315,10 +549,7 @@ function tkCalRender() {
       if(a.done!==b.done) return a.done?1:-1;
       return (a.hora||'99:99').localeCompare(b.hora||'99:99');
     });
-    const visible = sorted.slice(0,MAX_CARDS);
-    const extra   = sorted.length - MAX_CARDS;
-
-    const miniCards = visible.map(t => {
+    const miniCards = sorted.map(t => {
       const col = t.cor || TK_PRIOR_COLOR[t.prior] || '#c8a96e';
       return `<div class="tk-cal-task-card ${t.done?'done-mini':''}"
           style="--tk-color:${col}"
@@ -327,14 +558,13 @@ function tkCalRender() {
         ${t.hora?`<span style="opacity:.6;margin-right:3px">${t.hora}</span>`:''}${t.nome}
       </div>`;
     }).join('');
-    const moreTag = extra>0 ? `<div class="tk-cal-more">+${extra} mais</div>` : '';
 
     cells.push(`<div class="${cls}"
         onclick="tkCalSelectDay('${ds}')"
         ondblclick="tkModalOpenForDate('${ds}')"
         title="Clique para selecionar · Duplo clique para adicionar tarefa">
       <span class="tk-day-num">${d}</span>
-      ${miniCards}${moreTag}
+      <div class="tk-day-tasks">${miniCards}</div>
     </div>`);
   }
 
@@ -729,6 +959,7 @@ function tkModalOpenForDate(ds) {
   document.getElementById('tkm-nome').value  = '';
   document.getElementById('tkm-nota').value  = '';
   document.getElementById('tkm-hora').value  = '';
+  document.getElementById('tkm-recorrencia').value = 'none';
   document.getElementById('tkm-prior').value = 'media';
   document.getElementById('tkm-cat').value   = 'Pessoal';
   document.getElementById('tk-modal-date-label').textContent = tkFmtDateLong(tkModalDate);
@@ -742,7 +973,10 @@ function tkModalPickColor(col) {
   tkBuildColorPicker('tkm-colors', tkModalColor, 'tkModalPickColor');
 }
 
-function tkModalClose() { document.getElementById('tk-modal-bd').classList.remove('open'); }
+function tkModalClose() {
+  document.getElementById('tk-modal-bd').classList.remove('open');
+  taskLinkPendingCreate = null;
+}
 function tkModalCloseOutside(e) { if (e.target.id === 'tk-modal-bd') tkModalClose(); }
 
 function tkModalSave() {
@@ -755,11 +989,17 @@ function tkModalSave() {
     prior:      document.getElementById('tkm-prior').value,
     cat:        document.getElementById('tkm-cat').value,
     hora:       document.getElementById('tkm-hora').value,
+    recurrence: document.getElementById('tkm-recorrencia').value,
     data:       tkModalDate,
     cor:        tkModalColor,
     done:       false,
     subtarefas: [],
+    parentId:   null,
+    isRecurringClone: false,
+    recurrenceMasterId: null,
+    recurrenceIndex: 0,
   };
+  task.recurrenceMasterId = task.id;
   S.tasks.push(task);
   save(); renderTasks();
   tkModalClose();
@@ -809,8 +1049,8 @@ function taskHubRender(t) {
   heroEl.classList.remove('has-img');
 
   // Ícone, badge, título
-  const priorEmojis = { alta:'🔴', media:'🟡', baixa:'🟢' };
-  document.getElementById('taskh-icon').textContent = priorEmojis[t.prior] || '✅';
+  const priorIcons = { alta:'\u25c6', media:'\u25c8', baixa:'\u2726' };
+  document.getElementById('taskh-icon').textContent = priorIcons[t.prior] || '\u25ce';
   const badgeEl = document.getElementById('taskh-badge');
   badgeEl.textContent = t.cat || 'Tarefa';
   badgeEl.style.color = color; badgeEl.style.borderColor = color+'44'; badgeEl.style.background = color+'18';
@@ -828,7 +1068,7 @@ function taskHubRender(t) {
   if (t.hora) chips.push(`<div class="hub-hero-chip">🕐 ${t.hora}</div>`);
   const subTotal = (t.subtarefas||[]).length;
   const subDone  = (t.subtarefas||[]).filter(s=>s.done).length;
-  if (subTotal > 0) chips.push(`<div class="hub-hero-chip">◈ ${subDone}/${subTotal} subtarefas</div>`);
+  if (subTotal > 0) chips.push(`<div class="hub-hero-chip">\u25c8 ${subDone}/${subTotal} subtarefas</div>`);
   document.getElementById('taskh-meta').innerHTML = chips.join('');
 
   // Nota/detalhes
@@ -895,11 +1135,15 @@ function taskHubRender(t) {
 
 function taskHubRenderSubs(t) {
   const subs = t.subtarefas || [];
+  const childTasks = tkGetChildren(t.id);
   const listEl = document.getElementById('taskh-sub-list');
   const pctEl  = document.getElementById('taskh-sub-pct');
   if (!listEl) return;
   const done = subs.filter(s=>s.done).length;
-  if (pctEl) pctEl.textContent = subs.length ? `${done}/${subs.length}` : '';
+  const childDone = childTasks.filter(child => child.done).length;
+  const totalItems = subs.length + childTasks.length;
+  const totalDone = done + childDone;
+  if (pctEl) pctEl.textContent = totalItems ? `${totalDone}/${totalItems}` : '';
   listEl.innerHTML = subs.length
     ? subs.map((s,i) => `
         <div class="taskh-sub-item">
@@ -947,9 +1191,9 @@ function taskHubRenderDoneBtn(t) {
   const navLbl  = document.getElementById('taskh-nav-done-lbl');
   if (!btn) return;
   btn.className = 'taskh-done-btn ' + (t.done ? 'done-state' : 'pending');
-  if (icon) icon.textContent = t.done ? '✓' : '○';
+  if (icon) icon.textContent = t.done ? '\u2713' : '\u25cb';
   if (lbl)  lbl.textContent  = t.done ? 'Concluída! Clique para reabrir' : 'Marcar como concluída';
-  if (navIcon) navIcon.textContent = t.done ? '✓' : '○';
+  if (navIcon) navIcon.textContent = t.done ? '\u2713' : '\u25cb';
   if (navLbl)  navLbl.textContent  = t.done ? 'Reabrir' : 'Concluir';
 }
 
@@ -961,7 +1205,7 @@ function taskHubRenderTips(t) {
   const tips = [];
 
   if (!t.nota) tips.push({ icon:'📝', color:'#c8a96e', badge:'Detalhe', title:'Adicione contexto', desc:'Uma boa descrição evita esquecimentos e ajuda a retomar o foco rapidamente.' });
-  if (subs.length === 0) tips.push({ icon:'◈', color:'#7c6fcd', badge:'Estrutura', title:'Divida em subtarefas', desc:'Tarefas com passos menores são concluídas 2x mais rápido.' });
+  if (subs.length === 0) tips.push({ icon:'\u25c8', color:'#7c6fcd', badge:'Estrutura', title:'Divida em subtarefas', desc:'Tarefas com passos menores são concluídas 2x mais rápido.' });
   if (diff !== null && diff < 0 && !t.done) tips.push({ icon:'⚡', color:'#e06b8b', badge:'Urgente', title:'Tarefa atrasada!', desc:`Esta tarefa está ${Math.abs(diff)} dia(s) atrasada. Priorize agora.` });
   if (diff !== null && diff === 0 && !t.done) tips.push({ icon:'🎯', color:'#e8864a', badge:'Hoje', title:'Vence hoje!', desc:'Foco! Esta tarefa precisa ser concluída antes do fim do dia.' });
   if (t.prior === 'alta' && !t.done) tips.push({ icon:'🔴', color:'#e06b8b', badge:'Alta prio', title:'Tarefa de alta prioridade', desc:'Considere trabalhar nesta tarefa antes de qualquer outra pendente.' });
@@ -1030,7 +1274,8 @@ function taskHubDrawerOpen() {
   document.getElementById('tkd-cat').value   = t.cat   || 'Pessoal';
   document.getElementById('tkd-data').value  = t.data  || '';
   document.getElementById('tkd-hora').value  = t.hora  || '';
-  document.getElementById('taskh-drawer-icon').textContent  = TK_PRIOR_COLOR[t.prior] ? ({alta:'🔴',media:'🟡',baixa:'🟢'}[t.prior]) : '✦';
+  document.getElementById('tkd-recorrencia').value = t.recurrence || 'none';
+  document.getElementById('taskh-drawer-icon').textContent  = TK_PRIOR_COLOR[t.prior] ? ({alta:'\u25c6', media:'\u25c8', baixa:'\u2726'}[t.prior]) : '\u2726';
   document.getElementById('taskh-drawer-title').textContent = t.nome;
   tkBuildColorPicker('tkd-colors', taskHubDrawerColor, 'taskHubPickColor');
   document.getElementById('taskh-drawer').classList.add('open');
@@ -1061,6 +1306,7 @@ function taskHubDrawerSalvar() {
     data:  document.getElementById('tkd-data').value,
     hora:  document.getElementById('tkd-hora').value,
     cor:   taskHubDrawerColor,
+    recurrence: document.getElementById('tkd-recorrencia').value,
   };
   save(); renderTasks();
   taskHubDrawerClose();
@@ -1076,6 +1322,696 @@ function taskHubDelete() {
   taskHubDrawerClose(); taskHubClose();
 }
 
+var tkCalPointerState = null;
+taskLinkBoardState.x = 0;
+taskLinkBoardState.y = 0;
+
+function tkCalEnsureSelectionBox() {
+  var wrap = document.querySelector('.tk-cal-wrap');
+  if (!wrap) return null;
+  var box = document.getElementById('tk-cal-select-box');
+  if (!box) {
+    box = document.createElement('div');
+    box.id = 'tk-cal-select-box';
+    box.className = 'tk-cal-select-box';
+    wrap.appendChild(box);
+  }
+  return box;
+}
+
+function tkCalApplySelection(ids) {
+  var normalizedIds = Array.from(ids || []).map(function (id) { return Number(id); });
+  tkCalendarSelection.ids.clear();
+  normalizedIds.forEach(function (id) { tkCalendarSelection.ids.add(id); });
+  document.querySelectorAll('.tk-cal-task-card').forEach(function (card) {
+    var id = Number(card.dataset.taskId);
+    card.classList.toggle('selected', tkSelectionHas(id));
+  });
+}
+
+function tkCalSetHoverDate(date) {
+  tkCalendarSelection.hoverDate = date || null;
+  document.querySelectorAll('.tk-day[data-date]').forEach(function (day) {
+    day.classList.toggle('drop-target', day.dataset.date === tkCalendarSelection.hoverDate);
+  });
+}
+
+function tkCalSelectByRect(rect, additiveIds) {
+  var ids = new Set(additiveIds || []);
+  document.querySelectorAll('.tk-cal-task-card').forEach(function (card) {
+    var cardRect = card.getBoundingClientRect();
+    var hit = !(cardRect.right < rect.left || cardRect.left > rect.right || cardRect.bottom < rect.top || cardRect.top > rect.bottom);
+    if (hit) ids.add(Number(card.dataset.taskId));
+  });
+  tkCalApplySelection(ids);
+}
+
+function tkCalStartSelection(event) {
+  if (event.button !== 0) return;
+  var wrap = document.querySelector('.tk-cal-wrap');
+  var box = tkCalEnsureSelectionBox();
+  if (!wrap || !box) return;
+  var rect = wrap.getBoundingClientRect();
+  tkCalPointerState = {
+    rect: rect,
+    startX: event.clientX,
+    startY: event.clientY,
+    moved: false,
+    additive: event.ctrlKey || event.metaKey,
+    baseIds: new Set(tkCalendarSelection.ids)
+  };
+  tkCalendarSelection.boxActive = true;
+  if (!tkCalPointerState.additive) tkClearSelection();
+  box.style.display = 'block';
+  box.style.left = (event.clientX - rect.left) + 'px';
+  box.style.top = (event.clientY - rect.top) + 'px';
+  box.style.width = '0px';
+  box.style.height = '0px';
+}
+
+function tkCalMoveSelection(event) {
+  if (!tkCalendarSelection.boxActive || !tkCalPointerState) return;
+  var box = tkCalEnsureSelectionBox();
+  if (!box) return;
+  var rect = tkCalPointerState.rect;
+  if (Math.abs(event.clientX - tkCalPointerState.startX) > 4 || Math.abs(event.clientY - tkCalPointerState.startY) > 4) {
+    tkCalPointerState.moved = true;
+  }
+  var left = Math.max(0, Math.min(event.clientX, tkCalPointerState.startX) - rect.left);
+  var top = Math.max(0, Math.min(event.clientY, tkCalPointerState.startY) - rect.top);
+  var right = Math.min(rect.width, Math.max(event.clientX, tkCalPointerState.startX) - rect.left);
+  var bottom = Math.min(rect.height, Math.max(event.clientY, tkCalPointerState.startY) - rect.top);
+  box.style.left = left + 'px';
+  box.style.top = top + 'px';
+  box.style.width = Math.max(0, right - left) + 'px';
+  box.style.height = Math.max(0, bottom - top) + 'px';
+  tkCalSelectByRect(
+    { left: left + rect.left, top: top + rect.top, right: right + rect.left, bottom: bottom + rect.top },
+    tkCalPointerState.additive ? tkCalPointerState.baseIds : []
+  );
+}
+
+function tkCalEndSelection() {
+  if (tkCalPointerState && tkCalPointerState.moved) {
+    tkCalendarSelection.justBoxSelected = true;
+    setTimeout(function () { tkCalendarSelection.justBoxSelected = false; }, 80);
+  }
+  tkCalendarSelection.boxActive = false;
+  tkCalPointerState = null;
+  var box = document.getElementById('tk-cal-select-box');
+  if (box) box.style.display = 'none';
+}
+
+function tkCalFindDayAtPoint(clientX, clientY) {
+  var target = document.elementFromPoint(clientX, clientY);
+  var day = target ? target.closest('.tk-day[data-date]') : null;
+  return day ? day.dataset.date : null;
+}
+
+function tkCalResetPointerDrag() {
+  tkCalendarSelection.pointerCardId = null;
+  tkCalendarSelection.pointerStartX = 0;
+  tkCalendarSelection.pointerStartY = 0;
+  tkCalendarSelection.pointerDragging = false;
+  tkCalendarSelection.dragTaskId = null;
+  tkCalendarSelection.dragDate = null;
+  tkCalendarSelection.dragIds = [];
+  tkCalSetHoverDate(null);
+  document.body.classList.remove('tk-cal-dragging');
+  if (tkCalDragGhost && tkCalDragGhost.parentNode) tkCalDragGhost.parentNode.removeChild(tkCalDragGhost);
+  tkCalDragGhost = null;
+}
+
+function tkCalEnsureDragGhost() {
+  if (tkCalDragGhost) return tkCalDragGhost;
+  tkCalDragGhost = document.createElement('div');
+  tkCalDragGhost.className = 'tk-cal-drag-ghost';
+  document.body.appendChild(tkCalDragGhost);
+  return tkCalDragGhost;
+}
+
+function tkCalUpdateDragGhost(clientX, clientY) {
+  if (!tkCalendarSelection.pointerDragging) return;
+  var ghost = tkCalEnsureDragGhost();
+  var ids = tkCalendarSelection.dragIds.slice();
+  var tasks = ids.map(function (id) {
+    return S.tasks.find(function (item) { return item.id === Number(id); });
+  }).filter(Boolean);
+  if (!tasks.length) return;
+  ghost.innerHTML = ids.length === 1
+    ? `<span class="tk-cal-drag-ghost-count">1</span><span>${tasks[0].nome}</span>`
+    : `<span class="tk-cal-drag-ghost-count">${ids.length}</span><span>${tasks[0].nome}</span>`;
+  ghost.style.left = (clientX + 16) + 'px';
+  ghost.style.top = (clientY + 16) + 'px';
+  ghost.classList.add('show');
+}
+
+function tkCalInitInteractions() {
+  var wrap = document.querySelector('.tk-cal-wrap');
+  if (!wrap || wrap.dataset.selectionReady === '1') return;
+  wrap.dataset.selectionReady = '1';
+  wrap.addEventListener('pointerdown', function (event) {
+    if (event.target.closest('.tk-cal-task-card')) return;
+    tkCalStartSelection(event);
+  });
+  document.addEventListener('pointermove', tkCalMoveSelection);
+  document.addEventListener('pointerup', tkCalEndSelection);
+  document.addEventListener('pointermove', tkCalHandlePointerDragMove);
+  document.addEventListener('pointerup', tkCalHandlePointerDragEnd);
+}
+
+function tkCalCardPointerDown(event, id) {
+  event.stopPropagation();
+  event.preventDefault();
+  if (tkCalendarSelection.justDragged) {
+    tkCalendarSelection.justDragged = false;
+    return;
+  }
+  if (event.ctrlKey || event.metaKey) {
+    if (tkSelectionHas(id)) tkCalendarSelection.ids.delete(id);
+    else tkCalendarSelection.ids.add(id);
+  } else if (!tkSelectionHas(id)) {
+    tkClearSelection();
+    tkCalendarSelection.ids.add(id);
+  }
+  tkCalApplySelection(tkCalendarSelection.ids);
+  tkCalendarSelection.pointerCardId = id;
+  tkCalendarSelection.pointerStartX = event.clientX;
+  tkCalendarSelection.pointerStartY = event.clientY;
+  tkCalendarSelection.pointerDragging = false;
+  tkCalendarSelection.dragTaskId = id;
+  tkCalendarSelection.dragDate = (S.tasks.find(function (item) { return item.id === id; }) || {}).data || null;
+  tkCalendarSelection.dragIds = tkSelectionHas(id) ? Array.from(tkCalendarSelection.ids) : [id];
+}
+
+function tkCalCardActivate(event, id) {
+  event.stopPropagation();
+  if (tkCalendarSelection.justDragged || tkCalendarSelection.pointerDragging) return;
+  if (event.ctrlKey || event.metaKey) return;
+  taskHubOpen(id);
+}
+
+function tkCalHandlePointerDragMove(event) {
+  if (!tkCalendarSelection.pointerCardId || tkCalendarSelection.boxActive) return;
+  var dx = Math.abs(event.clientX - tkCalendarSelection.pointerStartX);
+  var dy = Math.abs(event.clientY - tkCalendarSelection.pointerStartY);
+  if (!tkCalendarSelection.pointerDragging && (dx > 6 || dy > 6)) {
+    tkCalendarSelection.pointerDragging = true;
+    document.body.classList.add('tk-cal-dragging');
+  }
+  if (!tkCalendarSelection.pointerDragging) return;
+  tkCalSetHoverDate(tkCalFindDayAtPoint(event.clientX, event.clientY));
+  tkCalUpdateDragGhost(event.clientX, event.clientY);
+}
+
+function tkCalHandlePointerDragEnd(event) {
+  if (!tkCalendarSelection.pointerCardId) return;
+  var wasDragging = tkCalendarSelection.pointerDragging;
+  var sourceDate = tkCalendarSelection.dragDate;
+  var ids = tkCalendarSelection.dragIds.slice();
+  var targetDate = tkCalFindDayAtPoint(event.clientX, event.clientY);
+  tkCalResetPointerDrag();
+  if (!wasDragging || !sourceDate || !targetDate || !ids.length) return;
+  var delta = tkDiffDays(sourceDate, targetDate);
+  if (!delta) {
+    tkCalendarSelection.justDragged = true;
+    setTimeout(function () { tkCalendarSelection.justDragged = false; }, 80);
+    return;
+  }
+  tkMoveTaskSeries(ids, delta);
+  tkClearSelection();
+  tkCalendarSelection.justDragged = true;
+  setTimeout(function () { tkCalendarSelection.justDragged = false; }, 80);
+  save();
+  renderTasks();
+}
+
+const renderTasksBase = renderTasks;
+renderTasks = function () {
+  renderTasksBase();
+  tkCalInitInteractions();
+  if (taskHubState.id) {
+    var openTask = S.tasks.find(function (item) { return item.id === taskHubState.id; });
+    if (openTask) taskHubRenderLinks(openTask);
+  }
+};
+
+tkCalRender = function () {
+  const titleEl = document.getElementById('tk-cal-title');
+  if (titleEl) titleEl.textContent = TK_MONTHS[tkCalState.month] + ' ' + tkCalState.year;
+  const year = tkCalState.year;
+  const month = tkCalState.month;
+  const selected = tkCalState.selected;
+  const today = tkToday();
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMo = new Date(year, month + 1, 0).getDate();
+  const daysInPrev = new Date(year, month, 0).getDate();
+  const byDay = {};
+  S.tasks.forEach(function (task) {
+    if (!task.data) return;
+    const parts = task.data.split('-').map(Number);
+    if (parts[0] === year && parts[1] === month + 1) {
+      if (!byDay[parts[2]]) byDay[parts[2]] = [];
+      byDay[parts[2]].push(task);
+    }
+  });
+  const grid = document.getElementById('tk-cal-days');
+  if (!grid) return;
+  const cells = [];
+  for (let i = firstDay - 1; i >= 0; i--) {
+    cells.push(`<div class="tk-day other-month"><span class="tk-day-num">${daysInPrev - i}</span></div>`);
+  }
+  for (let d = 1; d <= daysInMo; d++) {
+    const ds = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const cls = ['tk-day', ds === today ? 'today' : '', ds === selected ? 'selected' : ''].filter(Boolean).join(' ');
+    const miniCards = (byDay[d] || []).slice().sort(function (a, b) {
+      if (a.done !== b.done) return a.done ? 1 : -1;
+      return (a.hora || '99:99').localeCompare(b.hora || '99:99');
+    }).map(function (task) {
+      const col = task.cor || TK_PRIOR_COLOR[task.prior] || '#c8a96e';
+      return `<div class="tk-cal-task-card ${task.done ? 'done-mini' : ''} ${tkSelectionHas(task.id) ? 'selected' : ''}"
+          data-task-id="${task.id}"
+          data-date="${task.data}"
+          style="--tk-color:${col}"
+          onclick="tkCalCardActivate(event, ${task.id})"
+          onpointerdown="tkCalCardPointerDown(event, ${task.id})"
+          title="${task.nome}">
+        ${task.hora ? `<span style="opacity:.6;margin-right:3px">${task.hora}</span>` : ''}${task.nome}
+      </div>`;
+    }).join('');
+    cells.push(`<div class="${cls}"
+        data-date="${ds}"
+        onclick="tkCalSelectDay('${ds}')"
+        ondblclick="tkModalOpenForDate('${ds}')"
+        title="Clique para selecionar · Duplo clique para adicionar tarefa">
+      <span class="tk-day-num">${d}</span>
+      <div class="tk-day-tasks">${miniCards}</div>
+    </div>`);
+  }
+  const rem = cells.length % 7 === 0 ? 0 : 7 - (cells.length % 7);
+  for (let d = 1; d <= rem; d++) cells.push(`<div class="tk-day other-month"><span class="tk-day-num">${d}</span></div>`);
+  grid.innerHTML = cells.join('');
+  tkCalEnsureSelectionBox();
+  tkCalApplySelection(tkCalendarSelection.ids);
+};
+
+tkCalSelectDay = function (ds) {
+  if (tkCalendarSelection.justBoxSelected) return;
+  tkCalState.selected = ds;
+  tkCalRender();
+  const listEl = document.getElementById('tk-list-section') || document.querySelector('.tk-list-section');
+  if (listEl) listEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+
+const taskHubRenderBase = taskHubRender;
+taskHubRender = function (task) {
+  taskHubRenderBase(task);
+  const schedEl = document.getElementById('taskh-sched-content');
+  const classEl = document.getElementById('taskh-class-content');
+  const recurrenceLabel = TK_RECURRENCE_LABEL[task.recurrence || 'none'] || TK_RECURRENCE_LABEL.none;
+  const children = tkGetChildren(task.id);
+  const parent = task.parentId ? S.tasks.find(function (item) { return item.id === task.parentId; }) : null;
+  if (schedEl) {
+    schedEl.insertAdjacentHTML('beforeend', `
+      <div style="display:flex;justify-content:space-between;margin-top:10px">
+        <span style="font-size:11px;font-family:var(--font-mono);color:var(--muted)">Recorrencia</span>
+        <span style="font-size:12px;font-weight:700;color:var(--text)">${recurrenceLabel}</span>
+      </div>`);
+  }
+  if (classEl) {
+    classEl.insertAdjacentHTML('beforeend', `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
+        <span style="font-size:11px;font-family:var(--font-mono);color:var(--muted)">Estrutura</span>
+        <span style="font-size:12px;font-weight:700;color:var(--text)">${parent ? 'Filha de ' + parent.nome : 'Raiz'} · ${children.length} filha(s)</span>
+      </div>`);
+  }
+  taskHubRenderLinks(task);
+  taskHubRenderDoneBtn(task);
+};
+
+taskHubRenderDoneBtn = function (task) {
+  const btn = document.getElementById('taskh-done-btn');
+  const icon = document.getElementById('taskh-done-icon');
+  const lbl = document.getElementById('taskh-done-lbl');
+  const navIcon = document.getElementById('taskh-nav-done-icon');
+  const navLbl = document.getElementById('taskh-nav-done-lbl');
+  const blocked = !task.done && !tkCanCompleteTask(task);
+  if (!btn) return;
+  btn.className = 'taskh-done-btn ' + (task.done ? 'done-state' : 'pending');
+  btn.disabled = blocked;
+  btn.style.opacity = blocked ? '.58' : '';
+  btn.title = blocked ? 'Conclua todas as tarefas filhas antes.' : '';
+  if (icon) icon.textContent = task.done ? '\u2713' : '\u25cb';
+  if (lbl) lbl.textContent = task.done ? 'Concluida! Clique para reabrir' : blocked ? 'Conclua as tarefas filhas primeiro' : 'Marcar como concluida';
+  if (navIcon) navIcon.textContent = task.done ? '\u2713' : '\u25cb';
+  if (navLbl) navLbl.textContent = task.done ? 'Reabrir' : blocked ? 'Bloqueada' : 'Concluir';
+};
+
+function taskHubRenderLinks(task) {
+  const lane = document.getElementById('taskh-links-lane');
+  const board = document.getElementById('taskh-links-board');
+  const canvas = document.getElementById('taskh-links-canvas');
+  if (!lane || !board || !canvas || !task) return;
+  var parent = task.parentId ? S.tasks.find(function (item) { return item.id === task.parentId; }) : null;
+  var child = tkGetChildren(task.id)[0] || null;
+  lane.innerHTML = `
+    ${parent ? `<button class="taskh-link-node parent" type="button" onclick="taskHubOpen(${parent.id})">
+      <span class="taskh-link-role">Tarefa mae</span>
+      <span class="taskh-link-title">${parent.nome}</span>
+    </button>` : `<div class="taskh-link-empty">Sem tarefa mae</div>`}
+    <div class="taskh-link-connector"></div>
+    <div class="taskh-link-node current">
+      <span class="taskh-link-role">Tarefa atual</span>
+      <span class="taskh-link-title">${task.nome}</span>
+    </div>
+    <div class="taskh-link-connector"></div>
+    ${child ? `<button class="taskh-link-node child" type="button" onclick="taskHubOpen(${child.id})">
+      <span class="taskh-link-role">Tarefa filha</span>
+      <span class="taskh-link-title">${child.nome}</span>
+    </button>` : `<div class="taskh-link-empty">Sem tarefa filha</div>`}
+  `;
+  requestAnimationFrame(function () {
+    taskLinkBoardState.x = Math.max(18, Math.round((canvas.clientWidth - (board.offsetWidth * taskLinkBoardState.scale)) / 2));
+    taskLinkBoardState.y = Math.max(18, Math.round((canvas.clientHeight - (board.offsetHeight * taskLinkBoardState.scale)) / 2));
+    taskHubApplyBoardTransform();
+  });
+}
+
+function taskHubApplyBoardTransform() {
+  const board = document.getElementById('taskh-links-board');
+  const readout = document.getElementById('taskh-links-zoom-readout');
+  if (!board) return;
+  board.style.transform = `translate(${taskLinkBoardState.x}px, ${taskLinkBoardState.y}px) scale(${taskLinkBoardState.scale})`;
+  if (readout) readout.textContent = Math.round(taskLinkBoardState.scale * 100) + '%';
+}
+
+function taskHubClampBoardPosition() {
+  const canvas = document.getElementById('taskh-links-canvas');
+  const board = document.getElementById('taskh-links-board');
+  if (!canvas || !board) return;
+  const maxX = Math.max(18, canvas.clientWidth - (board.offsetWidth * taskLinkBoardState.scale) - 18);
+  const maxY = Math.max(18, canvas.clientHeight - (board.offsetHeight * taskLinkBoardState.scale) - 18);
+  taskLinkBoardState.x = Math.max(18, Math.min(maxX, taskLinkBoardState.x));
+  taskLinkBoardState.y = Math.max(18, Math.min(maxY, taskLinkBoardState.y));
+  taskHubApplyBoardTransform();
+}
+
+function taskHubSetZoom(nextScale) {
+  const clamped = Math.max(0.7, Math.min(1.8, Number(nextScale.toFixed(2))));
+  taskLinkBoardState.scale = clamped;
+  taskHubClampBoardPosition();
+}
+
+function taskHubZoomIn() {
+  taskHubSetZoom(taskLinkBoardState.scale + 0.1);
+}
+
+function taskHubZoomOut() {
+  taskHubSetZoom(taskLinkBoardState.scale - 0.1);
+}
+
+function taskHubLinksWheel(event) {
+  event.preventDefault();
+  taskHubSetZoom(taskLinkBoardState.scale + (event.deltaY < 0 ? 0.08 : -0.08));
+}
+
+function taskHubCanLink(kind, current, candidate) {
+  if (!current || !candidate || current.id === candidate.id) return false;
+  if (kind === 'parent') {
+    if (tkWouldCreateCycle(current.id, candidate.id)) return false;
+    return true;
+  }
+  if (candidate.id === current.parentId) return false;
+  if (tkWouldCreateCycle(candidate.id, current.id)) return false;
+  return true;
+}
+
+function taskHubLinkTasks(kind, candidateId) {
+  const current = S.tasks.find(function (item) { return item.id === taskHubState.id; });
+  const candidate = S.tasks.find(function (item) { return item.id === Number(candidateId); });
+  if (!current || !candidate || !taskHubCanLink(kind, current, candidate)) return;
+  if (kind === 'parent') {
+    current.parentId = candidate.id;
+  } else {
+    candidate.parentId = current.id;
+  }
+  save();
+  renderTasks();
+  taskHubLinkPickerClose();
+  taskHubRender(current);
+}
+
+function taskHubLinkPickerRender() {
+  const list = document.getElementById('taskh-link-picker-list');
+  const search = document.getElementById('taskh-link-picker-search');
+  const current = S.tasks.find(function (item) { return item.id === taskHubState.id; });
+  if (!list || !current || !taskLinkPickerState.kind) return;
+  var query = search ? search.value.trim().toLowerCase() : '';
+  var items = S.tasks.filter(function (item) {
+    if (!taskHubCanLink(taskLinkPickerState.kind, current, item)) return false;
+    if (!query) return true;
+    return (item.nome || '').toLowerCase().indexOf(query) >= 0;
+  }).sort(function (a, b) {
+    return (a.nome || '').localeCompare(b.nome || '');
+  });
+  list.innerHTML = items.length ? items.map(function (item) {
+    return `<button class="taskh-link-picker-item" type="button" onclick="taskHubLinkTasks('${taskLinkPickerState.kind}', ${item.id})">
+      <span class="taskh-link-picker-item-main">
+        <span class="taskh-link-picker-item-title">${item.nome}</span>
+        <span class="taskh-link-picker-item-meta">${item.cat || 'Sem categoria'} · ${item.data ? tkFmtDate(item.data) : 'Sem data'}</span>
+      </span>
+      <span class="taskh-link-picker-item-meta">${item.done ? 'Concluida' : 'Pendente'}</span>
+    </button>`;
+  }).join('') : '<div class="taskh-link-empty">Nenhuma tarefa encontrada.</div>';
+}
+
+function taskHubLinkPickerOpen(kind) {
+  const current = S.tasks.find(function (item) { return item.id === taskHubState.id; });
+  const title = document.getElementById('taskh-link-picker-title');
+  const sub = document.getElementById('taskh-link-picker-sub');
+  const bd = document.getElementById('taskh-link-picker-bd');
+  const search = document.getElementById('taskh-link-picker-search');
+  if (!current || !bd) return;
+  taskLinkPickerState.kind = kind;
+  taskLinkPickerState.open = true;
+  if (title) title.textContent = kind === 'parent' ? 'Selecionar tarefa mae' : 'Selecionar tarefa filha';
+  if (sub) sub.textContent = kind === 'parent'
+    ? 'Escolha uma tarefa existente para ser a tarefa mae da atual.'
+    : 'Escolha uma tarefa existente para ser a tarefa filha da atual.';
+  if (search) search.value = '';
+  bd.classList.add('open');
+  taskHubLinkPickerRender();
+  if (search) setTimeout(function () { search.focus(); }, 60);
+}
+
+function taskHubLinkPickerClose(event) {
+  if (event && event.target && event.target.id !== 'taskh-link-picker-bd') return;
+  const bd = document.getElementById('taskh-link-picker-bd');
+  if (bd) bd.classList.remove('open');
+  taskLinkPickerState.kind = null;
+  taskLinkPickerState.open = false;
+}
+
+function taskHubLinkPickerCreateNew() {
+  const current = S.tasks.find(function (item) { return item.id === taskHubState.id; });
+  if (!current || !taskLinkPickerState.kind) return;
+  taskLinkPendingCreate = taskLinkPickerState.kind;
+  taskHubLinkPickerClose();
+  tkModalOpenForDate(current.data || tkToday());
+}
+
+function taskHubLinksPointerDown(event) {
+  if (event.button !== 0) return;
+  if (event.target.closest('.taskh-link-add') || event.target.closest('button.taskh-link-node')) return;
+  const board = document.getElementById('taskh-links-board');
+  if (!board) return;
+  taskLinkBoardState.dragging = true;
+  taskLinkBoardState.startX = event.clientX - taskLinkBoardState.x;
+  taskLinkBoardState.startY = event.clientY - taskLinkBoardState.y;
+  board.classList.add('dragging');
+}
+
+document.addEventListener('pointermove', function (event) {
+  if (!taskLinkBoardState.dragging) return;
+  const canvas = document.getElementById('taskh-links-canvas');
+  const board = document.getElementById('taskh-links-board');
+  if (!canvas || !board) return;
+  const maxX = Math.max(18, canvas.clientWidth - (board.offsetWidth * taskLinkBoardState.scale) - 18);
+  const maxY = Math.max(18, canvas.clientHeight - (board.offsetHeight * taskLinkBoardState.scale) - 18);
+  taskLinkBoardState.x = Math.max(18, Math.min(maxX, event.clientX - taskLinkBoardState.startX));
+  taskLinkBoardState.y = Math.max(18, Math.min(maxY, event.clientY - taskLinkBoardState.startY));
+  taskHubApplyBoardTransform();
+});
+
+document.addEventListener('pointerup', function () {
+  if (!taskLinkBoardState.dragging) return;
+  taskLinkBoardState.dragging = false;
+  const board = document.getElementById('taskh-links-board');
+  if (board) board.classList.remove('dragging');
+});
+
+function taskHubCreateLinkedTask(kind) {
+  taskHubLinkPickerOpen(kind);
+}
+
+tkQuickToggle = function (id) {
+  const task = S.tasks.find(function (item) { return item.id === id; });
+  if (!task) return;
+  if (!task.done && !tkCanCompleteTask(task)) {
+    alert('Conclua todas as tarefas filhas antes de finalizar a tarefa mae.');
+    return;
+  }
+  task.done = !task.done;
+  save();
+  renderTasks();
+  if (taskHubState.id === id) taskHubRender(task);
+};
+
+taskHubToggleDone = function () {
+  const task = S.tasks.find(function (item) { return item.id === taskHubState.id; });
+  if (!task) return;
+  if (!task.done && !tkCanCompleteTask(task)) {
+    alert('Conclua todas as tarefas filhas antes de finalizar a tarefa mae.');
+    return;
+  }
+  task.done = !task.done;
+  save();
+  renderTasks();
+  taskHubRender(task);
+};
+
+taskHubToggleSub = function (idx) {
+  const task = S.tasks.find(function (item) { return item.id === taskHubState.id; });
+  if (!task) return;
+  task.subtarefas[idx].done = !task.subtarefas[idx].done;
+  if (task.subtarefas.length && task.subtarefas.every(function (sub) { return sub.done; }) && tkCanCompleteTask(task)) {
+    task.done = true;
+  } else if (!task.subtarefas[idx].done) {
+    task.done = false;
+  }
+  save();
+  renderTasks();
+  taskHubRender(task);
+};
+
+taskHubRenderSubs = function (task) {
+  const subs = task.subtarefas || [];
+  const childTasks = tkGetChildren(task.id);
+  const listEl = document.getElementById('taskh-sub-list');
+  const pctEl = document.getElementById('taskh-sub-pct');
+  if (!listEl) return;
+  const done = subs.filter(function (sub) { return sub.done; }).length;
+  const childDone = childTasks.filter(function (child) { return child.done; }).length;
+  const totalItems = subs.length + childTasks.length;
+  const totalDone = done + childDone;
+  if (pctEl) pctEl.textContent = totalItems ? `${totalDone}/${totalItems}` : '';
+  const subMarkup = subs.map(function (sub, index) {
+    return `
+      <div class="taskh-sub-item">
+        <div class="taskh-sub-check ${sub.done ? 'done' : ''}" onclick="taskHubToggleSub(${index})">
+          ${sub.done ? '\u2713' : ''}
+        </div>
+        <div class="taskh-sub-text ${sub.done ? 'done' : ''}">${sub.texto}</div>
+        <button class="taskh-sub-del" onclick="taskHubDelSub(${index})">\u2715</button>
+      </div>`;
+  }).join('');
+  const childMarkup = childTasks.map(function (child) {
+    return `
+      <button class="taskh-sub-item taskh-sub-item-linked" type="button" onclick="taskHubOpen(${child.id})">
+        <div class="taskh-sub-check ${child.done ? 'done' : ''}">
+          ${child.done ? '\u2713' : '\u2192'}
+        </div>
+        <div class="taskh-sub-text ${child.done ? 'done' : ''}">
+          ${child.nome}
+          <span class="taskh-sub-linked-meta">Tarefa filha</span>
+        </div>
+        <span class="taskh-sub-open">Abrir</span>
+      </button>`;
+  }).join('');
+  listEl.innerHTML = (subMarkup || childMarkup)
+    ? subMarkup + childMarkup
+    : '<div style="font-size:12px;color:rgba(122,117,144,.4);font-family:var(--font-mono);font-style:italic;padding:4px 0">Nenhuma subtarefa. Adicione passos menores abaixo.</div>';
+};
+
+tkModalSave = function () {
+  const nome = document.getElementById('tkm-nome').value.trim();
+  if (!nome) { document.getElementById('tkm-nome').focus(); return; }
+  const task = {
+    id: Date.now(),
+    nome: nome,
+    nota: document.getElementById('tkm-nota').value.trim(),
+    prior: document.getElementById('tkm-prior').value,
+    cat: document.getElementById('tkm-cat').value,
+    hora: document.getElementById('tkm-hora').value,
+    recurrence: document.getElementById('tkm-recorrencia').value,
+    data: tkModalDate,
+    cor: tkModalColor,
+    done: false,
+    subtarefas: [],
+    parentId: null,
+    isRecurringClone: false,
+    recurrenceMasterId: null,
+    recurrenceIndex: 0
+  };
+  task.recurrenceMasterId = task.id;
+  if (taskLinkPendingCreate === 'child') task.parentId = taskHubState.id;
+  S.tasks.push(task);
+  if (taskLinkPendingCreate === 'parent') {
+    var current = S.tasks.find(function (item) { return item.id === taskHubState.id; });
+    if (current) current.parentId = task.id;
+  }
+  tkSyncRecurringSeries(task.id);
+  taskLinkPendingCreate = null;
+  save();
+  renderTasks();
+  tkModalClose();
+};
+
+taskHubDrawerSalvar = function () {
+  const nome = document.getElementById('tkd-nome').value.trim();
+  if (!nome) { document.getElementById('tkd-nome').focus(); return; }
+  const idx = S.tasks.findIndex(function (item) { return item.id === taskHubState.id; });
+  if (idx < 0) return;
+  S.tasks[idx] = {
+    ...S.tasks[idx],
+    nome: nome,
+    nota: document.getElementById('tkd-nota').value.trim(),
+    prior: document.getElementById('tkd-prior').value,
+    cat: document.getElementById('tkd-cat').value,
+    data: document.getElementById('tkd-data').value,
+    hora: document.getElementById('tkd-hora').value,
+    cor: taskHubDrawerColor,
+    recurrence: document.getElementById('tkd-recorrencia').value
+  };
+  if (!S.tasks[idx].isRecurringClone) tkSyncRecurringSeries(S.tasks[idx].id);
+  save();
+  renderTasks();
+  taskHubDrawerClose();
+  taskHubRender(S.tasks[idx]);
+};
+
+taskHubDelete = function () {
+  const task = S.tasks.find(function (item) { return item.id === taskHubState.id; });
+  const nome = task ? task.nome : 'esta tarefa';
+  if (!confirm('Excluir "' + nome + '"?')) return;
+  const nextParentId = task ? task.parentId : null;
+  S.tasks.forEach(function (item) {
+    if (item.parentId === taskHubState.id) item.parentId = nextParentId;
+  });
+  S.tasks = S.tasks.filter(function (item) {
+    if (item.id === taskHubState.id) return false;
+    if (task && !task.isRecurringClone && item.isRecurringClone && item.recurrenceMasterId === task.id) return false;
+    return true;
+  });
+  tkCalendarSelection.ids.delete(taskHubState.id);
+  save();
+  renderTasks();
+  taskHubDrawerClose();
+  taskHubClose();
+};
+
 
 load();
 renderTasks();
+window.addEventListener('resize', tkRenderList);
+window.addEventListener('resize', taskHubClampBoardPosition);

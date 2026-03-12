@@ -127,6 +127,235 @@
     return parts.map(function (p) { return p.charAt(0).toUpperCase(); }).join("");
   }
 
+  var RPG_XP = {
+    livro: 30,
+    cinema: 15,
+    manga: 20,
+    treino: 25,
+    estudoHora: 20,
+    tarefa: 10,
+    sonho: 15,
+    viagem: 50
+  };
+
+  var RPG_TITLES = [
+    "Iniciante", "Aprendiz", "Explorador", "Aventureiro", "Viajante",
+    "Veterano", "Especialista", "Mestre", "Grao-Mestre", "Lendario"
+  ];
+
+  var RPG_CLASSES = {
+    scholar: { name: "Sabio" },
+    warrior: { name: "Guerreiro" },
+    explorer: { name: "Explorador" },
+    artist: { name: "Artista" },
+    mage: { name: "Mago" },
+    ranger: { name: "Ranger" }
+  };
+
+  var RPG_MISSION_XP = {
+    m_leitura: 20,
+    m_treino: 30,
+    m_tarefa: 15,
+    m_estudo: 25,
+    m_sonho: 10,
+    m_cinema: 15,
+    m_manga: 12,
+    m_wishlist: 8
+  };
+
+  function ensureRpgShape(state) {
+    state = ensureStateShape(state);
+    if (!state.data.rpg || typeof state.data.rpg !== "object") state.data.rpg = {};
+    if (!state.data.rpg.classe) state.data.rpg.classe = "scholar";
+    if (!state.data.rpg.missions || typeof state.data.rpg.missions !== "object") state.data.rpg.missions = {};
+    if (!state.data.rpg.missionRewards || typeof state.data.rpg.missionRewards !== "object") state.data.rpg.missionRewards = {};
+    if (!Array.isArray(state.data.rpg.log)) state.data.rpg.log = [];
+    return state;
+  }
+
+  function pickArray(data, keys) {
+    var i;
+    for (i = 0; i < keys.length; i += 1) {
+      if (Array.isArray(data[keys[i]])) return data[keys[i]];
+    }
+    return [];
+  }
+
+  function getLivros(state) { return pickArray(state.data, ["trackerLivraria", "trackerLivros", "livros", "livraria"]); }
+  function getCinema(state) { return pickArray(state.data, ["trackerCinema", "trackerFilmes", "trackerSeries", "cinema", "filmes"]); }
+  function getMangas(state) { return pickArray(state.data, ["trackerMangas", "trackerManga", "mangas"]); }
+  function getTasks(state) { return pickArray(state.data, ["tasks", "tarefas"]); }
+  function getGym(state) { return pickArray(state.data, ["academia", "gym", "treinos", "workouts"]); }
+  function getEstudos(state) { return pickArray(state.data, ["estudos"]); }
+  function getViagens(state) { return pickArray(state.data, ["viagens", "travels"]); }
+
+  function getSonhos(state) {
+    var data = state.data || {};
+    if (data.sonhosHub && Array.isArray(data.sonhosHub.sonhos)) return data.sonhosHub.sonhos;
+    return pickArray(data, ["sonhos"]);
+  }
+
+  function norm(v) {
+    return String(v == null ? "" : v).trim().toLowerCase();
+  }
+
+  function isDoneLivro(item) { return item && norm(item.status) === "concluido"; }
+  function isDoneCinema(item) { return item && norm(item.status) === "concluido"; }
+  function isDoneManga(item) { return item && norm(item.status) === "concluido"; }
+  function isDoneTask(item) { return !!(item && item.done); }
+  function isVisitedViagem(item) { return ["feito", "visitado", "concluido"].indexOf(norm(item && item.status)) >= 0; }
+  function getEstudosHoras(state) {
+    return getEstudos(state).reduce(function (acc, item) {
+      return acc + Number(item && item.horas || 0);
+    }, 0);
+  }
+
+  function isDoneStudyItem(item) {
+    if (!item || typeof item !== "object") return false;
+    if (item.done || item.completed || item.concluida || item.concluido || item.revisado) return true;
+    if (Number(item.progress || item.progresso || 0) >= 100) return true;
+    return ["concluido", "concluida", "feito", "feita", "completed", "done", "revisado", "revisada"].indexOf(norm(item.status)) >= 0;
+  }
+
+  function xpForLevel(level) { return level * 100 + (level - 1) * 50; }
+  function getLevelFromXp(xp) {
+    var level = 1;
+    while (xp >= xpForLevel(level + 1)) level += 1;
+    return level;
+  }
+
+  function calcRpgXp(state) {
+    state = ensureRpgShape(state);
+    var total = getLivros(state).filter(isDoneLivro).length * RPG_XP.livro +
+      getCinema(state).filter(isDoneCinema).length * RPG_XP.cinema +
+      getMangas(state).filter(isDoneManga).length * RPG_XP.manga +
+      getGym(state).length * RPG_XP.treino +
+      getEstudosHoras(state) * RPG_XP.estudoHora +
+      getTasks(state).filter(isDoneTask).length * RPG_XP.tarefa +
+      getSonhos(state).length * RPG_XP.sonho +
+      getViagens(state).filter(isVisitedViagem).length * RPG_XP.viagem;
+    Object.keys(state.data.rpg.missionRewards || {}).forEach(function (dateKey) {
+      var rewards = state.data.rpg.missionRewards[dateKey];
+      if (!rewards || typeof rewards !== "object") return;
+      Object.keys(rewards).forEach(function (missionId) {
+        total += Number(rewards[missionId] || 0);
+      });
+    });
+    return total;
+  }
+
+  function findByIdOrName(items, item) {
+    if (!item) return null;
+    var itemId = item.id;
+    var itemTitle = norm(item.titulo || item.title || item.nome);
+    return (items || []).find(function (candidate) {
+      if (itemId != null && candidate && candidate.id != null) return String(candidate.id) === String(itemId);
+      return norm(candidate && (candidate.titulo || candidate.title || candidate.nome)) === itemTitle;
+    }) || null;
+  }
+
+  function hasBookProgressUpdate(prevState, nextState) {
+    var prev = getLivros(prevState);
+    var next = getLivros(nextState);
+    return next.some(function (book) {
+      var before = findByIdOrName(prev, book);
+      if (!before) return Number(book && book.atual || 0) > 0;
+      return Number(book && book.atual || 0) !== Number(before && before.atual || 0);
+    });
+  }
+
+  function hasNewCompletedTask(prevState, nextState) {
+    var prev = getTasks(prevState);
+    var next = getTasks(nextState);
+    return next.some(function (task) {
+      var before = findByIdOrName(prev, task);
+      return !!(task && task.done) && !(before && before.done);
+    });
+  }
+
+  function hasNewCompletedStudy(prevState, nextState) {
+    var prev = getEstudos(prevState);
+    var next = getEstudos(nextState);
+    return next.some(function (entry) {
+      var before = findByIdOrName(prev, entry);
+      return isDoneStudyItem(entry) && !isDoneStudyItem(before);
+    });
+  }
+
+  function hasNewWorkout(prevState, nextState) {
+    return getGym(nextState).length > getGym(prevState).length;
+  }
+
+  function syncRpgState(nextState, previousState) {
+    var state = ensureRpgShape(nextState);
+    var prev = ensureRpgShape(previousState || loadState());
+    var today = new Date().toISOString().slice(0, 10);
+
+    if (state.data.rpg.missionsDate !== today) {
+      state.data.rpg.missions = {};
+      state.data.rpg.missionsDate = today;
+    }
+
+    if (hasBookProgressUpdate(prev, state)) state.data.rpg.missions.m_leitura = true;
+    if (hasNewCompletedTask(prev, state)) state.data.rpg.missions.m_tarefa = true;
+    if (hasNewCompletedStudy(prev, state)) state.data.rpg.missions.m_estudo = true;
+    if (hasNewWorkout(prev, state)) state.data.rpg.missions.m_treino = true;
+
+    if (!state.data.rpg.missionRewards[today] || typeof state.data.rpg.missionRewards[today] !== "object") {
+      state.data.rpg.missionRewards[today] = {};
+    }
+
+    Object.keys(state.data.rpg.missions).forEach(function (missionId) {
+      if (!state.data.rpg.missions[missionId]) return;
+      if (state.data.rpg.missionRewards[today][missionId] != null) return;
+      state.data.rpg.missionRewards[today][missionId] = Number(RPG_MISSION_XP[missionId] || 0);
+    });
+
+    return state;
+  }
+
+  function renderRpgHeader(state) {
+    state = ensureRpgShape(state);
+    var xp = Math.round(calcRpgXp(state));
+    var level = getLevelFromXp(xp);
+    var xpThisLevel = xpForLevel(level);
+    var xpNext = xpForLevel(level + 1);
+    var pct = xpNext > xpThisLevel ? Math.max(0, Math.min(100, Math.round((xp - xpThisLevel) / (xpNext - xpThisLevel) * 100))) : 100;
+    var cls = RPG_CLASSES[state.data.rpg.classe] || RPG_CLASSES.scholar;
+    var title = RPG_TITLES[Math.min(level - 1, RPG_TITLES.length - 1)];
+
+    var headerLevel = document.getElementById("header-level-badge");
+    var headerFill = document.getElementById("header-xp-fill");
+    var pmTitle = document.getElementById("pm-title-display");
+    var pmXpText = document.getElementById("pm-xp-text");
+    var pmXpNext = document.getElementById("pm-xp-next");
+    var pmXpFill = document.getElementById("pm-xp-fill");
+
+    if (headerLevel) headerLevel.textContent = "Nv " + level;
+    if (headerFill) headerFill.style.width = pct + "%";
+    if (pmTitle) pmTitle.textContent = title + " · " + cls.name + " · Nível " + level;
+    if (pmXpText) pmXpText.textContent = xp.toLocaleString("pt-BR") + " XP";
+    if (pmXpNext) pmXpNext.textContent = "próx. nível: " + xpNext.toLocaleString("pt-BR") + " XP";
+    if (pmXpFill) pmXpFill.style.width = pct + "%";
+  }
+
+  function applySiteState(nextState, previousState) {
+    var state = syncRpgState(nextState, previousState);
+    saveState(state);
+    applyProfileToUI(state);
+    renderNotifications(state);
+    renderRpgHeader(state);
+    return state;
+  }
+
+  window.SoterRPG = {
+    calcXP: function (state) { return calcRpgXp(state || loadState()); },
+    xpForLevel: xpForLevel,
+    getLevel: function (xp) { return getLevelFromXp(xp); },
+    syncState: function (state, previousState) { return syncRpgState(state, previousState); },
+    renderHeaderProgress: function (state) { renderRpgHeader(state || loadState()); }
+  };
+
   function applyProfileToUI(state) {
     var profile = state.profile;
     var displayName = profile.name && profile.name.trim() ? profile.name.trim() : DEFAULT_STATE.profile.name;
@@ -188,8 +417,7 @@
       nameInput.addEventListener("input", function () {
         var value = nameInput.value.trim();
         state.profile.name = value || DEFAULT_STATE.profile.name;
-        saveState(state);
-        applyProfileToUI(state);
+        state = applySiteState(state, loadState());
       });
     }
 
@@ -205,8 +433,7 @@
         if (!file) return;
         compressImageDataUrl(file, function (dataUrl) {
           state.profile.avatar = dataUrl;
-          saveState(state);
-          applyProfileToUI(state);
+          state = applySiteState(state, loadState());
           avatarInput.value = "";
         });
       });
@@ -216,8 +443,7 @@
       removePhotoBtn.addEventListener("click", function () {
         state.profile.name = DEFAULT_STATE.profile.name;
         state.profile.avatar = "";
-        saveState(state);
-        applyProfileToUI(state);
+        state = applySiteState(state, loadState());
       });
     }
   }
@@ -435,15 +661,23 @@
   }
 
   function exposeStorageApi(state) {
+    function commit(nextState) {
+      var previousState = loadState();
+      state = applySiteState(nextState, previousState);
+      return state;
+    }
+
     window.SoterStorage = {
       load: function () { return loadState(); },
-      save: function (nextState) { saveState(nextState); },
+      save: function (nextState) { return commit(nextState); },
       getState: function () { return ensureStateShape(loadState()); },
       setData: function (key, value) {
+        state = ensureStateShape(loadState());
         state.data[key] = value;
-        saveState(state);
+        return commit(state);
       },
       getData: function (key) {
+        state = ensureStateShape(loadState());
         return state.data[key];
       }
     };
@@ -455,10 +689,13 @@
   highlightCurrentPage();
 
   var siteState = loadState();
+  siteState = syncRpgState(siteState, siteState);
+  saveState(siteState);
   applyProfileToUI(siteState);
   wireProfileControls(siteState);
   renderNotifications(siteState);
   wireNotifications(siteState);
+  renderRpgHeader(siteState);
   exposeStorageApi(siteState);
 }());
 

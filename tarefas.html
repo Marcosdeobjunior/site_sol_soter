@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
@@ -55,6 +55,7 @@
           <span class="tk-list-count" id="tk-list-count"></span>
         </div>
         <div class="tk-list-grid" id="tk-list-grid"></div>
+        <div class="tk-list-pagination" id="tk-list-pagination"></div>
       </div>
 
       <!-- Foco de hoje (coluna direita, menor) -->
@@ -111,16 +112,16 @@
       <div class="hub-hero-lines"></div>
       <div class="hub-accent-bar" id="taskh-accent-bar"></div>
       <div class="hub-nav">
-        <button class="hub-back-btn" onclick="taskHubClose()">← Planejamento</button>
+        <button class="hub-back-btn" onclick="taskHubClose()"><span class="taskh-symbol" aria-hidden="true">&larr;</span><span>Voltar</span></button>
         <div class="hub-nav-actions">
           <button class="hub-nav-btn done-btn" id="taskh-nav-done" onclick="taskHubToggleDone()">
-            <span id="taskh-nav-done-icon">○</span><span id="taskh-nav-done-lbl">Concluir</span>
+            <span class="taskh-symbol" id="taskh-nav-done-icon" aria-hidden="true">&#9675;</span><span id="taskh-nav-done-lbl">Concluir</span>
           </button>
-          <button class="hub-nav-btn edit" onclick="taskHubDrawerOpen()">✎ Editar</button>
+          <button class="hub-nav-btn edit" onclick="taskHubDrawerOpen()">&#9998; Editar</button>
         </div>
       </div>
       <div class="hub-hero-content">
-        <div class="hub-icon-bubble" id="taskh-icon">✅</div>
+        <div class="hub-icon-bubble" id="taskh-icon">&#10022;</div>
         <div class="hub-title-block">
           <div class="hub-cat-badge" id="taskh-badge">Tarefa</div>
           <div class="hub-title" id="taskh-title">Tarefa</div>
@@ -134,12 +135,12 @@
     <div id="taskh-drawer">
       <div class="hd-stripe"></div>
       <div class="hd-head">
-        <div class="hd-head-icon" id="taskh-drawer-icon">✦</div>
+        <div class="hd-head-icon" id="taskh-drawer-icon">&#10022;</div>
         <div class="hd-head-info">
           <div class="hd-head-title" id="taskh-drawer-title">Editar tarefa</div>
           <div class="hd-head-sub">Alterações salvas ao clicar em salvar</div>
         </div>
-        <button class="hd-close-btn" onclick="taskHubDrawerClose()">✕</button>
+        <button class="hd-close-btn" onclick="taskHubDrawerClose()">&#10005;</button>
       </div>
       <div class="hd-body">
         <div class="hd-section">
@@ -178,16 +179,27 @@
           </div>
         </div>
         <div class="hd-section">
-          <div class="hd-section-lbl">Cronograma</div>
-          <div class="hd-row">
-            <div class="hd-field">
-              <div class="hd-field-lbl">Data</div>
-              <input class="hd-inp" id="tkd-data" type="date">
+        <div class="hd-section-lbl">Cronograma</div>
+        <div class="hd-row">
+          <div class="hd-field">
+            <div class="hd-field-lbl">Data</div>
+            <input class="hd-inp" id="tkd-data" type="date">
             </div>
             <div class="hd-field">
               <div class="hd-field-lbl">Hora</div>
               <input class="hd-inp" id="tkd-hora" type="time">
             </div>
+          </div>
+          <div class="hd-field">
+            <div class="hd-field-lbl">Recorrência</div>
+            <select class="hd-inp" id="tkd-recorrencia">
+              <option value="none">Não recorrente</option>
+              <option value="daily">Diariamente</option>
+              <option value="weekly">Semanalmente</option>
+              <option value="monthly">Mensalmente</option>
+              <option value="semiannual">Semestralmente</option>
+              <option value="yearly">Anualmente</option>
+            </select>
           </div>
         </div>
       </div>
@@ -269,10 +281,48 @@
         <!-- Concluir -->
         <div class="hub-section">
           <button class="taskh-done-btn pending" id="taskh-done-btn" onclick="taskHubToggleDone()">
-            <span id="taskh-done-icon">○</span>
+            <span class="taskh-symbol" id="taskh-done-icon" aria-hidden="true">&#9675;</span>
             <span id="taskh-done-lbl">Marcar como concluída</span>
           </button>
         </div>
+      </div>
+    </div>
+
+    <div class="hub-section taskh-links-stage">
+      <div class="hub-section-hd">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="hub-section-hd-icon">⇄</div>
+          <span class="hub-section-label">Estrutura</span>
+        </div>
+        <div class="taskh-links-zoom">
+          <button class="taskh-links-zoom-btn" type="button" onclick="taskHubZoomOut()">−</button>
+          <span class="taskh-links-zoom-readout" id="taskh-links-zoom-readout">100%</span>
+          <button class="taskh-links-zoom-btn" type="button" onclick="taskHubZoomIn()">+</button>
+        </div>
+      </div>
+      <div class="taskh-links-canvas" id="taskh-links-canvas" onwheel="taskHubLinksWheel(event)">
+        <div class="taskh-links-board" id="taskh-links-board" onpointerdown="taskHubLinksPointerDown(event)">
+          <button class="taskh-link-add left" type="button" onclick="taskHubCreateLinkedTask('parent')">+</button>
+          <div class="taskh-links-lane" id="taskh-links-lane"></div>
+          <button class="taskh-link-add right" type="button" onclick="taskHubCreateLinkedTask('child')">+</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="taskh-link-picker-bd" id="taskh-link-picker-bd" onclick="taskHubLinkPickerClose(event)">
+      <div class="taskh-link-picker">
+        <div class="taskh-link-picker-head">
+          <div>
+            <div class="taskh-link-picker-title" id="taskh-link-picker-title">Vincular tarefa</div>
+            <div class="taskh-link-picker-sub" id="taskh-link-picker-sub">Escolha uma tarefa existente ou crie uma nova.</div>
+          </div>
+          <button class="taskh-link-picker-close" type="button" onclick="taskHubLinkPickerClose()">✕</button>
+        </div>
+        <div class="taskh-link-picker-tools">
+          <input class="taskh-link-picker-search" id="taskh-link-picker-search" placeholder="Pesquisar tarefa..." oninput="taskHubLinkPickerRender()">
+          <button class="taskh-link-picker-new" type="button" onclick="taskHubLinkPickerCreateNew()">+ Adicionar tarefa</button>
+        </div>
+        <div class="taskh-link-picker-list" id="taskh-link-picker-list"></div>
       </div>
     </div>
 
@@ -333,6 +383,17 @@
         <input class="tk-modal-inp" id="tkm-hora" type="time">
       </div>
       <div>
+        <div class="tk-modal-lbl">Recorrência</div>
+        <select class="tk-modal-inp" id="tkm-recorrencia">
+          <option value="none">Não recorrente</option>
+          <option value="daily">Diariamente</option>
+          <option value="weekly">Semanalmente</option>
+          <option value="monthly">Mensalmente</option>
+          <option value="semiannual">Semestralmente</option>
+          <option value="yearly">Anualmente</option>
+        </select>
+      </div>
+      <div>
         <div class="tk-modal-lbl">Cor de destaque</div>
         <div class="tk-modal-colors" id="tkm-colors"></div>
       </div>
@@ -351,3 +412,4 @@
   <script src="js/tarefas.js"></script>
 </body>
 </html>
+

@@ -41,6 +41,8 @@ main{padding:0 36px 56px;min-height:100vh;}
 .cph{padding:15px 18px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
 .cptit{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-family:var(--fm);}
 .cpcnt{font-size:10px;font-family:var(--fm);color:var(--a1);}
+.list-tools{padding:12px;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center;width:100%;}
+.list-tools .inp{flex:1;min-width:0;}
 .cl{padding:12px;display:flex;flex-direction:column;gap:9px;height:var(--travel-list-height, 520px);max-height:var(--travel-list-height, 520px);overflow-y:auto;overflow-x:hidden;}
 .cl::-webkit-scrollbar{width:3px}.cl::-webkit-scrollbar-track{background:transparent}.cl::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:3px}
 
@@ -129,5 +131,48 @@ main{padding:0 36px 56px;min-height:100vh;}
 
 .ico{display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;}
 
+.inp{
+  background:rgba(8,8,16,0.7);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:9px 13px;
+  color:var(--text);
+  font-family:var(--fu);
+  font-size:13px;
+  outline:none;
+  transition:border-color .2s,background .2s,box-shadow .2s;
+}
+.inp:focus{border-color:rgba(200,169,110,.5);background:rgba(200,169,110,.04);box-shadow:0 0 0 3px rgba(200,169,110,.07);}
+.inp::placeholder{color:rgba(122,117,144,.6);}
+select.inp option{background:#0d0c1e;}
+
+.filter-wrap{position:relative;flex-shrink:0;}
+.btn-filter{
+  display:flex;align-items:center;gap:6px;padding:9px 14px;
+  border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.04);
+  color:var(--muted);font-family:var(--fu);font-size:12.5px;font-weight:700;
+  cursor:pointer;transition:all .2s;white-space:nowrap;letter-spacing:.4px;
+}
+.btn-filter:hover{color:var(--text);border-color:rgba(255,255,255,.2);background:rgba(255,255,255,.07);}
+.btn-filter.active{color:var(--a1);border-color:rgba(200,169,110,.5);background:rgba(200,169,110,.08);}
+.btn-filter .filter-badge{display:none;background:var(--a1);color:#0d0d12;font-size:9px;font-weight:800;border-radius:50%;width:16px;height:16px;align-items:center;justify-content:center;}
+.btn-filter.active .filter-badge{display:flex;}
+.filter-panel{
+  position:absolute;top:calc(100% + 6px);right:0;z-index:300;
+  background:rgba(8,7,20,.98);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border:1px solid rgba(255,255,255,.1);border-top:2px solid var(--a1);
+  border-radius:0 0 14px 14px;width:260px;padding:14px 16px 16px;
+  box-shadow:0 20px 50px rgba(0,0,0,.7);opacity:0;visibility:hidden;transform:translateY(-6px);
+  transition:opacity .2s,transform .2s,visibility .2s;
+}
+.filter-panel.open{opacity:1;visibility:visible;transform:translateY(0);}
+.filter-section-title{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-family:var(--fm);margin-bottom:8px;}
+.filter-chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:2px;}
+.filter-chip{font-size:11px;font-family:var(--fm);padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all .15s;letter-spacing:.3px;}
+.filter-chip:hover{color:var(--text);border-color:rgba(255,255,255,.2);}
+.filter-chip.selected{background:rgba(200,169,110,.12);color:var(--a1);border-color:rgba(200,169,110,.45);font-weight:700;}
+.filter-actions{display:flex;gap:7px;margin-top:14px;}
+.filter-actions .btn{flex:1;font-size:11.5px;padding:8px 10px;}
+
 @media(max-width:960px){.lay{grid-template-columns:1fr}.cp,.mp{height:auto;min-height:0}.cl{height:auto;max-height:none}.mp{position:static}.stats{grid-template-columns:repeat(2,1fr)}.app-content{padding-top:74px}main{padding:0 18px 38px}}
-@media(max-width:560px){.stats{grid-template-columns:1fr 1fr}.pt{font-size:27px}.fr{grid-template-columns:1fr}.do{grid-template-columns:1fr}}
+@media(max-width:560px){.stats{grid-template-columns:1fr 1fr}.pt{font-size:27px}.fr{grid-template-columns:1fr}.do{grid-template-columns:1fr}.list-tools{flex-wrap:wrap}.filter-wrap{width:100%}.btn-filter{width:100%;justify-content:center}.filter-panel{width:100%;}}

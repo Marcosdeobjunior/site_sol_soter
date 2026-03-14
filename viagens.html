@@ -34,21 +34,33 @@
       <div class="st"><div class="stl">Cidades/Pa&iacute;ses</div><div class="stv" id="s-cities">0</div><div class="sts">registrados</div></div>
     </div>
 
-    <div class="fb">
-      <span class="fc on" data-f="all">Todos</span>
-      <span class="fc" data-f="Desejo">Wishlist</span>
-      <span class="fc" data-f="Cidade/Pais">Cidade/Pa&iacute;s</span>
-      <span class="fc" data-f="Restaurante">Restaurante</span>
-      <span class="fc" data-f="Hotel">Hotel</span>
-      <span class="fc" data-f="Museu">Museu</span>
-      <span class="fc" data-f="Parque">Parque</span>
-      <span class="fc" data-f="Ponto Turistico">P. Tur&iacute;stico</span>
-      <span class="fc" data-f="Outro">Outro</span>
-    </div>
-
     <div class="lay">
       <div class="cp">
         <div class="cph"><span class="cptit">Lista de Viagens</span><span class="cpcnt" id="c-cnt">0 destinos</span></div>
+        <div class="list-tools">
+          <input class="inp" id="travel-search" type="text" placeholder="🔍 Buscar...">
+          <div class="filter-wrap" id="travel-filter-wrap">
+            <button class="btn-filter" id="travel-filter-btn" type="button">⚙ Filtros <span class="filter-badge" id="travel-filter-badge">0</span></button>
+            <div class="filter-panel" id="travel-filter-panel">
+              <div class="filter-section-title">Tipo de Local</div>
+              <div class="filter-chips">
+                <button class="filter-chip" type="button" data-panel-filter="all">Todos</button>
+                <button class="filter-chip" type="button" data-panel-filter="Desejo">Wishlist</button>
+                <button class="filter-chip" type="button" data-panel-filter="Cidade/Pais">Cidade/Pais</button>
+                <button class="filter-chip" type="button" data-panel-filter="Restaurante">Restaurante</button>
+                <button class="filter-chip" type="button" data-panel-filter="Hotel">Hotel</button>
+                <button class="filter-chip" type="button" data-panel-filter="Museu">Museu</button>
+                <button class="filter-chip" type="button" data-panel-filter="Parque">Parque</button>
+                <button class="filter-chip" type="button" data-panel-filter="Ponto Turistico">P. Turistico</button>
+                <button class="filter-chip" type="button" data-panel-filter="Outro">Outro</button>
+              </div>
+              <div class="filter-actions">
+                <button class="btn btn-g" id="travel-filter-clear" type="button">Limpar</button>
+                <button class="btn btn-p" id="travel-filter-apply" type="button">Aplicar</button>
+              </div>
+            </div>
+          </div>
+        </div>
         <div class="cl" id="cards"></div>
         <div class="pg" id="pag" style="display:none">
           <button class="pb" id="p-prev" type="button">&#8249;</button>

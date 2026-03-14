@@ -12,6 +12,8 @@
   var edit = false;
   var editIdx = -1;
   var filt = "all";
+  var pendingFilt = "all";
+  var searchTerm = "";
   var page = 1;
   var PER = 6;
   var listResizeTimer = null;
@@ -309,7 +311,12 @@
   }
 
   function filtered() {
-    return filt === "all" ? T : T.filter(function (t) { return t.category === filt; });
+    return T.filter(function (t) {
+      var matchesFilter = filt === "all" ? true : t.category === filt;
+      var haystack = (t.destination + " " + (t.category || "") + " " + (t.localDescription || "")).toLowerCase();
+      var matchesSearch = !searchTerm || haystack.indexOf(searchTerm) >= 0;
+      return matchesFilter && matchesSearch;
+    });
   }
 
   function renderCards() {
@@ -394,6 +401,37 @@
       lockListToFiveCards();
       listResizeTimer = null;
     }, 40);
+  }
+
+  function syncFilterUi() {
+    var btn = document.getElementById("travel-filter-btn");
+    var badge = document.getElementById("travel-filter-badge");
+    Array.prototype.slice.call(document.querySelectorAll("[data-panel-filter]")).forEach(function (chip) {
+      chip.classList.toggle("selected", chip.getAttribute("data-panel-filter") === pendingFilt);
+    });
+    if (btn) btn.classList.toggle("active", filt !== "all");
+    if (badge) badge.textContent = filt === "all" ? "0" : "1";
+  }
+
+  function closeTravelFilterPanel() {
+    var panel = document.getElementById("travel-filter-panel");
+    if (panel) panel.classList.remove("open");
+  }
+
+  function toggleTravelFilterPanel() {
+    var panel = document.getElementById("travel-filter-panel");
+    var wrap = document.getElementById("travel-filter-wrap");
+    if (!panel || !wrap) return;
+    panel.classList.toggle("open");
+    if (!panel.classList.contains("open")) return;
+    setTimeout(function () {
+      function closeOnOutside(event) {
+        if (wrap.contains(event.target)) return;
+        panel.classList.remove("open");
+        document.removeEventListener("click", closeOnOutside);
+      }
+      document.addEventListener("click", closeOnOutside);
+    }, 0);
   }
 
   function render() {
@@ -525,15 +563,44 @@
       close("mo-travel");
       toast("Viagem excluida.", "i");
     });
-    Array.prototype.slice.call(document.querySelectorAll(".fc")).forEach(function (c) {
-      c.addEventListener("click", function () {
-        Array.prototype.slice.call(document.querySelectorAll(".fc")).forEach(function (x) { x.classList.remove("on"); });
-        c.classList.add("on");
-        filt = c.dataset.f;
+    if (document.getElementById("travel-search")) {
+      document.getElementById("travel-search").addEventListener("input", function (event) {
+        searchTerm = event.target.value.trim().toLowerCase();
         page = 1;
         renderCards();
       });
+    }
+    if (document.getElementById("travel-filter-btn")) {
+      document.getElementById("travel-filter-btn").addEventListener("click", function (event) {
+        event.stopPropagation();
+        toggleTravelFilterPanel();
+      });
+    }
+    Array.prototype.slice.call(document.querySelectorAll("[data-panel-filter]")).forEach(function (chip) {
+      chip.addEventListener("click", function () {
+        pendingFilt = chip.getAttribute("data-panel-filter") || "all";
+        syncFilterUi();
+      });
     });
+    if (document.getElementById("travel-filter-clear")) {
+      document.getElementById("travel-filter-clear").addEventListener("click", function () {
+        pendingFilt = "all";
+        filt = "all";
+        page = 1;
+        syncFilterUi();
+        closeTravelFilterPanel();
+        renderCards();
+      });
+    }
+    if (document.getElementById("travel-filter-apply")) {
+      document.getElementById("travel-filter-apply").addEventListener("click", function () {
+        filt = pendingFilt;
+        page = 1;
+        syncFilterUi();
+        closeTravelFilterPanel();
+        renderCards();
+      });
+    }
     document.getElementById("p-prev").addEventListener("click", function () { page -= 1; renderCards(); });
     document.getElementById("p-next").addEventListener("click", function () { page += 1; renderCards(); });
     document.getElementById("btn-add").addEventListener("click", function () { resetForm(); open("mo-travel"); });
@@ -601,6 +668,7 @@
     initMap(noMap);
     bindForm();
     bindUi();
+    syncFilterUi();
     render();
     scheduleListViewportUpdate();
   }

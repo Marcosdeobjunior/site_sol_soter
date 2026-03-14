@@ -339,12 +339,225 @@
     if (pmXpFill) pmXpFill.style.width = pct + "%";
   }
 
+  function getFinanceTxs(state) {
+    var data = state && state.data ? state.data : {};
+    if (data.financasTracker && Array.isArray(data.financasTracker.txs)) return data.financasTracker.txs;
+    if (Array.isArray(data.financas)) return data.financas;
+    return [];
+  }
+
+  function getFinanceRules(state) {
+    var data = state && state.data ? state.data : {};
+    if (data.financasTracker && Array.isArray(data.financasTracker.recurrenceRules)) return data.financasTracker.recurrenceRules;
+    if (Array.isArray(data.financasRecurrenceRules)) return data.financasRecurrenceRules;
+    return [];
+  }
+
+  function financeToday() {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  function isFinanceFuture(tx) {
+    return !!(tx && tx.date > financeToday());
+  }
+
+  function financeDelta(tx) {
+    if (!tx) return 0;
+    var value = Number(tx.value || 0);
+    if (tx.type === "in") return value;
+    if (tx.type === "out" || tx.type === "save") return -value;
+    return 0;
+  }
+
+  function financeDateStr(year, month, day) {
+    return year + "-" + String(month + 1).padStart(2, "0") + "-" + String(day).padStart(2, "0");
+  }
+
+  function financeIsHoliday(dateStr, holidays) {
+    return (holidays || []).indexOf(dateStr) >= 0;
+  }
+
+  function financeCountableDay(dateObj, countSaturday, holidays) {
+    var dayOfWeek = dateObj.getDay();
+    var dateStr = financeDateStr(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate());
+    if (financeIsHoliday(dateStr, holidays)) return false;
+    if (dayOfWeek === 0) return false;
+    if (dayOfWeek === 6) return !!countSaturday;
+    return true;
+  }
+
+  function financeReceivableDay(dateObj, holidays) {
+    var dayOfWeek = dateObj.getDay();
+    var dateStr = financeDateStr(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate());
+    if (financeIsHoliday(dateStr, holidays)) return false;
+    return dayOfWeek !== 0 && dayOfWeek !== 6;
+  }
+
+  function financeShiftBusinessDay(dateObj, direction, holidays) {
+    var next = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate());
+    var step = direction === "next_business_day" ? 1 : -1;
+    while (!financeReceivableDay(next, holidays)) next.setDate(next.getDate() + step);
+    return next;
+  }
+
+  function financeRuleDate(rule, year, month) {
+    if (rule.pattern === "fixed_day") {
+      var fixedDate = new Date(year, month, Math.min(Number(rule.day || 20), new Date(year, month + 1, 0).getDate()));
+      var fixedNeedsShift = (!!rule.avoidWeekend && (fixedDate.getDay() === 0 || fixedDate.getDay() === 6)) ||
+        (!!rule.fixedAvoidHoliday && financeIsHoliday(financeDateStr(year, month, fixedDate.getDate()), rule.holidays));
+      if (fixedNeedsShift) fixedDate = financeShiftBusinessDay(fixedDate, rule.shift === "next_business_day" ? "next_business_day" : "previous_business_day", rule.holidays);
+      return financeDateStr(fixedDate.getFullYear(), fixedDate.getMonth(), fixedDate.getDate());
+    }
+
+    var lastDay = new Date(year, month + 1, 0).getDate();
+    var count = 0;
+    var candidate = new Date(year, month, lastDay);
+    var day;
+    for (day = 1; day <= lastDay; day += 1) {
+      var dateObj = new Date(year, month, day);
+      if (!financeCountableDay(dateObj, !!rule.countSaturday, rule.holidays || [])) continue;
+      count += 1;
+      if (count >= Number(rule.nth || 5)) {
+        candidate = dateObj;
+        break;
+      }
+    }
+    if (!financeReceivableDay(candidate, rule.holidays || [])) {
+      candidate = financeShiftBusinessDay(candidate, rule.shift === "next_business_day" ? "next_business_day" : "previous_business_day", rule.holidays || []);
+    }
+    return financeDateStr(candidate.getFullYear(), candidate.getMonth(), candidate.getDate());
+  }
+
+  function financeRuleOccurrencesUntil(rules, endDate) {
+    var end = new Date(endDate + "T12:00:00");
+    var startYear = end.getFullYear() - 2;
+    var startMonth = 0;
+    (rules || []).forEach(function (rule) {
+      if (!rule || !rule.startDate) return;
+      var start = new Date(rule.startDate + "T12:00:00");
+      if (start.getFullYear() < startYear) {
+        startYear = start.getFullYear();
+        startMonth = start.getMonth();
+      } else if (start.getFullYear() === startYear) {
+        startMonth = Math.min(startMonth, start.getMonth());
+      }
+    });
+    var occurrences = [];
+    var year = startYear;
+    var month = startMonth;
+    while (year < end.getFullYear() || (year === end.getFullYear() && month <= end.getMonth())) {
+      (rules || []).forEach(function (rule) {
+        if (!rule || !rule.startDate || Number(rule.value || 0) <= 0) return;
+        var date = financeRuleDate(rule, year, month);
+        if (date < rule.startDate || date > endDate) return;
+        occurrences.push({
+          date: date,
+          type: rule.type,
+          value: Number(rule.value || 0)
+        });
+      });
+      month += 1;
+      if (month > 11) {
+        month = 0;
+        year += 1;
+      }
+    }
+    return occurrences;
+  }
+
+  function expandFinanceRecurringMonth(txs, year, month) {
+    var result = [];
+    (txs || []).forEach(function (tx) {
+      if (!tx || !tx.date) return;
+      var baseDate = new Date(tx.date + "T12:00:00");
+      var txYear = baseDate.getFullYear();
+      var txMonth = baseDate.getMonth();
+
+      if (tx.recurrence === "monthly") {
+        if (year > txYear || (year === txYear && month >= txMonth)) {
+          var monthlyDate = year + "-" + String(month + 1).padStart(2, "0") + "-" + String(baseDate.getDate()).padStart(2, "0");
+          result.push(Object.assign({}, tx, { date: monthlyDate }));
+        }
+      } else if (tx.recurrence === "weekly") {
+        var cur = new Date(tx.date + "T12:00:00");
+        var firstOfMonth = new Date(year, month, 1);
+        var lastOfMonth = new Date(year, month + 1, 0);
+        while (cur < firstOfMonth) cur.setDate(cur.getDate() + 7);
+        while (cur <= lastOfMonth) {
+          var weeklyDate = cur.getFullYear() + "-" + String(cur.getMonth() + 1).padStart(2, "0") + "-" + String(cur.getDate()).padStart(2, "0");
+          result.push(Object.assign({}, tx, { date: weeklyDate }));
+          cur.setDate(cur.getDate() + 7);
+        }
+      } else if (txYear === year && txMonth === month) {
+        result.push(tx);
+      }
+    });
+    return result;
+  }
+
+  function computeHeaderFinance(state) {
+    var txs = getFinanceTxs(state);
+    var rules = getFinanceRules(state);
+    var now = new Date();
+    var today = financeToday();
+    var ym = { y: now.getFullYear(), m: now.getMonth() };
+    var saldo = 0;
+    var inMonth = 0;
+    var outMonth = 0;
+
+    txs.forEach(function (tx) {
+      if (!tx || !tx.date) return;
+      if (tx.recurrence === "monthly") {
+        var monthlyCur = new Date(tx.date + "T12:00:00");
+        while (monthlyCur <= now) {
+          saldo += financeDelta(tx);
+          monthlyCur.setMonth(monthlyCur.getMonth() + 1);
+        }
+      } else if (tx.recurrence === "weekly") {
+        var weeklyCur = new Date(tx.date + "T12:00:00");
+        while (weeklyCur <= now) {
+          saldo += financeDelta(tx);
+          weeklyCur.setDate(weeklyCur.getDate() + 7);
+        }
+      } else if (tx.date <= today) {
+        saldo += financeDelta(tx);
+      }
+    });
+    financeRuleOccurrencesUntil(rules, today).forEach(function (tx) {
+      saldo += financeDelta(tx);
+    });
+
+    expandFinanceRecurringMonth(txs, ym.y, ym.m).forEach(function (tx) {
+      if (tx.type === "in") inMonth += Number(tx.value || 0);
+      if (tx.type === "out") outMonth += Number(tx.value || 0);
+    });
+    financeRuleOccurrencesUntil(rules, financeDateStr(ym.y, ym.m, new Date(ym.y, ym.m + 1, 0).getDate())).forEach(function (tx) {
+      if (tx.date.slice(0, 7) !== financeDateStr(ym.y, ym.m, 1).slice(0, 7)) return;
+      if (tx.type === "in") inMonth += Number(tx.value || 0);
+      if (tx.type === "out") outMonth += Number(tx.value || 0);
+    });
+
+    return {
+      saldo: saldo,
+      overload: inMonth === 0 ? outMonth > 0 : outMonth > inMonth * 0.4
+    };
+  }
+
+  function renderHeaderBalance(state) {
+    var balanceVal = document.getElementById("header-balance-val");
+    if (!balanceVal) return;
+    var finance = computeHeaderFinance(state || loadState());
+    balanceVal.textContent = "R$ " + Number(finance.saldo || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    balanceVal.classList.toggle("negative", !!finance.overload);
+  }
+
   function applySiteState(nextState, previousState) {
     var state = syncRpgState(nextState, previousState);
     saveState(state);
     applyProfileToUI(state);
     renderNotifications(state);
     renderRpgHeader(state);
+    renderHeaderBalance(state);
     return state;
   }
 
@@ -696,6 +909,7 @@
   renderNotifications(siteState);
   wireNotifications(siteState);
   renderRpgHeader(siteState);
+  renderHeaderBalance(siteState);
   exposeStorageApi(siteState);
 }());
 

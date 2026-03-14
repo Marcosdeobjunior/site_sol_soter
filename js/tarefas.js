@@ -1,4 +1,4 @@
-"use strict";
+﻿"use strict";
 
 var appState = null;
 var S = {};
@@ -86,7 +86,7 @@ const taskLinkBoardState = { x: 18, y: 18, scale: 1, dragging: false, startX: 0,
 const taskLinkPickerState = { open: false, kind: null };
 var taskLinkPendingCreate = null;
 
-// ── Helpers ──────────────────────────────────────────────────────────
+// Helpers
 function tkToday() { return new Date().toISOString().slice(0,10); }
 function tkFmtDate(ds) {
   if (!ds) return '—';
@@ -139,6 +139,16 @@ function tkAdvanceRecurrence(ds, recurrence, step) {
   return ds;
 }
 
+function tkRewindRecurrence(ds, recurrence, step) {
+  if (!ds || recurrence === 'none' || !step) return ds;
+  if (recurrence === 'daily') return tkAddDays(ds, -step);
+  if (recurrence === 'weekly') return tkAddDays(ds, -step * 7);
+  if (recurrence === 'monthly') return tkAddMonths(ds, -step);
+  if (recurrence === 'semiannual') return tkAddMonths(ds, -step * 6);
+  if (recurrence === 'yearly') return tkAddMonths(ds, -step * 12);
+  return ds;
+}
+
 function tkDiffDays(fromDate, toDate) {
   const a = tkParseDate(fromDate);
   const b = tkParseDate(toDate);
@@ -179,14 +189,22 @@ function tkCanCompleteTask(task) {
 function tkSyncRecurringSeries(masterId) {
   var master = S.tasks.find(function (item) { return item.id === masterId; });
   if (!master || master.isRecurringClone) return;
+  var existingClones = S.tasks.filter(function (item) {
+    return item.isRecurringClone && item.recurrenceMasterId === masterId;
+  });
+  var cloneByIndex = {};
+  existingClones.forEach(function (item) {
+    cloneByIndex[item.recurrenceIndex] = item;
+  });
   S.tasks = S.tasks.filter(function (item) {
     return !(item.isRecurringClone && item.recurrenceMasterId === masterId);
   });
   var limit = TK_RECURRENCE_LIMIT[master.recurrence] || 0;
   if (!master.recurrence || master.recurrence === 'none' || !limit) return;
   for (var i = 1; i <= limit; i++) {
+    var existing = cloneByIndex[i];
     S.tasks.push({
-      id: Date.now() + Math.floor(Math.random() * 100000) + i,
+      id: existing ? existing.id : Date.now() + Math.floor(Math.random() * 100000) + i,
       nome: master.nome,
       nota: master.nota,
       prior: master.prior,
@@ -194,15 +212,45 @@ function tkSyncRecurringSeries(masterId) {
       hora: master.hora,
       data: tkAdvanceRecurrence(master.data, master.recurrence, i),
       cor: master.cor,
-      done: false,
-      subtarefas: tkCloneSubtasks(master.subtarefas),
+      done: existing ? existing.done : false,
+      subtarefas: existing ? existing.subtarefas || [] : tkCloneSubtasks(master.subtarefas),
       recurrence: master.recurrence,
-      parentId: null,
+      parentId: existing ? existing.parentId || null : null,
       isRecurringClone: true,
       recurrenceMasterId: master.id,
       recurrenceIndex: i
     });
   }
+}
+
+function tkApplyRecurringEdits(taskId, updates) {
+  var task = S.tasks.find(function (item) { return item.id === taskId; });
+  if (!task) return null;
+  if (!task.recurrence || task.recurrence === 'none') {
+    Object.assign(task, updates);
+    return task;
+  }
+
+  var masterId = task.isRecurringClone ? task.recurrenceMasterId : task.id;
+  var master = S.tasks.find(function (item) { return item.id === masterId; });
+  if (!master) {
+    Object.assign(task, updates);
+    return task;
+  }
+
+  var nextRecurrence = updates.recurrence || task.recurrence || master.recurrence || 'none';
+  var nextDate = updates.data || task.data || master.data;
+  var nextMasterDate = nextDate;
+  if (task.isRecurringClone && task.recurrenceIndex) {
+    nextMasterDate = tkRewindRecurrence(nextDate, nextRecurrence, task.recurrenceIndex);
+  }
+
+  Object.assign(master, updates, { data: nextMasterDate });
+  master.isRecurringClone = false;
+  master.recurrenceMasterId = master.id;
+  master.recurrenceIndex = 0;
+  tkSyncRecurringSeries(master.id);
+  return S.tasks.find(function (item) { return item.id === taskId; }) || master;
 }
 
 function tkMoveTaskSeries(ids, dayDelta) {
@@ -216,7 +264,7 @@ function tkMoveTaskSeries(ids, dayDelta) {
 }
 
 
-// ── Migrar dados antigos ─────────────────────────────────────────────
+// Migrar dados antigos
 function tkMigrate() {
   S.tasks = (S.tasks || []).map(t => {
     if (!t.subtarefas) t.subtarefas = [];
@@ -278,7 +326,7 @@ function tkEnsureRecurringTasks() {
   if (additions.length) S.tasks = S.tasks.concat(additions);
 }
 
-// ── KPIs ────────────────────────────────────────────────────────────
+// KPIs
 function renderTasks() {
   tkMigrate();
   const tk    = S.tasks;
@@ -308,9 +356,9 @@ function renderTasks() {
   tkCalRender();
 }
 
-// ══════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // FOCO DE HOJE
-// ══════════════════════════════════════════════════════════════════════
+// ============================================================================
 function tkRenderFocus() {
   const today   = tkToday();
   const tasks   = S.tasks.filter(t => t.data === today)
@@ -338,7 +386,7 @@ function tkRenderFocus() {
     const color = t.cor || TK_PRIOR_COLOR[t.prior] || '#c8a96e';
     const subs  = t.subtarefas || [];
     const sDone = subs.filter(s=>s.done).length;
-    const sPct  = subs.length ? Math.round(sDone/subs.length*100) : (t.done?100:0);
+    const sPct  = subs.length ? Math.round(sDone/subs.length*100) : (t.done ? 100 : 0);
     return `<div class="tk-focus-card ${t.done?'done-card':''}" style="--tk-color:${color}"
         onclick="taskHubOpen(${t.id})">
       <div class="tk-focus-card-top">
@@ -360,9 +408,8 @@ function tkRenderFocus() {
   }).join('');
 }
 
-// ══════════════════════════════════════════════════════════════════════
+// ============================================================================
 // LISTA COM ABAS
-// ══════════════════════════════════════════════════════════════════════
 let tkListTab = 'pendentes';
 let tkListPage = 1;
 
@@ -497,9 +544,8 @@ function tkRenderList() {
   tkRenderListPagination(items.length, pageSize, tkListPage);
 }
 
-// ══════════════════════════════════════════════════════════════════════
-// CALENDÁRIO FULL-WIDTH COM MINI-CARDS
-// ══════════════════════════════════════════════════════════════════════
+// ============================================================================
+// CALENDÃRIO FULL-WIDTH COM MINI-CARDS
 const tkCalState = { year: new Date().getFullYear(), month: new Date().getMonth(), selected: tkToday() };
 
 function tkCalPrev() { tkCalState.month--; if (tkCalState.month<0){tkCalState.month=11;tkCalState.year--;} tkCalRender(); }
@@ -518,7 +564,7 @@ function tkCalRender() {
   const firstDay  = new Date(year, month, 1).getDay();
   const daysInMo  = new Date(year, month+1, 0).getDate();
   const daysInPrev= new Date(year, month, 0).getDate();
-  const MAX_CARDS = 3; // mini-cards por célula antes do "+N mais"
+  const MAX_CARDS = 3; // mini-cards por cÃ©lula antes do "+N mais"
 
   // index tasks by day
   const byDay = {};
@@ -532,30 +578,30 @@ function tkCalRender() {
   if (!grid) return;
   const cells = [];
 
-  // dias do mês anterior (placeholder)
+  // dias do mÃªs anterior (placeholder)
   for (let i=firstDay-1;i>=0;i--) {
     cells.push(`<div class="tk-day other-month"><span class="tk-day-num">${daysInPrev-i}</span></div>`);
   }
 
-  // dias do mês atual
+  // dias do mÃªs atual
   for (let d=1;d<=daysInMo;d++) {
     const ds  = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const tks = byDay[d] || [];
     const isToday = ds===today, isSel = ds===selected;
-    const cls = ['tk-day', isToday?'today':'', isSel?'selected':''].filter(Boolean).join(' ');
+    const cls = ['tk-day', isToday ? 'today' : '', isSel ? 'selected' : ''].filter(Boolean).join(' ');
 
     // sort: pendentes antes, depois por hora
     const sorted = [...tks].sort((a,b)=>{
-      if(a.done!==b.done) return a.done?1:-1;
+      if(a.done!==b.done) return a.done ? 1 : -1;
       return (a.hora||'99:99').localeCompare(b.hora||'99:99');
     });
     const miniCards = sorted.map(t => {
       const col = t.cor || TK_PRIOR_COLOR[t.prior] || '#c8a96e';
-      return `<div class="tk-cal-task-card ${t.done?'done-mini':''}"
+      return `<div class="tk-cal-task-card ${t.done ? 'done-mini' : ''}"
           style="--tk-color:${col}"
           onclick="event.stopPropagation();taskHubOpen(${t.id})"
           title="${t.nome}">
-        ${t.hora?`<span style="opacity:.6;margin-right:3px">${t.hora}</span>`:''}${t.nome}
+        ${t.hora ? `<span style="opacity:.6;margin-right:3px">${t.hora}</span>` : ''}${t.nome}
       </div>`;
     }).join('');
 
@@ -568,7 +614,7 @@ function tkCalRender() {
     </div>`);
   }
 
-  // completar última linha
+  // completar Ãºltima linha
   const rem = cells.length%7===0 ? 0 : 7-(cells.length%7);
   for (let d=1;d<=rem;d++) cells.push(`<div class="tk-day other-month"><span class="tk-day-num">${d}</span></div>`);
 
@@ -578,127 +624,163 @@ function tkCalRender() {
 function tkCalSelectDay(ds) {
   tkCalState.selected = ds;
   tkCalRender();
-  // Double-click abre modal; single click só seleciona e scroll
+  // Double-click abre modal; single click sÃ³ seleciona e scroll
   const listEl = document.getElementById('tk-list-section') || document.querySelector('.tk-list-section');
   if (listEl) listEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-// ══════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ANALYTICS DE TAREFAS
-// ══════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 function tkOpenAnalytics() {
   const el = document.getElementById('tk-analytics');
   if (!el) return;
   tkRenderAnalytics();
   el.classList.add('open');
   document.body.style.overflow = 'hidden';
+  document.body.classList.add('tk-analytics-open');
 }
 function tkCloseAnalytics() {
   document.getElementById('tk-analytics').classList.remove('open');
   document.body.style.overflow = '';
+  document.body.classList.remove('tk-analytics-open');
 }
 
 function tkRenderAnalytics() {
   const el = document.getElementById('tk-analytics');
   if (!el) return;
   tkMigrate();
-  const tasks  = S.tasks;
-  const today  = tkToday();
-  const total  = tasks.length;
-  const done   = tasks.filter(t => t.done).length;
-  const pend   = total - done;
-  const pct    = total ? Math.round(done / total * 100) : 0;
-  const venc   = tasks.filter(t => !t.done && t.data && tkDaysFromNow(t.data) < 0).length;
-  const hoje   = tasks.filter(t => t.data === today).length;
-  const hojeD  = tasks.filter(t => t.data === today && t.done).length;
-  const semData= tasks.filter(t => !t.data).length;
-  const subTotal = tasks.reduce((a,t) => a + (t.subtarefas||[]).length, 0);
-  const subDone  = tasks.reduce((a,t) => a + (t.subtarefas||[]).filter(s=>s.done).length, 0);
 
-  // ── Agrupamentos ─────────────────────────────────────────────────
-  const byCat   = {}, byPrior = {alta:0,media:0,baixa:0};
-  const byCatD  = {}, byColor = {};
+  const tasks = S.tasks;
+  const today = tkToday();
+  const total = tasks.length;
+  const done = tasks.filter(t => t.done).length;
+  const pend = total - done;
+  const pct = total ? Math.round(done / total * 100) : 0;
+  const venc = tasks.filter(t => !t.done && t.data && tkDaysFromNow(t.data) < 0).length;
+  const hoje = tasks.filter(t => t.data === today).length;
+  const hojeD = tasks.filter(t => t.data === today && t.done).length;
+  const semData = tasks.filter(t => !t.data).length;
+  const getTaskChildren = task => tasks.filter(item => item.parentId === task.id);
+  const getTaskComplexity = task => {
+    const subtasks = task.subtarefas || [];
+    const children = getTaskChildren(task);
+    const totalItems = subtasks.length + children.length;
+    const doneItems = subtasks.filter(s => s.done).length + children.filter(child => child.done).length;
+    return { totalItems, doneItems };
+  };
+  const subTotal = tasks.reduce((a, t) => a + getTaskComplexity(t).totalItems, 0);
+  const subDone = tasks.reduce((a, t) => a + getTaskComplexity(t).doneItems, 0);
+  const detailRate = Math.round(tasks.filter(t => t.nota).length / Math.max(1, total) * 100);
+  const subtaskRate = Math.round(tasks.filter(t => getTaskComplexity(t).totalItems > 0).length / Math.max(1, total) * 100);
+  const datedRate = Math.round(tasks.filter(t => t.data).length / Math.max(1, total) * 100);
+
+  const byCat = {};
+  const byCatD = {};
   tasks.forEach(t => {
     const cat = t.cat || 'Outros';
-    byCat[cat]  = (byCat[cat]  || 0) + 1;
+    byCat[cat] = (byCat[cat] || 0) + 1;
     byCatD[cat] = (byCatD[cat] || 0) + (t.done ? 1 : 0);
-    if (byPrior[t.prior] !== undefined) byPrior[t.prior]++;
-    const col = t.cor || '#c8a96e';
-    byColor[col] = (byColor[col] || 0) + 1;
   });
 
-  // ── Atividade mensal (6 meses) ────────────────────────────────────
   const monthly = {};
   for (let i = 5; i >= 0; i--) {
-    const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - i);
-    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-    monthly[key] = { label: TK_MONTHS_SHORT[d.getMonth()], done:0, total:0 };
+    const d = new Date();
+    d.setDate(1);
+    d.setMonth(d.getMonth() - i);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    monthly[key] = { label: TK_MONTHS_SHORT[d.getMonth()], done: 0, total: 0 };
   }
   tasks.forEach(t => {
     if (!t.data) return;
-    const key = t.data.slice(0,7);
-    if (monthly[key]) { monthly[key].total++; if (t.done) monthly[key].done++; }
+    const key = t.data.slice(0, 7);
+    if (monthly[key]) {
+      monthly[key].total++;
+      if (t.done) monthly[key].done++;
+    }
   });
   const maxMonth = Math.max(1, ...Object.values(monthly).map(m => m.total));
 
-  // ── Donut por categoria ───────────────────────────────────────────
-  const cats = Object.entries(byCat).sort((a,b) => b[1] - a[1]);
-  const catColors = ['#c8a96e','#7c6fcd','#5ec4a8','#e06b8b','#e8864a','#4ab0e8','#b06be8'];
-  const totalCats = cats.reduce((s,[,v]) => s + v, 0);
+  const cats = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
+  const catColors = ['#c8a96e', '#7c6fcd', '#5ec4a8', '#e06b8b', '#e8864a', '#4ab0e8', '#b06be8'];
+  const totalCats = cats.reduce((s, [, v]) => s + v, 0);
   let cumAngle = -90;
-  const donutPaths = cats.map(([name, count], i) => {
+  const donutPaths = cats.map(([, count], i) => {
     const angle = (count / Math.max(1, totalCats)) * 360;
     const color = catColors[i % catColors.length];
-    const r = 44, cx = 65, cy = 65;
-    const sA = cumAngle * Math.PI/180, eA = (cumAngle+angle) * Math.PI/180;
-    const x1=cx+r*Math.cos(sA), y1=cy+r*Math.sin(sA);
-    const x2=cx+r*Math.cos(eA), y2=cy+r*Math.sin(eA);
-    const path = `<path d="M${cx},${cy} L${x1.toFixed(1)},${y1.toFixed(1)} A${r},${r} 0 ${angle>180?1:0},1 ${x2.toFixed(1)},${y2.toFixed(1)} Z" fill="${color}" opacity=".88"/>`;
+    if (angle >= 359.99) {
+      return `<circle cx="65" cy="65" r="44" fill="${color}" opacity=".88"/>`;
+    }
+    const r = 44;
+    const cx = 65;
+    const cy = 65;
+    const sA = cumAngle * Math.PI / 180;
+    const eA = (cumAngle + angle) * Math.PI / 180;
+    const x1 = cx + r * Math.cos(sA);
+    const y1 = cy + r * Math.sin(sA);
+    const x2 = cx + r * Math.cos(eA);
+    const y2 = cy + r * Math.sin(eA);
+    const path = `<path d="M${cx},${cy} L${x1.toFixed(1)},${y1.toFixed(1)} A${r},${r} 0 ${angle > 180 ? 1 : 0},1 ${x2.toFixed(1)},${y2.toFixed(1)} Z" fill="${color}" opacity=".88"/>`;
     cumAngle += angle;
     return path;
   }).join('');
 
-  // ── Taxa de conclusão por prioridade ──────────────────────────────
-  const priorRate = ['alta','media','baixa'].map(k => {
+  const priorRate = ['alta', 'media', 'baixa'].map(k => {
     const tot = tasks.filter(t => t.prior === k).length;
-    const dn  = tasks.filter(t => t.prior === k && t.done).length;
-    return { k, tot, dn, pct: tot ? Math.round(dn/tot*100) : 0 };
+    const dn = tasks.filter(t => t.prior === k && t.done).length;
+    return { k, tot, dn, pct: tot ? Math.round(dn / tot * 100) : 0 };
   });
 
-  // ── Top tarefas com mais subtarefas ──────────────────────────────
   const topSub = [...tasks]
-    .filter(t => (t.subtarefas||[]).length > 0)
-    .sort((a,b) => (b.subtarefas||[]).length - (a.subtarefas||[]).length)
-    .slice(0,5);
+    .filter(t => getTaskComplexity(t).totalItems > 0)
+    .sort((a, b) => getTaskComplexity(b).totalItems - getTaskComplexity(a).totalItems)
+    .slice(0, 5);
 
-  // ── Próximas (não vencidas, não concluídas) ───────────────────────
   const proximas = [...tasks]
     .filter(t => !t.done && t.data && tkDaysFromNow(t.data) >= 0)
-    .sort((a,b) => a.data.localeCompare(b.data))
-    .slice(0,5);
+    .sort((a, b) => a.data.localeCompare(b.data))
+    .slice(0, 5);
 
-  // ── Score de saúde ────────────────────────────────────────────────
+  const vencTasks = tasks
+    .filter(t => !t.done && t.data && tkDaysFromNow(t.data) < 0)
+    .sort((a, b) => a.data.localeCompare(b.data))
+    .slice(0, 6);
+
   let healthScore = 0;
   if (pct >= 50) healthScore += 25;
   if (venc === 0) healthScore += 25;
-  if (tasks.filter(t => t.nota).length / Math.max(1,total) > 0.5) healthScore += 15;
-  if (tasks.filter(t => (t.subtarefas||[]).length > 0).length / Math.max(1,total) > 0.3) healthScore += 15;
-  if (tasks.filter(t => t.data).length / Math.max(1,total) > 0.7) healthScore += 20;
-  const healthLabel = healthScore >= 80 ? 'Excelente' : healthScore >= 60 ? 'Bom' : healthScore >= 40 ? 'Regular' : 'Atenção';
+  if (detailRate > 50) healthScore += 15;
+  if (subtaskRate > 30) healthScore += 15;
+  if (datedRate > 70) healthScore += 20;
+  const healthLabel = healthScore >= 80 ? 'Excelente' : healthScore >= 60 ? 'Bom' : healthScore >= 40 ? 'Regular' : 'Atencao';
   const healthColor = healthScore >= 80 ? '#5ec4a8' : healthScore >= 60 ? '#c8a96e' : healthScore >= 40 ? '#e8864a' : '#e06b8b';
   const ringC = 2 * Math.PI * 32;
 
-  el.innerHTML = `
-    <div class="san-header">
-      <button class="san-back-btn" onclick="tkCloseAnalytics()">← Planejamento</button>
-      <div>
-        <div class="san-header-title">Analytics de <em>Tarefas</em></div>
-        <div class="san-header-sub">Visão completa do seu planejamento pessoal</div>
-      </div>
-    </div>
-    <div class="san-body">
+  const categoryLegend = cats.length
+    ? cats.slice(0, 6).map(([name, count], i) => {
+        const rate = byCatD[name] ? Math.round(byCatD[name] / count * 100) : 0;
+        return `<div class="san-legend-item">
+          <div class="san-legend-dot" style="background:${catColors[i % catColors.length]}"></div>
+          <span class="san-legend-lbl">${name}</span>
+          <span class="san-legend-val">${count} <span style="opacity:.5;font-size:9px">${rate}% ok</span></span>
+        </div>`;
+      }).join('')
+    : '<div style="font-size:12px;color:var(--muted);font-family:var(--font-mono);font-style:italic">Nenhuma categoria registrada</div>';
 
-      <!-- KPIs -->
+  const priorityLabel = { alta: 'Alta', media: 'Media', baixa: 'Baixa' };
+
+  el.innerHTML = `
+    <div class="san-body">
+      <div class="san-intro">
+        <div class="san-intro-head">
+          <div>
+            <div class="san-header-title">Analytics de <em>Tarefas</em></div>
+            <div class="san-header-sub">Visao completa do seu planejamento pessoal</div>
+          </div>
+          <button class="san-back-btn" onclick="tkCloseAnalytics()">Voltar</button>
+        </div>
+      </div>
+
       <div class="san-kpi-row">
         <div class="san-kpi" style="--kpi-color:#c8a96e">
           <div class="san-kpi-icon">📋</div><div class="san-kpi-val">${total}</div>
@@ -710,7 +792,7 @@ function tkRenderAnalytics() {
         </div>
         <div class="san-kpi" style="--kpi-color:#5ec4a8">
           <div class="san-kpi-icon">✅</div><div class="san-kpi-val">${done}</div>
-          <div class="san-kpi-lbl">Concluídas</div>
+          <div class="san-kpi-lbl">Concluidas</div>
           <div class="san-kpi-sub">${pct}% do total</div>
         </div>
         <div class="san-kpi" style="--kpi-color:#e06b8b">
@@ -720,23 +802,22 @@ function tkRenderAnalytics() {
         <div class="san-kpi" style="--kpi-color:#4ab0e8">
           <div class="san-kpi-icon">📅</div><div class="san-kpi-val">${hoje}</div>
           <div class="san-kpi-lbl">Para hoje</div>
-          <div class="san-kpi-sub">${hojeD} concluídas</div>
+          <div class="san-kpi-sub">${hojeD} concluidas</div>
         </div>
       </div>
 
-      <!-- Row 1: Atividade mensal + Donut categoria -->
       <div class="san-charts-row">
         <div class="san-card" style="flex:2">
-          <div class="san-card-title"><span class="san-card-title-icon">📈</span>Atividade mensal — últimos 6 meses</div>
+          <div class="san-card-title"><span class="san-card-title-icon">📈</span>Atividade mensal - ultimos 6 meses</div>
           <div class="san-bar-chart">
             ${Object.values(monthly).map(m => {
-              const pTot  = Math.round(m.total / maxMonth * 100);
-              const pDone = m.total > 0 ? Math.round(m.done / m.total * 100) : 0;
+              const pTot = Math.round(m.total / maxMonth * 100);
+              const pDone = Math.round(m.done / maxMonth * 100);
               return `<div class="san-bar-item">
                 <div class="san-bar-label">${m.label}</div>
                 <div class="san-bar-track" style="position:relative">
                   <div class="san-bar-fill" style="background:rgba(124,111,205,.2);width:0" data-w="${pTot}"></div>
-                  <div class="san-bar-fill" style="position:absolute;top:0;left:0;height:100%;border-radius:6px;background:var(--accent3);width:0;transition:width 1.1s .1s cubic-bezier(.22,1,.36,1)" data-w="${Math.round(m.done/maxMonth*100)}"></div>
+                  <div class="san-bar-fill" style="position:absolute;top:0;left:0;height:100%;border-radius:6px;background:var(--accent3);width:0;transition:width 1.1s .1s cubic-bezier(.22,1,.36,1)" data-w="${pDone}"></div>
                 </div>
                 <div class="san-bar-val">${m.total}</div>
               </div>`;
@@ -747,7 +828,7 @@ function tkRenderAnalytics() {
               <div style="width:10px;height:10px;border-radius:3px;background:rgba(124,111,205,.2)"></div>Total
             </div>
             <div style="display:flex;align-items:center;gap:6px;font-size:10px;font-family:var(--font-mono);color:var(--muted)">
-              <div style="width:10px;height:10px;border-radius:3px;background:var(--accent3)"></div>Concluídas
+              <div style="width:10px;height:10px;border-radius:3px;background:var(--accent3)"></div>Concluidas
             </div>
           </div>
         </div>
@@ -760,30 +841,19 @@ function tkRenderAnalytics() {
               <text x="65" y="61" text-anchor="middle" fill="var(--text)" font-family="var(--font-display)" font-size="16" font-weight="700">${total}</text>
               <text x="65" y="75" text-anchor="middle" fill="var(--muted)" font-family="var(--font-mono)" font-size="7">tarefas</text>
             </svg>
-            <div class="san-donut-legend">
-              ${cats.slice(0,6).map(([name,count],i) => {
-                const rate = byCatD[name] ? Math.round(byCatD[name]/count*100) : 0;
-                return `<div class="san-legend-item">
-                  <div class="san-legend-dot" style="background:${catColors[i%catColors.length]}"></div>
-                  <span class="san-legend-lbl">${name}</span>
-                  <span class="san-legend-val">${count} <span style="opacity:.5;font-size:9px">${rate}%✓</span></span>
-                </div>`;
-              }).join('')}
-            </div>
+            <div class="san-donut-legend">${categoryLegend}</div>
           </div>
         </div>
       </div>
 
-      <!-- Row 2: Prioridade + Score saúde + Próximas -->
       <div class="san-charts-row-3">
         <div class="san-card">
           <div class="san-card-title"><span class="san-card-title-icon">🔴</span>Taxa por prioridade</div>
           <div class="san-bar-chart" style="gap:12px">
-            ${priorRate.map(({k,tot,dn,pct:p}) => {
+            ${priorRate.map(({ k, tot, dn, pct: p }) => {
               const col = TK_PRIOR_COLOR[k];
-              const lbl = {alta:'🔴 Alta',media:'🟡 Média',baixa:'🟢 Baixa'}[k];
               return `<div class="san-bar-item">
-                <div class="san-bar-label">${lbl}</div>
+                <div class="san-bar-label">${priorityLabel[k]}</div>
                 <div class="san-bar-track">
                   <div class="san-bar-fill" data-w="${p}" style="background:${col};width:0"></div>
                 </div>
@@ -797,7 +867,7 @@ function tkRenderAnalytics() {
               <span style="color:var(--text);font-weight:700">${subTotal}</span>
             </div>
             <div style="display:flex;justify-content:space-between;font-size:11px;font-family:var(--font-mono)">
-              <span style="color:var(--muted)">Subtarefas concluídas</span>
+              <span style="color:var(--muted)">Subtarefas concluidas</span>
               <span style="color:var(--accent3);font-weight:700">${subDone}</span>
             </div>
             <div style="display:flex;justify-content:space-between;font-size:11px;font-family:var(--font-mono)">
@@ -808,13 +878,13 @@ function tkRenderAnalytics() {
         </div>
 
         <div class="san-card">
-          <div class="san-card-title"><span class="san-card-title-icon">💚</span>Score de saúde</div>
+          <div class="san-card-title"><span class="san-card-title-icon">💚</span>Score de saude</div>
           <div class="san-health-ring-wrap">
             <svg width="120" height="120" viewBox="0 0 80 80">
               <circle cx="40" cy="40" r="32" fill="none" stroke="rgba(255,255,255,.05)" stroke-width="8"/>
               <circle cx="40" cy="40" r="32" fill="none" stroke="${healthColor}" stroke-width="8"
                 stroke-dasharray="${ringC.toFixed(2)}"
-                stroke-dashoffset="${(ringC*(1-healthScore/100)).toFixed(2)}"
+                stroke-dashoffset="${(ringC * (1 - healthScore / 100)).toFixed(2)}"
                 transform="rotate(-90 40 40)" stroke-linecap="round"
                 style="transition:stroke-dashoffset 1.4s cubic-bezier(.22,1,.36,1)"/>
               <text x="40" y="37" text-anchor="middle" fill="${healthColor}" font-family="var(--font-display)" font-size="16" font-weight="700">${healthScore}</text>
@@ -824,39 +894,39 @@ function tkRenderAnalytics() {
           </div>
           <div class="san-health-factors">
             ${[
-              ['Taxa conclusão ≥50%',   pct>=50,    pct+'%'],
-              ['Sem tarefas vencidas',  venc===0,   venc===0?'✓':''+venc+' venc.'],
-              ['>50% com detalhes',     tasks.filter(t=>t.nota).length/Math.max(1,total)>0.5, Math.round(tasks.filter(t=>t.nota).length/Math.max(1,total)*100)+'%'],
-              ['>30% com subtarefas',   tasks.filter(t=>(t.subtarefas||[]).length>0).length/Math.max(1,total)>0.3, Math.round(tasks.filter(t=>(t.subtarefas||[]).length>0).length/Math.max(1,total)*100)+'%'],
-              ['>70% com data',         tasks.filter(t=>t.data).length/Math.max(1,total)>0.7, Math.round(tasks.filter(t=>t.data).length/Math.max(1,total)*100)+'%'],
-            ].map(([lbl,ok,val]) => `
+              ['Taxa de conclusao >= 50%', pct >= 50, `${pct}%`],
+              ['Sem tarefas vencidas', venc === 0, venc === 0 ? 'OK' : `${venc} venc.`],
+              ['Mais de 50% com detalhes', detailRate > 50, `${detailRate}%`],
+              ['Mais de 30% com subtarefas', subtaskRate > 30, `${subtaskRate}%`],
+              ['Mais de 70% com data', datedRate > 70, `${datedRate}%`]
+            ].map(([lbl, ok, val]) => `
               <div class="san-health-factor">
                 <div class="san-health-factor-row">
                   <span class="san-health-factor-lbl">${lbl}</span>
-                  <span class="san-health-factor-val" style="color:${ok?'var(--accent3)':'var(--accent4)'}">${val}</span>
+                  <span class="san-health-factor-val" style="color:${ok ? 'var(--accent3)' : 'var(--accent4)'}">${val}</span>
                 </div>
                 <div class="san-health-bar">
-                  <div class="san-health-fill" style="background:${ok?'var(--accent3)':'var(--accent4)'};width:${ok?'100':'30'}%"></div>
+                  <div class="san-health-fill" style="background:${ok ? 'var(--accent3)' : 'var(--accent4)'};width:${ok ? '100' : '30'}%"></div>
                 </div>
               </div>`).join('')}
           </div>
         </div>
 
         <div class="san-card">
-          <div class="san-card-title"><span class="san-card-title-icon">📅</span>Próximas tarefas</div>
+          <div class="san-card-title"><span class="san-card-title-icon">📌</span>Proximas tarefas</div>
           ${proximas.length === 0
             ? '<div style="font-size:12px;color:var(--muted);font-family:var(--font-mono);font-style:italic;padding:12px 0">Nenhuma tarefa futura pendente</div>'
             : `<div class="san-rank-list">
-              ${proximas.map((t,i) => {
+              ${proximas.map((t, i) => {
                 const diff = tkDaysFromNow(t.data);
                 const urgColor = diff === 0 ? '#e8864a' : diff <= 2 ? '#e06b8b' : '#5ec4a8';
-                const urgLabel = diff === 0 ? 'Hoje' : diff === 1 ? 'Amanhã' : `em ${diff}d`;
+                const urgLabel = diff === 0 ? 'Hoje' : diff === 1 ? 'Amanha' : `em ${diff}d`;
                 const pColor = TK_PRIOR_COLOR[t.prior] || '#c8a96e';
                 return `<div class="san-rank-item" onclick="taskHubOpen(${t.id})" style="cursor:pointer">
-                  <div class="san-rank-pos" style="background:${t.cor||pColor}22;color:${t.cor||pColor}">${i+1}</div>
+                  <div class="san-rank-pos" style="background:${t.cor || pColor}22;color:${t.cor || pColor}">${i + 1}</div>
                   <div class="san-rank-info">
                     <div class="san-rank-name">${t.nome}</div>
-                    <div class="san-rank-meta">${t.cat} · ${TK_PRIOR_LABEL[t.prior]||''}</div>
+                    <div class="san-rank-meta">${t.cat} · ${priorityLabel[t.prior] || ''}</div>
                   </div>
                   <div style="font-size:10px;font-family:var(--font-mono);font-weight:700;color:${urgColor};flex-shrink:0">${urgLabel}</div>
                 </div>`;
@@ -865,20 +935,20 @@ function tkRenderAnalytics() {
         </div>
       </div>
 
-      <!-- Row 3: Top subtarefas + vencidas por prioridade -->
       <div class="san-charts-row">
         <div class="san-card" style="flex:1">
           <div class="san-card-title"><span class="san-card-title-icon">◈</span>Mais complexas (subtarefas)</div>
           ${topSub.length === 0
             ? '<div style="font-size:12px;color:var(--muted);font-family:var(--font-mono);font-style:italic">Nenhuma tarefa com subtarefas</div>'
             : `<div class="san-rank-list">
-              ${topSub.map((t,i) => {
-                const subD = (t.subtarefas||[]).filter(s=>s.done).length;
-                const subT = (t.subtarefas||[]).length;
-                const sp   = Math.round(subD/subT*100);
-                const col  = t.cor || TK_PRIOR_COLOR[t.prior] || '#c8a96e';
+              ${topSub.map((t, i) => {
+                const complexity = getTaskComplexity(t);
+                const subD = complexity.doneItems;
+                const subT = complexity.totalItems;
+                const sp = Math.round(subD / subT * 100);
+                const col = t.cor || TK_PRIOR_COLOR[t.prior] || '#c8a96e';
                 return `<div class="san-rank-item" onclick="taskHubOpen(${t.id})" style="cursor:pointer">
-                  <div class="san-rank-pos" style="background:${col}22;color:${col}">${i+1}</div>
+                  <div class="san-rank-pos" style="background:${col}22;color:${col}">${i + 1}</div>
                   <div class="san-rank-info">
                     <div class="san-rank-name">${t.nome}</div>
                     <div class="san-rank-meta">${subD}/${subT} subtarefas · ${sp}%</div>
@@ -895,32 +965,27 @@ function tkRenderAnalytics() {
         </div>
 
         <div class="san-card" style="flex:1">
-          <div class="san-card-title"><span class="san-card-title-icon">🔴</span>Tarefas vencidas por prioridade</div>
-          ${(() => {
-            const vencTasks = tasks.filter(t => !t.done && t.data && tkDaysFromNow(t.data) < 0)
-              .sort((a,b) => a.data.localeCompare(b.data)).slice(0,6);
-            if (!vencTasks.length) return '<div style="font-size:12px;color:var(--accent3);font-family:var(--font-mono);font-style:italic;padding:12px 0">✓ Nenhuma tarefa vencida!</div>';
-            return `<div class="san-rank-list">
+          <div class="san-card-title"><span class="san-card-title-icon">🚨</span>Tarefas vencidas por prioridade</div>
+          ${!vencTasks.length
+            ? '<div style="font-size:12px;color:var(--accent3);font-family:var(--font-mono);font-style:italic;padding:12px 0">OK Nenhuma tarefa vencida</div>'
+            : `<div class="san-rank-list">
               ${vencTasks.map(t => {
                 const diff = Math.abs(tkDaysFromNow(t.data));
-                const col  = TK_PRIOR_COLOR[t.prior] || '#e06b8b';
+                const col = TK_PRIOR_COLOR[t.prior] || '#e06b8b';
                 return `<div class="san-rank-item" onclick="taskHubOpen(${t.id})" style="cursor:pointer">
                   <div class="san-rank-pos" style="background:${col}22;color:${col}">!</div>
                   <div class="san-rank-info">
                     <div class="san-rank-name">${t.nome}</div>
                     <div class="san-rank-meta">${t.cat} · ${tkFmtDate(t.data)}</div>
                   </div>
-                  <div style="font-size:10px;font-family:var(--font-mono);font-weight:700;color:var(--accent4);flex-shrink:0">${diff}d atrás</div>
+                  <div style="font-size:10px;font-family:var(--font-mono);font-weight:700;color:var(--accent4);flex-shrink:0">${diff}d atras</div>
                 </div>`;
               }).join('')}
-            </div>`;
-          })()}
+            </div>`}
         </div>
       </div>
-
     </div>`;
 
-  // animar barras
   setTimeout(() => {
     el.querySelectorAll('[data-w]').forEach(bar => {
       bar.style.width = bar.dataset.w + '%';
@@ -937,9 +1002,9 @@ function tkQuickToggle(id) {
   if (taskHubState.id === id) taskHubRender(t);
 }
 
-// ══════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // MODAL NOVA TAREFA
-// ══════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 let tkModalDate = '';
 let tkModalColor = TK_COLORS[0];
 
@@ -947,7 +1012,7 @@ function tkBuildColorPicker(containerId, selectedColor, onPickFn) {
   const el = document.getElementById(containerId);
   if (!el) return;
   el.innerHTML = TK_COLORS.map(col =>
-    `<div class="tk-color-opt ${col===selectedColor?'sel':''}"
+    `<div class="tk-color-opt ${col===selectedColor ? 'sel' : ''}"
       style="background:${col}"
       onclick="(${onPickFn})('${col}')"></div>`
   ).join('');
@@ -1005,14 +1070,14 @@ function tkModalSave() {
   tkModalClose();
 }
 
-// Compatibilidade com código antigo
+// Compatibilidade com cÃ³digo antigo
 function addTask() { tkModalOpenForDate(tkCalState.selected); }
 function toggleTask(id) { tkQuickToggle(id); }
 function delTask(id) { S.tasks = S.tasks.filter(x => x.id !== id); save(); renderTasks(); }
 
-// ══════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // TASK HUB FULLSCREEN
-// ══════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 const taskHubState = { id: null };
 let taskHubDrawerColor = TK_COLORS[0];
 
@@ -1040,7 +1105,6 @@ function taskHubRender(t) {
   const pColor = TK_PRIOR_COLOR[t.prior] || '#c8a96e';
   const color  = t.cor || pColor;
 
-  // Hero — cor dinâmica no mesh
   const heroEl = document.getElementById('taskh-hero');
   heroEl.style.background = `linear-gradient(160deg, ${color}22 0%, #06051a 60%, #100820 100%)`;
   document.getElementById('taskh-accent-bar').style.background =
@@ -1048,17 +1112,17 @@ function taskHubRender(t) {
   document.getElementById('taskh-hero-img').src = '';
   heroEl.classList.remove('has-img');
 
-  // Ícone, badge, título
   const priorIcons = { alta:'\u25c6', media:'\u25c8', baixa:'\u2726' };
   document.getElementById('taskh-icon').textContent = priorIcons[t.prior] || '\u25ce';
   const badgeEl = document.getElementById('taskh-badge');
   badgeEl.textContent = t.cat || 'Tarefa';
-  badgeEl.style.color = color; badgeEl.style.borderColor = color+'44'; badgeEl.style.background = color+'18';
+  badgeEl.style.color = color;
+  badgeEl.style.borderColor = color+'44';
+  badgeEl.style.background = color+'18';
   document.getElementById('taskh-title').textContent = t.nome;
 
-  // Meta chips
   const chips = [];
-  chips.push(`<div class="hub-hero-chip" style="color:${pColor}">${TK_PRIOR_LABEL[t.prior]||'—'}</div>`);
+  chips.push(`<div class="hub-hero-chip" style="color:${pColor}">${TK_PRIOR_LABEL[t.prior] || '—'}</div>`);
   if (t.data) {
     const diff = tkDaysFromNow(t.data);
     const cls = diff < 0 && !t.done ? 'warning' : diff === 0 ? 'success' : '';
@@ -1066,26 +1130,23 @@ function taskHubRender(t) {
     chips.push(`<div class="hub-hero-chip ${cls}">📅 ${tkFmtDate(t.data)} · ${lbl}</div>`);
   }
   if (t.hora) chips.push(`<div class="hub-hero-chip">🕐 ${t.hora}</div>`);
-  const subTotal = (t.subtarefas||[]).length;
-  const subDone  = (t.subtarefas||[]).filter(s=>s.done).length;
+  const subTotal = (t.subtarefas || []).length;
+  const subDone = (t.subtarefas || []).filter(s => s.done).length;
   if (subTotal > 0) chips.push(`<div class="hub-hero-chip">\u25c8 ${subDone}/${subTotal} subtarefas</div>`);
   document.getElementById('taskh-meta').innerHTML = chips.join('');
 
-  // Nota/detalhes
   const notaEl = document.getElementById('taskh-nota-display');
   if (t.nota && t.nota.trim()) {
-    notaEl.className = 'taskh-nota-text'; notaEl.textContent = t.nota;
+    notaEl.className = 'taskh-nota-text';
+    notaEl.textContent = t.nota;
   } else {
-    notaEl.className = 'taskh-nota-empty'; notaEl.textContent = 'Sem detalhes. Edite para adicionar contexto.';
+    notaEl.className = 'taskh-nota-empty';
+    notaEl.textContent = 'Sem detalhes. Edite para adicionar contexto.';
   }
 
-  // Subtarefas
   taskHubRenderSubs(t);
-
-  // Ring de progresso
   taskHubRenderRing(t);
 
-  // Cronograma
   const schedEl = document.getElementById('taskh-sched-content');
   const diff = t.data ? tkDaysFromNow(t.data) : null;
   schedEl.innerHTML = `
@@ -1100,25 +1161,24 @@ function taskHubRender(t) {
       </div>` : ''}
       ${diff !== null ? `<div style="display:flex;justify-content:space-between">
         <span style="font-size:11px;font-family:var(--font-mono);color:var(--muted)">Status</span>
-        <span style="font-size:12px;font-weight:700;color:${diff<0&&!t.done?'var(--accent4)':diff===0?'var(--accent3)':'var(--muted)'}">
-          ${t.done?'✓ Concluída':diff===0?'Hoje':diff<0?Math.abs(diff)+'d atrasada':'em '+diff+'d'}
+        <span style="font-size:12px;font-weight:700;color:${diff < 0 && !t.done ? 'var(--accent4)' : diff === 0 ? 'var(--accent3)' : 'var(--muted)'}">
+          ${t.done ? '✓ Concluída' : diff === 0 ? 'Hoje' : diff < 0 ? Math.abs(diff) + 'd atrasada' : 'em ' + diff + 'd'}
         </span>
       </div>` : ''}
     </div>`;
 
-  // Classificação
   document.getElementById('taskh-class-content').innerHTML = `
     <div style="display:flex;flex-direction:column;gap:10px">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <span style="font-size:11px;font-family:var(--font-mono);color:var(--muted)">Prioridade</span>
         <span style="font-size:12px;font-weight:700;padding:4px 12px;border-radius:20px;
           color:${pColor};border:1px solid ${pColor}44;background:${pColor}18">
-          ${TK_PRIOR_LABEL[t.prior]||'—'}
+          ${TK_PRIOR_LABEL[t.prior] || '—'}
         </span>
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center">
         <span style="font-size:11px;font-family:var(--font-mono);color:var(--muted)">Categoria</span>
-        <span style="font-size:12px;font-weight:700;color:var(--text)">${t.cat||'—'}</span>
+        <span style="font-size:12px;font-weight:700;color:var(--text)">${t.cat || '—'}</span>
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center">
         <span style="font-size:11px;font-family:var(--font-mono);color:var(--muted)">Cor</span>
@@ -1126,10 +1186,7 @@ function taskHubRender(t) {
       </div>
     </div>`;
 
-  // Botão concluir
   taskHubRenderDoneBtn(t);
-
-  // Tips
   taskHubRenderTips(t);
 }
 
@@ -1158,9 +1215,10 @@ function taskHubRenderSubs(t) {
 
 function taskHubRenderRing(t) {
   const subs = t.subtarefas || [];
-  const total = subs.length, done = subs.filter(s=>s.done).length;
+  const total = subs.length;
+  const done = subs.filter(s=>s.done).length;
   const pct = total > 0 ? Math.round(done/total*100) : (t.done ? 100 : 0);
-  const circum = 2 * Math.PI * 40; // r=40
+  const circum = 2 * Math.PI * 40;
   const fill = document.getElementById('taskh-ring-fill');
   const pctEl = document.getElementById('taskh-ring-pct');
   const subEl = document.getElementById('taskh-ring-sub');
@@ -1211,7 +1269,6 @@ function taskHubRenderTips(t) {
   if (t.prior === 'alta' && !t.done) tips.push({ icon:'🔴', color:'#e06b8b', badge:'Alta prio', title:'Tarefa de alta prioridade', desc:'Considere trabalhar nesta tarefa antes de qualquer outra pendente.' });
   if (subs.length > 0 && subs.every(s=>s.done) && !t.done) tips.push({ icon:'✅', color:'#5ec4a8', badge:'Quase lá!', title:'Subtarefas 100% concluídas', desc:'Todas as subtarefas foram feitas. Marque a tarefa principal como concluída!' });
 
-  // tips fixas de valor
   const fixed = [
     { icon:'⏱️', color:'#4ab0e8', badge:'Produtividade', title:'Use a técnica Pomodoro', desc:'25 min de foco + 5 min de pausa. Ideal para tarefas complexas.' },
     { icon:'🌅', color:'#7c6fcd', badge:'Hábito', title:'Tarefas difíceis pela manhã', desc:'Sua energia e foco são maiores no início do dia.' },
@@ -1241,7 +1298,7 @@ function taskHubToggleDone() {
 function taskHubToggleSub(idx) {
   const t = S.tasks.find(x => x.id === taskHubState.id); if (!t) return;
   t.subtarefas[idx].done = !t.subtarefas[idx].done;
-  // auto-marcar tarefa se todas as subs concluídas
+  // auto-marcar tarefa se todas as subs concluÃ­das
   if (t.subtarefas.length && t.subtarefas.every(s=>s.done)) t.done = true;
   save(); renderTasks();
   taskHubRenderSubs(t); taskHubRenderRing(t); taskHubRenderDoneBtn(t);
@@ -1264,7 +1321,7 @@ function taskHubAddSub() {
   taskHubRenderSubs(t); taskHubRenderRing(t);
 }
 
-// ── Drawer de edição ─────────────────────────────────────────────────
+// Drawer de edicao
 function taskHubDrawerOpen() {
   const t = S.tasks.find(x => x.id === taskHubState.id); if (!t) return;
   taskHubDrawerColor = t.cor || TK_COLORS[0];
@@ -1316,7 +1373,7 @@ function taskHubDrawerSalvar() {
 function taskHubDelete() {
   const t = S.tasks.find(x => x.id === taskHubState.id);
   const nome = t ? t.nome : 'esta tarefa';
-  if (!confirm('Excluir "' + nome + '"?')) return;
+  if (!confirm('Excluir "' + nome + '"')) return;
   S.tasks = S.tasks.filter(x => x.id !== taskHubState.id);
   save(); renderTasks();
   taskHubDrawerClose(); taskHubClose();
@@ -1972,8 +2029,7 @@ taskHubDrawerSalvar = function () {
   if (!nome) { document.getElementById('tkd-nome').focus(); return; }
   const idx = S.tasks.findIndex(function (item) { return item.id === taskHubState.id; });
   if (idx < 0) return;
-  S.tasks[idx] = {
-    ...S.tasks[idx],
+  const savedTask = tkApplyRecurringEdits(taskHubState.id, {
     nome: nome,
     nota: document.getElementById('tkd-nota').value.trim(),
     prior: document.getElementById('tkd-prior').value,
@@ -1982,18 +2038,17 @@ taskHubDrawerSalvar = function () {
     hora: document.getElementById('tkd-hora').value,
     cor: taskHubDrawerColor,
     recurrence: document.getElementById('tkd-recorrencia').value
-  };
-  if (!S.tasks[idx].isRecurringClone) tkSyncRecurringSeries(S.tasks[idx].id);
+  });
   save();
   renderTasks();
   taskHubDrawerClose();
-  taskHubRender(S.tasks[idx]);
+  taskHubRender(savedTask || S.tasks[idx]);
 };
 
 taskHubDelete = function () {
   const task = S.tasks.find(function (item) { return item.id === taskHubState.id; });
   const nome = task ? task.nome : 'esta tarefa';
-  if (!confirm('Excluir "' + nome + '"?')) return;
+  if (!confirm('Excluir "' + nome + '"')) return;
   const nextParentId = task ? task.parentId : null;
   S.tasks.forEach(function (item) {
     if (item.parentId === taskHubState.id) item.parentId = nextParentId;
@@ -2015,3 +2070,4 @@ load();
 renderTasks();
 window.addEventListener('resize', tkRenderList);
 window.addEventListener('resize', taskHubClampBoardPosition);
+

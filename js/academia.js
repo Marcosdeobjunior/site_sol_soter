@@ -1,12 +1,679 @@
-﻿(function () {
+(function () {
   "use strict";
 
-  var pageId = document.body.getAttribute("data-page") || "";
-  var state = window.SoterStorage ? window.SoterStorage.getState() : null;
+  var DATA_KEY = "academiaTracker";
+  var profile = { name: "Marcos", age: 25, height: 1.75, goalWeight: 80, kcalGoal: 2000, trainDays: [1, 2, 3, 4, 5], photo: "" };
+  var weightLog = [];
+  var exercises = [];
+  var diet = { breakfast: [], lunch: [], snack: [], dinner: [] };
+  var todayDone = {};
+  var exFilter = "all";
+  var editExId = null;
+  var exImageData = "";
 
-  if (state && state.data) {
-    state.data.lastVisitedPage = pageId;
-    state.data.lastVisitedAt = new Date().toISOString();
-    window.SoterStorage.save(state);
+  var DAYS_PT = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+  var DAYS_FULL = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
+  var TAG_LABELS = { peito: "Peito", costas: "Costas", pernas: "Pernas", ombros: "Ombros", triceps: "Tríceps", biceps: "Bíceps", abdomen: "Abdômen", cardio: "Cardio", outro: "Outro" };
+  var MEAL_NAMES = { breakfast: "Café da manhã", lunch: "Almoço", snack: "Lanche", dinner: "Jantar" };
+  var MEAL_ICONS = { breakfast: "☕", lunch: "🍽️", snack: "🥜", dinner: "🌙" };
+
+  function getState() {
+    if (window.SoterStorage && window.SoterStorage.getState) return window.SoterStorage.getState();
+    return { data: {} };
   }
+
+  function saveState(nextState) {
+    if (window.SoterStorage && window.SoterStorage.save) window.SoterStorage.save(nextState);
+  }
+
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+  function todayStr() { return new Date().toISOString().slice(0, 10); }
+  function todayDOW() { return new Date().getDay(); }
+
+  function toast(msg, type) {
+    type = type || "ok";
+    var icons = { ok: "fa-check-circle", err: "fa-exclamation-circle", info: "fa-info-circle" };
+    var cols = { ok: "var(--teal)", err: "var(--rose)", info: "var(--sky)" };
+    var c = document.getElementById("toasts");
+    var el = document.createElement("div");
+    el.className = "t " + type;
+    el.innerHTML = '<i class="fas ' + icons[type] + '" style="color:' + cols[type] + '"></i> ' + msg;
+    c.appendChild(el);
+    setTimeout(function () {
+      el.style.animation = "tOut .3s ease forwards";
+      setTimeout(function () { el.remove(); }, 300);
+    }, 2600);
+  }
+
+  function openModal(id) { document.getElementById(id).classList.add("open"); }
+  function closeModal(id) { document.getElementById(id).classList.remove("open"); }
+
+  function save() {
+    var state = getState();
+    if (!state.data || typeof state.data !== "object") state.data = {};
+    state.data[DATA_KEY] = {
+      profile: profile,
+      weightLog: weightLog,
+      exercises: exercises,
+      diet: diet,
+      todayDoneByDate: Object.assign({}, state.data[DATA_KEY] && state.data[DATA_KEY].todayDoneByDate, (function () {
+        var next = {};
+        next[todayStr()] = todayDone;
+        return next;
+      }()))
+    };
+    state.data.lastVisitedPage = "academia";
+    state.data.lastVisitedAt = new Date().toISOString();
+    saveState(state);
+  }
+
+  function loadAll() {
+    var state = getState();
+    var data = state.data || {};
+    if (data[DATA_KEY]) {
+      profile = Object.assign(profile, data[DATA_KEY].profile || {});
+      weightLog = Array.isArray(data[DATA_KEY].weightLog) ? data[DATA_KEY].weightLog : [];
+      exercises = Array.isArray(data[DATA_KEY].exercises) ? data[DATA_KEY].exercises : [];
+      diet = Object.assign({ breakfast: [], lunch: [], snack: [], dinner: [] }, data[DATA_KEY].diet || {});
+      todayDone = data[DATA_KEY].todayDoneByDate && data[DATA_KEY].todayDoneByDate[todayStr()] ? data[DATA_KEY].todayDoneByDate[todayStr()] : {};
+      return;
+    }
+    try {
+      var p = localStorage.getItem("gym-profile"); if (p) profile = JSON.parse(p);
+      var w = localStorage.getItem("gym-weights"); if (w) weightLog = JSON.parse(w);
+      var e = localStorage.getItem("gym-exercises"); if (e) exercises = JSON.parse(e);
+      var d = localStorage.getItem("gym-diet"); if (d) diet = JSON.parse(d);
+      var t = localStorage.getItem("gym-done-" + todayStr()); if (t) todayDone = JSON.parse(t);
+      save();
+    } catch (e2) {}
+  }
+
+  function renderProfile() {
+    document.getElementById("profile-name-display").innerHTML = profile.name || "Atleta";
+    document.getElementById("disp-age").textContent = (profile.age || "—") + " anos";
+    document.getElementById("disp-height").textContent = profile.height ? profile.height.toFixed(2).replace(".", ",") + " m" : "—";
+
+    var lastW = weightLog.length ? weightLog[weightLog.length - 1].weight : null;
+    if (lastW && profile.height) {
+      var imc = (lastW / (profile.height * profile.height)).toFixed(1);
+      var imcLbl = imc < 18.5 ? "Abaixo" : imc < 25 ? "Normal" : imc < 30 ? "Sobrepeso" : "Obeso";
+      var imcCol = imc < 18.5 ? "var(--sky)" : imc < 25 ? "var(--teal)" : imc < 30 ? "var(--amber)" : "var(--rose)";
+      document.getElementById("disp-imc").innerHTML = '<span style="color:' + imcCol + '">' + imc + " — " + imcLbl + "</span>";
+    } else {
+      document.getElementById("disp-imc").textContent = "—";
+    }
+
+    if (profile.photo) {
+      var img = document.getElementById("profile-photo-img");
+      img.src = profile.photo;
+      img.className = "loaded";
+      document.getElementById("profile-photo-placeholder").style.display = "none";
+    }
+
+    if (lastW) document.getElementById("weight-input").value = lastW;
+
+    document.querySelectorAll(".day-pill").forEach(function (btn) {
+      var d = parseInt(btn.dataset.day, 10);
+      btn.classList.remove("active", "today-active", "today-rest");
+      var isToday = d === todayDOW();
+      var isTrain = profile.trainDays.includes(d);
+      if (isToday && isTrain) btn.classList.add("today-active");
+      else if (isToday) btn.classList.add("today-rest");
+      else if (isTrain) btn.classList.add("active");
+    });
+
+    var dow = todayDOW();
+    var isTrain = profile.trainDays.includes(dow);
+    document.getElementById("today-tag").textContent = DAYS_FULL[dow];
+    document.getElementById("today-tag").style.color = isTrain ? "var(--teal)" : "var(--rose)";
+  }
+
+  function setRing(id, pct) {
+    var circ = 138.2;
+    var el = document.getElementById(id);
+    if (el) el.style.strokeDashoffset = circ * (1 - pct);
+  }
+
+  function renderWeightStats() {
+    var curr = weightLog.length ? weightLog[weightLog.length - 1].weight : null;
+    var start = weightLog.length ? weightLog[0].weight : null;
+    var goal = profile.goalWeight;
+
+    document.getElementById("ws-current").textContent = curr ? curr + "kg" : "—";
+    document.getElementById("ws-start").textContent = start ? start + "kg" : "—";
+
+    if (curr && start) {
+      var diff = (curr - start).toFixed(1);
+      var el = document.getElementById("ws-diff");
+      el.textContent = (diff > 0 ? "+" : "") + diff + "kg";
+      el.style.color = diff < 0 ? "var(--teal)" : diff > 0 ? "var(--rose)" : "var(--muted2)";
+    } else {
+      document.getElementById("ws-diff").textContent = "—";
+    }
+
+    document.getElementById("ws-goal").textContent = goal ? goal + "kg" : "—";
+
+    if (weightLog.length >= 2) {
+      var recent = weightLog.slice(-3).map(function (x) { return x.weight; });
+      var trend = recent[recent.length - 1] - recent[0];
+      var el2 = document.getElementById("weight-trend");
+      if (trend < 0) el2.innerHTML = '<i class="fas fa-arrow-down" style="color:var(--teal)"></i> ' + trend.toFixed(1) + "kg";
+      else if (trend > 0) el2.innerHTML = '<i class="fas fa-arrow-up" style="color:var(--rose)"></i> +' + trend.toFixed(1) + "kg";
+      else el2.textContent = "Estável";
+    }
+
+    var daysInMonth = new Date().getDate();
+    var trainCount = profile.trainDays.length * Math.floor(daysInMonth / 7);
+    setRing("ring-treinos", Math.min(trainCount, 30) / 30);
+    document.getElementById("ring-treinos-val").textContent = trainCount;
+
+    var metaPct = (curr && goal && start) ? Math.min(1, Math.max(0, (start - curr) / (start - goal) || 0)) : 0;
+    setRing("ring-meta", metaPct);
+    document.getElementById("ring-meta-val").textContent = Math.round(metaPct * 100) + "%";
+
+    setRing("ring-streak", Math.min(profile.trainDays.length / 7, 1));
+    document.getElementById("ring-streak-val").textContent = profile.trainDays.length;
+
+    setRing("ring-ex", Math.min(exercises.length / 20, 1));
+    document.getElementById("ring-ex-val").textContent = exercises.length;
+  }
+
+  function drawWeightChart() {
+    var canvas = document.getElementById("weight-chart");
+    if (!canvas) return;
+    var dpr = window.devicePixelRatio || 1;
+    canvas.width = canvas.offsetWidth * dpr;
+    canvas.height = 220 * dpr;
+    var ctx = canvas.getContext("2d");
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.scale(dpr, dpr);
+    var W = canvas.offsetWidth;
+    var H = 220;
+    ctx.clearRect(0, 0, W, H);
+
+    if (weightLog.length < 2) {
+      ctx.fillStyle = "rgba(255,255,255,.2)";
+      ctx.font = "13px Syne, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("Adicione registros de peso para ver o gráfico", W / 2, H / 2);
+      return;
+    }
+
+    var vals = weightLog.map(function (x) { return x.weight; });
+    var minV = Math.min.apply(null, vals) - 1;
+    var maxV = Math.max.apply(null, vals) + 1;
+    var rng = Math.max(maxV - minV, 1);
+    var pad = { l: 36, r: 16, t: 16, b: 28 };
+    var cW = W - pad.l - pad.r;
+    var cH = H - pad.t - pad.b;
+    var n = weightLog.length;
+    function px(i) { return pad.l + i / (n - 1) * cW; }
+    function py(v) { return pad.t + cH - (v - minV) / rng * cH; }
+
+    ctx.strokeStyle = "rgba(255,255,255,.055)";
+    ctx.lineWidth = 1;
+    for (var g = 0; g <= 4; g += 1) {
+      var gy = pad.t + cH * (1 - g / 4);
+      ctx.beginPath();
+      ctx.moveTo(pad.l, gy);
+      ctx.lineTo(W - pad.r, gy);
+      ctx.stroke();
+      ctx.fillStyle = "rgba(255,255,255,.3)";
+      ctx.font = "10px DM Mono, monospace";
+      ctx.textAlign = "right";
+      ctx.fillText((minV + rng * g / 4).toFixed(1), pad.l - 4, gy + 3);
+    }
+
+    if (profile.goalWeight && profile.goalWeight >= minV && profile.goalWeight <= maxV) {
+      var gy2 = py(profile.goalWeight);
+      ctx.strokeStyle = "rgba(94,196,168,.4)";
+      ctx.lineWidth = 1.2;
+      ctx.setLineDash([5, 4]);
+      ctx.beginPath();
+      ctx.moveTo(pad.l, gy2);
+      ctx.lineTo(W - pad.r, gy2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = "rgba(94,196,168,.7)";
+      ctx.font = "10px DM Mono, monospace";
+      ctx.textAlign = "left";
+      ctx.fillText("meta " + profile.goalWeight + "kg", pad.l + 4, gy2 - 4);
+    }
+
+    ctx.beginPath();
+    ctx.moveTo(px(0), py(vals[0]));
+    for (var i = 1; i < n; i += 1) ctx.lineTo(px(i), py(vals[i]));
+    ctx.lineTo(px(n - 1), H - pad.b);
+    ctx.lineTo(px(0), H - pad.b);
+    ctx.closePath();
+    var af = ctx.createLinearGradient(0, pad.t, 0, H - pad.b);
+    af.addColorStop(0, "rgba(200,169,110,.22)");
+    af.addColorStop(1, "rgba(200,169,110,.02)");
+    ctx.fillStyle = af;
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(px(0), py(vals[0]));
+    for (i = 1; i < n; i += 1) ctx.lineTo(px(i), py(vals[i]));
+    ctx.strokeStyle = "rgba(200,169,110,.9)";
+    ctx.lineWidth = 2.2;
+    ctx.stroke();
+
+    for (i = 0; i < n; i += 1) {
+      ctx.beginPath();
+      ctx.arc(px(i), py(vals[i]), 3.5, 0, Math.PI * 2);
+      ctx.fillStyle = i === n - 1 ? "rgba(200,169,110,1)" : "rgba(200,169,110,.6)";
+      ctx.fill();
+    }
+
+    var step = Math.max(1, Math.floor(n / 6));
+    for (i = 0; i < n; i += step) {
+      var d = weightLog[i].date.slice(5);
+      ctx.fillStyle = "rgba(255,255,255,.35)";
+      ctx.font = "9px DM Mono, monospace";
+      ctx.textAlign = "center";
+      ctx.fillText(d.replace("-", "/"), px(i), H - 8);
+    }
+  }
+
+  function renderDiet() {
+    var grid = document.getElementById("meal-grid");
+    var meals = ["breakfast", "lunch", "snack", "dinner"];
+    var totalKcal = 0;
+    meals.forEach(function (m) {
+      (diet[m] || []).forEach(function (item) { totalKcal += parseInt(item.kcal || 0, 10); });
+    });
+
+    grid.innerHTML = "";
+    meals.forEach(function (m) {
+      var col = document.createElement("div");
+      col.className = "meal-col";
+      col.innerHTML = '<div class="meal-header"><span class="meal-icon">' + MEAL_ICONS[m] + '</span><span class="meal-name">' + MEAL_NAMES[m] + '</span></div><div class="meal-items" id="meal-items-' + m + '"></div>';
+      var itemsDiv = col.querySelector(".meal-items");
+      (diet[m] || []).forEach(function (item, idx) {
+        var el = document.createElement("div");
+        el.className = "meal-item";
+        el.innerHTML = '<div class="meal-item-left"><span class="meal-item-name">' + item.name + '</span><span style="font-size:10px;color:var(--muted);margin-left:4px">' + (item.qty || "") + '</span></div>' + (item.kcal ? '<span class="meal-item-kcal">' + item.kcal + ' kcal</span>' : "") + ' <button class="meal-item-del" data-meal="' + m + '" data-idx="' + idx + '"><i class="fas fa-times"></i></button>';
+        itemsDiv.appendChild(el);
+      });
+      var addBtn = document.createElement("button");
+      addBtn.className = "meal-add-btn";
+      addBtn.dataset.meal = m;
+      addBtn.innerHTML = '<i class="fas fa-plus" style="font-size:10px"></i> Adicionar';
+      addBtn.addEventListener("click", function () {
+        document.getElementById("meal-target").value = this.dataset.meal;
+        document.getElementById("meal-item-name").value = "";
+        document.getElementById("meal-item-qty").value = "";
+        document.getElementById("meal-item-kcal").value = "";
+        openModal("modal-meal");
+      });
+      col.appendChild(addBtn);
+      grid.appendChild(col);
+    });
+
+    document.querySelectorAll(".meal-item-del").forEach(function (btn) {
+      btn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        var m = this.dataset.meal;
+        var idx = parseInt(this.dataset.idx, 10);
+        diet[m].splice(idx, 1);
+        save();
+        renderDiet();
+      });
+    });
+
+    var goal = profile.kcalGoal || 2000;
+    document.getElementById("kcal-num").textContent = totalKcal;
+    document.getElementById("kcal-goal-lbl").textContent = "/ " + goal;
+    document.getElementById("kcal-bar").style.width = Math.min(100, totalKcal / goal * 100) + "%";
+    document.getElementById("diet-kcal-display").textContent = totalKcal + " kcal";
+  }
+
+  function getExEmoji(tag) {
+    var m = { peito: "💪", costas: "🏋️", pernas: "🦵", ombros: "🙆", triceps: "💪", biceps: "🦾", abdomen: "🔥", cardio: "🏃", outro: "⚡" };
+    return m[tag] || "⚡";
+  }
+
+  function renderDayWorkout() {
+    var dow = todayDOW();
+    var isTrain = profile.trainDays.includes(dow);
+    var body = document.getElementById("day-workout-body");
+
+    if (!isTrain) {
+      body.innerHTML = '<div class="rest-msg"><i class="fas fa-moon"></i><p>Dia de descanso.<br>Aproveite a recuperação!</p></div>';
+      return;
+    }
+
+    var dayExs = exercises.filter(function (e) { return (e.days || []).map(Number).includes(dow); });
+    if (dayExs.length === 0) {
+      body.innerHTML = '<div class="rest-msg"><i class="fas fa-dumbbell"></i><p>Nenhum exercício configurado para hoje.<br>Adicione exercícios e selecione este dia.</p></div>';
+      return;
+    }
+
+    var list = document.createElement("div");
+    list.className = "day-ex-list";
+    var done = 0;
+    dayExs.forEach(function (ex) {
+      var isDone = !!todayDone[ex.id];
+      if (isDone) done += 1;
+      var item = document.createElement("div");
+      item.className = "day-ex-item";
+      var thumbHtml = ex.image ? '<div class="day-ex-thumb"><img src="' + ex.image + '" alt=""></div>' : '<div class="day-ex-thumb">' + getExEmoji(ex.tag) + "</div>";
+      item.innerHTML = thumbHtml +
+        '<div class="day-ex-body">' +
+        '<div class="day-ex-name"' + (isDone ? ' style="text-decoration:line-through;opacity:.5"' : "") + ">" + ex.name + "</div>" +
+        '<div class="day-ex-meta">' + (ex.sets ? ex.sets + "x " : "") + (ex.reps || "") + (ex.load ? " · " + ex.load : "") + "</div>" +
+        "</div>" +
+        '<span class="day-ex-tag tag-' + ex.tag + '">' + TAG_LABELS[ex.tag] + "</span>" +
+        '<div class="done-check' + (isDone ? " done" : "") + '" data-id="' + ex.id + '">' +
+        '<i class="fas fa-check"></i>' +
+        "</div>";
+      list.appendChild(item);
+    });
+    body.innerHTML = "";
+
+    var pbar = document.createElement("div");
+    pbar.style.cssText = "padding:12px 16px 0;display:flex;align-items:center;gap:10px;";
+    pbar.innerHTML = '<div style="flex:1;height:4px;background:rgba(255,255,255,.07);border-radius:4px;overflow:hidden"><div style="height:100%;border-radius:4px;background:var(--teal);width:' + Math.round(done / dayExs.length * 100) + '%;transition:width .5s"></div></div><span style="font-size:10px;font-family:var(--fm);color:var(--muted)">' + done + "/" + dayExs.length + "</span>";
+    body.appendChild(pbar);
+    body.appendChild(list);
+
+    body.querySelectorAll(".done-check").forEach(function (btn) {
+      btn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        var id = this.dataset.id;
+        todayDone[id] = !todayDone[id];
+        save();
+        renderDayWorkout();
+      });
+    });
+
+    list.querySelectorAll(".day-ex-item").forEach(function (item, i) {
+      item.addEventListener("click", function (e) {
+        if (e.target.closest(".done-check")) return;
+        openExModal(dayExs[i].id);
+      });
+    });
+  }
+
+  function renderExSheet() {
+    var grid = document.getElementById("ex-grid");
+    var filtered = exFilter === "all" ? exercises : exercises.filter(function (e) { return e.tag === exFilter; });
+    grid.innerHTML = "";
+    if (filtered.length === 0) {
+      grid.innerHTML = '<div class="ex-empty"><i class="fas fa-dumbbell"></i><p>Nenhum exercício' + (exFilter !== "all" ? " nesta categoria" : "") + ".<br>Adicione o primeiro!</p></div>";
+      return;
+    }
+    filtered.forEach(function (ex) {
+      var card = document.createElement("div");
+      card.className = "ex-card";
+      var imgHtml = ex.image ? '<div class="ex-card-img"><img src="' + ex.image + '" alt="' + ex.name + '"></div>' : '<div class="ex-card-img placeholder">' + getExEmoji(ex.tag) + "</div>";
+      var daysLabel = (ex.days || []).map(function (d) { return DAYS_PT[d]; }).join(", ") || "—";
+      card.innerHTML = imgHtml +
+        '<div class="ex-card-body">' +
+        '<div class="ex-card-name">' + ex.name + "</div>" +
+        '<span class="ex-card-tag tag-' + ex.tag + '">' + TAG_LABELS[ex.tag] + "</span>" +
+        '<div class="ex-card-sets">' + (ex.sets ? ex.sets + "x " : "") + (ex.reps || "") + (ex.load ? " · " + ex.load : "") + ' <span style="color:var(--muted)">' + daysLabel + "</span></div>" +
+        "</div>" +
+        '<button class="ex-card-del" data-id="' + ex.id + '"><i class="fas fa-times"></i></button>';
+      card.addEventListener("click", function (e) { if (e.target.closest(".ex-card-del")) return; openExModal(ex.id); });
+      grid.appendChild(card);
+    });
+
+    grid.querySelectorAll(".ex-card-del").forEach(function (btn) {
+      btn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        if (!window.confirm("Excluir exercício?")) return;
+        exercises = exercises.filter(function (x) { return x.id !== btn.dataset.id; });
+        save();
+        renderAll();
+        toast("Exercício removido.", "info");
+      });
+    });
+  }
+
+  function openExModal(id) {
+    editExId = id || null;
+    exImageData = "";
+    var ex = id ? exercises.find(function (x) { return x.id === id; }) : null;
+    document.getElementById("modal-ex-title").textContent = ex ? "Editar Exercício" : "Novo Exercício";
+    document.getElementById("ex-del-btn").style.display = ex ? "inline-flex" : "none";
+    document.getElementById("btn-save-ex").innerHTML = ex ? '<i class="fas fa-save"></i> Salvar' : '<i class="fas fa-plus"></i> Adicionar';
+
+    var previewImg = document.getElementById("ex-img-preview-img");
+    var previewLbl = document.getElementById("ex-img-preview-label");
+    if (ex && ex.image) {
+      previewImg.src = ex.image;
+      previewImg.style.display = "block";
+      previewLbl.style.display = "none";
+      exImageData = ex.image;
+    } else {
+      previewImg.src = "";
+      previewImg.style.display = "none";
+      previewLbl.style.display = "block";
+    }
+
+    document.getElementById("ex-name").value = ex ? ex.name : "";
+    document.getElementById("ex-tag").value = ex ? ex.tag : "peito";
+    document.getElementById("ex-sets").value = ex ? ex.sets || "" : "";
+    document.getElementById("ex-reps").value = ex ? ex.reps || "" : "";
+    document.getElementById("ex-load").value = ex ? ex.load || "" : "";
+    document.getElementById("ex-notes").value = ex ? ex.notes || "" : "";
+
+    var sel = document.getElementById("ex-days");
+    Array.from(sel.options).forEach(function (opt) {
+      opt.selected = ex ? (ex.days || []).map(Number).includes(parseInt(opt.value, 10)) : false;
+    });
+
+    openModal("modal-ex");
+  }
+
+  function renderAll() {
+    renderProfile();
+    renderWeightStats();
+    setTimeout(drawWeightChart, 60);
+    renderDiet();
+    renderDayWorkout();
+    renderExSheet();
+  }
+
+  function exportData() {
+    var data = { profile: profile, weightLog: weightLog, exercises: exercises, diet: diet, exportDate: new Date().toISOString() };
+    var blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "academia_backup_" + todayStr() + ".json";
+    a.click();
+    toast("Dados exportados!", "ok");
+  }
+
+  function bindEvents() {
+    document.getElementById("profile-photo-trigger").addEventListener("click", function () {
+      document.getElementById("profile-photo-input").click();
+    });
+    document.getElementById("profile-photo-input").addEventListener("change", function (e) {
+      var file = e.target.files[0];
+      if (!file) return;
+      var r = new FileReader();
+      r.onload = function () {
+        profile.photo = String(r.result || "");
+        var img = document.getElementById("profile-photo-img");
+        img.src = profile.photo;
+        img.className = "loaded";
+        document.getElementById("profile-photo-placeholder").style.display = "none";
+        save();
+        toast("Foto atualizada!", "ok");
+      };
+      r.readAsDataURL(file);
+      e.target.value = "";
+    });
+
+    document.getElementById("btn-update-weight").addEventListener("click", function () {
+      var v = parseFloat(document.getElementById("weight-input").value);
+      if (!v || v < 30 || v > 400) { toast("Valor inválido.", "err"); return; }
+      weightLog.push({ date: todayStr(), weight: v });
+      save();
+      renderWeightStats();
+      setTimeout(drawWeightChart, 60);
+      toast("Peso atualizado: " + v + "kg", "ok");
+    });
+
+    document.getElementById("train-days").addEventListener("click", function (e) {
+      var btn = e.target.closest(".day-pill");
+      if (!btn) return;
+      var d = parseInt(btn.dataset.day, 10);
+      var idx = profile.trainDays.indexOf(d);
+      if (idx >= 0) profile.trainDays.splice(idx, 1);
+      else profile.trainDays.push(d);
+      save();
+      renderProfile();
+      renderDayWorkout();
+    });
+
+    document.getElementById("btn-edit-profile").addEventListener("click", function () {
+      document.getElementById("p-name").value = profile.name || "";
+      document.getElementById("p-age").value = profile.age || "";
+      document.getElementById("p-height").value = profile.height || "";
+      document.getElementById("p-goal-weight").value = profile.goalWeight || "";
+      document.getElementById("p-kcal-goal").value = profile.kcalGoal || 2000;
+      openModal("modal-profile");
+    });
+
+    document.getElementById("btn-save-profile").addEventListener("click", function () {
+      profile.name = document.getElementById("p-name").value.trim() || profile.name;
+      profile.age = parseInt(document.getElementById("p-age").value, 10) || profile.age;
+      profile.height = parseFloat(document.getElementById("p-height").value) || profile.height;
+      profile.goalWeight = parseFloat(document.getElementById("p-goal-weight").value) || profile.goalWeight;
+      profile.kcalGoal = parseInt(document.getElementById("p-kcal-goal").value, 10) || 2000;
+      save();
+      renderAll();
+      closeModal("modal-profile");
+      toast("Perfil salvo!", "ok");
+    });
+
+    document.getElementById("btn-add-ex").addEventListener("click", function () { openExModal(null); });
+    document.getElementById("btn-add-ex2").addEventListener("click", function () { openExModal(null); });
+
+    document.getElementById("ex-img-preview").addEventListener("click", function () {
+      document.getElementById("ex-img-input").click();
+    });
+    document.getElementById("ex-img-input").addEventListener("change", function (e) {
+      var file = e.target.files[0];
+      if (!file) return;
+      var r = new FileReader();
+      r.onload = function () {
+        exImageData = String(r.result || "");
+        var img = document.getElementById("ex-img-preview-img");
+        img.src = exImageData;
+        img.style.display = "block";
+        document.getElementById("ex-img-preview-label").style.display = "none";
+      };
+      r.readAsDataURL(file);
+      e.target.value = "";
+    });
+
+    document.getElementById("btn-save-ex").addEventListener("click", function () {
+      var name = document.getElementById("ex-name").value.trim();
+      if (!name) { toast("Insira um nome.", "err"); return; }
+      var sel = document.getElementById("ex-days");
+      var days = Array.from(sel.selectedOptions).map(function (o) { return parseInt(o.value, 10); });
+      var current = editExId ? (exercises.find(function (x) { return x.id === editExId; }) || {}) : {};
+      var ex = {
+        id: editExId || uid(),
+        name: name,
+        tag: document.getElementById("ex-tag").value,
+        days: days,
+        sets: document.getElementById("ex-sets").value,
+        reps: document.getElementById("ex-reps").value,
+        load: document.getElementById("ex-load").value,
+        notes: document.getElementById("ex-notes").value.trim(),
+        image: exImageData || current.image || ""
+      };
+      if (editExId) {
+        var idx = exercises.findIndex(function (x) { return x.id === editExId; });
+        if (idx >= 0) exercises[idx] = ex;
+        toast("Exercício atualizado!", "ok");
+      } else {
+        exercises.push(ex);
+        toast("Exercício adicionado!", "ok");
+      }
+      save();
+      renderAll();
+      closeModal("modal-ex");
+    });
+
+    document.getElementById("ex-del-btn").addEventListener("click", function () {
+      if (!editExId) return;
+      if (!window.confirm("Excluir exercício?")) return;
+      exercises = exercises.filter(function (x) { return x.id !== editExId; });
+      save();
+      renderAll();
+      closeModal("modal-ex");
+      toast("Exercício removido.", "info");
+    });
+
+    document.getElementById("btn-save-meal").addEventListener("click", function () {
+      var name = document.getElementById("meal-item-name").value.trim();
+      if (!name) { toast("Insira o nome do alimento.", "err"); return; }
+      var m = document.getElementById("meal-target").value;
+      if (!diet[m]) diet[m] = [];
+      diet[m].push({
+        name: name,
+        qty: document.getElementById("meal-item-qty").value.trim(),
+        kcal: parseInt(document.getElementById("meal-item-kcal").value, 10) || 0
+      });
+      save();
+      renderDiet();
+      closeModal("modal-meal");
+      toast("Alimento adicionado!", "ok");
+    });
+
+    document.getElementById("ex-filters").addEventListener("click", function (e) {
+      var chip = e.target.closest(".ex-filter-chip");
+      if (!chip) return;
+      document.querySelectorAll(".ex-filter-chip").forEach(function (c) { c.classList.remove("active"); });
+      chip.classList.add("active");
+      exFilter = chip.dataset.tag;
+      renderExSheet();
+    });
+
+    document.querySelectorAll("[data-close]").forEach(function (btn) {
+      btn.addEventListener("click", function () { closeModal(this.dataset.close); });
+    });
+    document.querySelectorAll(".overlay").forEach(function (ov) {
+      ov.addEventListener("click", function (e) { if (e.target === ov) ov.classList.remove("open"); });
+    });
+
+    document.getElementById("btn-export").addEventListener("click", exportData);
+    document.getElementById("btn-import-btn").addEventListener("click", function () { document.getElementById("import-file").click(); });
+    document.getElementById("import-file").addEventListener("change", function (e) {
+      var file = e.target.files[0];
+      if (!file) return;
+      var r = new FileReader();
+      r.onload = function (ev) {
+        try {
+          var d = JSON.parse(ev.target.result);
+          if (!window.confirm("Importar dados? Os dados atuais serão substituídos.")) return;
+          if (d.profile) profile = d.profile;
+          if (d.weightLog) weightLog = d.weightLog;
+          if (d.exercises) exercises = d.exercises;
+          if (d.diet) diet = d.diet;
+          todayDone = {};
+          save();
+          renderAll();
+          toast("Dados importados!", "ok");
+        } catch (err) {
+          toast("Erro ao importar.", "err");
+        }
+      };
+      r.readAsText(file);
+      e.target.value = "";
+    });
+
+    window.addEventListener("resize", function () { setTimeout(drawWeightChart, 60); });
+  }
+
+  loadAll();
+  bindEvents();
+  renderAll();
 }());

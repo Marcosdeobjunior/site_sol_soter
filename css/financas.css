@@ -40,6 +40,54 @@ body[data-page="financas"] [data-app-footer] {
   z-index: 2;
 }
 
+body[data-page="financas"] .site-header .profile-trigger {
+  padding: 0 16px 0 10px;
+  box-sizing: border-box;
+}
+
+body[data-page="financas"] .site-header .profile-avatar {
+  width: 32px;
+  min-width: 32px;
+  max-width: 32px;
+  height: 32px;
+  min-height: 32px;
+  max-height: 32px;
+  box-sizing: border-box;
+}
+
+body[data-page="financas"] .site-header .profile-info {
+  min-width: 90px;
+  max-width: 96px;
+  padding-right: 2px;
+  box-sizing: border-box;
+}
+
+body[data-page="financas"] .site-header .profile-name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+body[data-page="financas"] .site-header .profile-level-row {
+  min-width: 0;
+}
+
+body[data-page="financas"] .site-header *,
+body[data-page="financas"] .site-header *::before,
+body[data-page="financas"] .site-header *::after {
+  box-sizing: border-box;
+}
+
+body[data-page="financas"] .site-header .pm-edit-zone {
+  padding: 12px 18px;
+}
+
+body[data-page="financas"] .site-header .pm-name-input {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
 body[data-page="financas"] main {
   position: relative;
   z-index: 1;

@@ -186,6 +186,43 @@ function tkCanCompleteTask(task) {
   return !task || !tkHasOpenChildren(task);
 }
 
+function tkGetAcademiaState() {
+  ensureState();
+  return appState.data && appState.data.academiaTracker ? appState.data.academiaTracker : null;
+}
+
+function tkGetGymCalendarEntries(year, month) {
+  var academia = tkGetAcademiaState();
+  if (!academia || !academia.profile || !Array.isArray(academia.profile.trainDays)) return [];
+  var trainDays = academia.profile.trainDays.map(function (day) { return Number(day); });
+  var doneByDate = academia.todayDoneByDate && typeof academia.todayDoneByDate === 'object' ? academia.todayDoneByDate : {};
+  var daysInMonth = new Date(year, month + 1, 0).getDate();
+  var entries = [];
+
+  for (var day = 1; day <= daysInMonth; day += 1) {
+    var date = new Date(year, month, day);
+    if (!trainDays.includes(date.getDay())) continue;
+    var ds = tkToDateString(date);
+    var doneMap = doneByDate[ds] || {};
+    var completed = Object.keys(doneMap).some(function (id) { return !!doneMap[id]; });
+    entries.push({
+      id: 'gym-' + ds,
+      nome: 'Treino',
+      data: ds,
+      cor: '#5ec4a8',
+      done: completed,
+      isGym: true
+    });
+  }
+
+  return entries;
+}
+
+function tkOpenGymDay(dateStr) {
+  sessionStorage.setItem('academia_focus_date', dateStr);
+  window.location.href = 'academia.html';
+}
+
 function tkSyncRecurringSeries(masterId) {
   var master = S.tasks.find(function (item) { return item.id === masterId; });
   if (!master || master.isRecurringClone) return;
@@ -1632,6 +1669,11 @@ tkCalRender = function () {
       byDay[parts[2]].push(task);
     }
   });
+  tkGetGymCalendarEntries(year, month).forEach(function (task) {
+    const day = Number(task.data.slice(-2));
+    if (!byDay[day]) byDay[day] = [];
+    byDay[day].push(task);
+  });
   const grid = document.getElementById('tk-cal-days');
   if (!grid) return;
   const cells = [];
@@ -1646,6 +1688,14 @@ tkCalRender = function () {
       return (a.hora || '99:99').localeCompare(b.hora || '99:99');
     }).map(function (task) {
       const col = task.cor || TK_PRIOR_COLOR[task.prior] || '#c8a96e';
+      if (task.isGym) {
+        return `<div class="tk-cal-task-card ${task.done ? 'done-mini' : ''}"
+          style="--tk-color:${col}"
+          onclick="event.stopPropagation();tkOpenGymDay('${task.data}')"
+          title="Treino programado">
+        🏋️ ${task.nome}
+      </div>`;
+      }
       return `<div class="tk-cal-task-card ${task.done ? 'done-mini' : ''} ${tkSelectionHas(task.id) ? 'selected' : ''}"
           data-task-id="${task.id}"
           data-date="${task.data}"

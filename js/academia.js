@@ -5,11 +5,14 @@
   var profile = { name: "Marcos", age: 25, height: 1.75, goalWeight: 80, kcalGoal: 2000, trainDays: [1, 2, 3, 4, 5], photo: "" };
   var weightLog = [];
   var exercises = [];
+  var exerciseHistory = {};
   var diet = { breakfast: [], lunch: [], snack: [], dinner: [] };
   var todayDone = {};
+  var doneByDate = {};
   var exFilter = "all";
   var editExId = null;
   var exImageData = "";
+  var exerciseHubId = null;
 
   var DAYS_PT = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
   var DAYS_FULL = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
@@ -29,6 +32,136 @@
   function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
   function todayStr() { return new Date().toISOString().slice(0, 10); }
   function todayDOW() { return new Date().getDay(); }
+  function parseDateLocal(str) {
+    if (!str) return null;
+    var parts = String(str).split("-");
+    if (parts.length !== 3) return null;
+    return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+  }
+  function formatDateLocal(date) {
+    var y = date.getFullYear();
+    var m = String(date.getMonth() + 1).padStart(2, "0");
+    var d = String(date.getDate()).padStart(2, "0");
+    return y + "-" + m + "-" + d;
+  }
+  function exerciseRunsOnDow(ex, dow) {
+    return Array.isArray(ex.days) && ex.days.map(Number).includes(dow);
+  }
+  function getExercisesForDate(dateStr) {
+    var date = parseDateLocal(dateStr);
+    if (!date) return [];
+    var dow = date.getDay();
+    return exercises.filter(function (ex) { return exerciseRunsOnDow(ex, dow); });
+  }
+  function getCompletedExerciseCount(dateStr) {
+    var dayDone = doneByDate[dateStr] || {};
+    return Object.keys(dayDone).filter(function (id) { return !!dayDone[id]; }).length;
+  }
+  function isTrainingDayCompleted(dateStr) {
+    var dayExercises = getExercisesForDate(dateStr);
+    if (!dayExercises.length) return false;
+    var dayDone = doneByDate[dateStr] || {};
+    return dayExercises.every(function (ex) { return !!dayDone[ex.id]; });
+  }
+  function getMonthCompletedTrainingDays(referenceDate) {
+    var year = referenceDate.getFullYear();
+    var month = referenceDate.getMonth();
+    return Object.keys(doneByDate).filter(function (dateStr) {
+      var date = parseDateLocal(dateStr);
+      return date && date.getFullYear() === year && date.getMonth() === month && isTrainingDayCompleted(dateStr);
+    }).length;
+  }
+  function getMonthCompletedExercises(referenceDate) {
+    var year = referenceDate.getFullYear();
+    var month = referenceDate.getMonth();
+    return Object.keys(doneByDate).reduce(function (sum, dateStr) {
+      var date = parseDateLocal(dateStr);
+      if (!date || date.getFullYear() !== year || date.getMonth() !== month) return sum;
+      return sum + getCompletedExerciseCount(dateStr);
+    }, 0);
+  }
+  function getTrainingDaysUntil(referenceDate) {
+    var days = [];
+    var cursor = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), referenceDate.getDate());
+    for (var i = 0; i < 120; i += 1) {
+      if (profile.trainDays.includes(cursor.getDay())) days.push(formatDateLocal(cursor));
+      cursor.setDate(cursor.getDate() - 1);
+    }
+    return days;
+  }
+  function getTrainingStreak(referenceDate) {
+    var trainingDays = getTrainingDaysUntil(referenceDate);
+    var streak = 0;
+    for (var i = 0; i < trainingDays.length; i += 1) {
+      if (isTrainingDayCompleted(trainingDays[i])) streak += 1;
+      else break;
+    }
+    return streak;
+  }
+  function getWeightGoalProgress(start, curr, goal) {
+    if (!(start && curr && goal)) return 0;
+    var total = Math.abs(goal - start);
+    if (total === 0) return curr === goal ? 1 : 0;
+    var progressed = Math.abs(curr - start);
+    var overshot = (goal >= start && curr >= goal) || (goal <= start && curr <= goal);
+    return Math.max(0, Math.min(1, overshot ? 1 : progressed / total));
+  }
+  function getLoadNumber(loadValue) {
+    var match = String(loadValue || "").replace(",", ".").match(/-?\d+(\.\d+)?/);
+    return match ? parseFloat(match[0]) : null;
+  }
+  function fmtShortDate(dateStr) {
+    if (!dateStr) return "—";
+    var parts = String(dateStr).split("-");
+    return parts.length === 3 ? parts[2] + "/" + parts[1] + "/" + parts[0] : dateStr;
+  }
+  function trackExerciseCompletion(exerciseId, dateStr) {
+    var ex = exercises.find(function (item) { return item.id === exerciseId; });
+    if (!ex) return;
+    if (!exerciseHistory[exerciseId]) exerciseHistory[exerciseId] = [];
+    var existing = exerciseHistory[exerciseId].find(function (entry) { return entry.date === dateStr; });
+    var next = {
+      date: dateStr,
+      load: getLoadNumber(ex.load),
+      loadLabel: ex.load || "—",
+      sets: ex.sets || "",
+      reps: ex.reps || ""
+    };
+    if (existing) {
+      Object.assign(existing, next);
+    } else {
+      exerciseHistory[exerciseId].push(next);
+      exerciseHistory[exerciseId].sort(function (a, b) { return String(a.date).localeCompare(String(b.date)); });
+    }
+  }
+  function setExerciseDaySelection(days) {
+    var selected = (days || []).map(Number);
+    document.querySelectorAll("#ex-days .ex-day-chip").forEach(function (chip) {
+      var day = parseInt(chip.dataset.day, 10);
+      chip.classList.toggle("active", selected.includes(day));
+    });
+  }
+  function getExerciseDaySelection() {
+    return Array.from(document.querySelectorAll("#ex-days .ex-day-chip.active")).map(function (chip) {
+      return parseInt(chip.dataset.day, 10);
+    });
+  }
+
+  function isSyntheticWeightSeed(list) {
+    if (!Array.isArray(list) || list.length !== 6) return false;
+    var base = new Date();
+    for (var i = 0; i < list.length; i += 1) {
+      var item = list[i];
+      if (!item || typeof item.date !== "string" || typeof item.weight !== "number") return false;
+      var expectedDate = new Date(base.getFullYear(), base.getMonth() - (list.length - 1 - i), 12, 12, 0, 0).toISOString().slice(0, 10);
+      if (item.date !== expectedDate) return false;
+    }
+    for (var j = 1; j < list.length; j += 1) {
+      var step = Number((list[j - 1].weight - list[j].weight).toFixed(1));
+      if (Math.abs(step - 0.7) > 0.05 && Math.abs(step - 0.8) > 0.15) return false;
+    }
+    return true;
+  }
 
   function toast(msg, type) {
     type = type || "ok";
@@ -55,12 +188,12 @@
       profile: profile,
       weightLog: weightLog,
       exercises: exercises,
+      exerciseHistory: exerciseHistory,
       diet: diet,
-      todayDoneByDate: Object.assign({}, state.data[DATA_KEY] && state.data[DATA_KEY].todayDoneByDate, (function () {
-        var next = {};
-        next[todayStr()] = todayDone;
-        return next;
-      }()))
+      todayDoneByDate: (function () {
+        doneByDate[todayStr()] = todayDone;
+        return Object.assign({}, doneByDate);
+      }())
     };
     state.data.lastVisitedPage = "academia";
     state.data.lastVisitedAt = new Date().toISOString();
@@ -74,18 +207,26 @@
       profile = Object.assign(profile, data[DATA_KEY].profile || {});
       weightLog = Array.isArray(data[DATA_KEY].weightLog) ? data[DATA_KEY].weightLog : [];
       exercises = Array.isArray(data[DATA_KEY].exercises) ? data[DATA_KEY].exercises : [];
+      exerciseHistory = data[DATA_KEY].exerciseHistory && typeof data[DATA_KEY].exerciseHistory === "object" ? Object.assign({}, data[DATA_KEY].exerciseHistory) : {};
       diet = Object.assign({ breakfast: [], lunch: [], snack: [], dinner: [] }, data[DATA_KEY].diet || {});
-      todayDone = data[DATA_KEY].todayDoneByDate && data[DATA_KEY].todayDoneByDate[todayStr()] ? data[DATA_KEY].todayDoneByDate[todayStr()] : {};
-      return;
+      doneByDate = data[DATA_KEY].todayDoneByDate && typeof data[DATA_KEY].todayDoneByDate === "object" ? Object.assign({}, data[DATA_KEY].todayDoneByDate) : {};
+      todayDone = doneByDate[todayStr()] ? Object.assign({}, doneByDate[todayStr()]) : {};
+    } else {
+      try {
+        var p = localStorage.getItem("gym-profile"); if (p) profile = JSON.parse(p);
+        var w = localStorage.getItem("gym-weights"); if (w) weightLog = JSON.parse(w);
+        var e = localStorage.getItem("gym-exercises"); if (e) exercises = JSON.parse(e);
+        exerciseHistory = {};
+        var d = localStorage.getItem("gym-diet"); if (d) diet = JSON.parse(d);
+        var t = localStorage.getItem("gym-done-" + todayStr()); if (t) todayDone = JSON.parse(t);
+        doneByDate = {};
+        if (Object.keys(todayDone).length) doneByDate[todayStr()] = Object.assign({}, todayDone);
+      } catch (e2) {}
     }
-    try {
-      var p = localStorage.getItem("gym-profile"); if (p) profile = JSON.parse(p);
-      var w = localStorage.getItem("gym-weights"); if (w) weightLog = JSON.parse(w);
-      var e = localStorage.getItem("gym-exercises"); if (e) exercises = JSON.parse(e);
-      var d = localStorage.getItem("gym-diet"); if (d) diet = JSON.parse(d);
-      var t = localStorage.getItem("gym-done-" + todayStr()); if (t) todayDone = JSON.parse(t);
-      save();
-    } catch (e2) {}
+
+    if (isSyntheticWeightSeed(weightLog)) weightLog = [];
+
+    save();
   }
 
   function renderProfile() {
@@ -162,20 +303,22 @@
       else el2.textContent = "Estável";
     }
 
-    var daysInMonth = new Date().getDate();
-    var trainCount = profile.trainDays.length * Math.floor(daysInMonth / 7);
-    setRing("ring-treinos", Math.min(trainCount, 30) / 30);
+    var now = new Date();
+    var trainCount = getMonthCompletedTrainingDays(now);
+    setRing("ring-treinos", Math.min(trainCount, Math.max(profile.trainDays.length * 4, 1)) / Math.max(profile.trainDays.length * 4, 1));
     document.getElementById("ring-treinos-val").textContent = trainCount;
 
-    var metaPct = (curr && goal && start) ? Math.min(1, Math.max(0, (start - curr) / (start - goal) || 0)) : 0;
+    var metaPct = getWeightGoalProgress(start, curr, goal);
     setRing("ring-meta", metaPct);
     document.getElementById("ring-meta-val").textContent = Math.round(metaPct * 100) + "%";
 
-    setRing("ring-streak", Math.min(profile.trainDays.length / 7, 1));
-    document.getElementById("ring-streak-val").textContent = profile.trainDays.length;
+    var streak = getTrainingStreak(now);
+    setRing("ring-streak", Math.min(streak, 12) / 12);
+    document.getElementById("ring-streak-val").textContent = streak;
 
-    setRing("ring-ex", Math.min(exercises.length / 20, 1));
-    document.getElementById("ring-ex-val").textContent = exercises.length;
+    var completedExercises = getMonthCompletedExercises(now);
+    setRing("ring-ex", Math.min(completedExercises, 40) / 40);
+    document.getElementById("ring-ex-val").textContent = completedExercises;
   }
 
   function drawWeightChart() {
@@ -274,6 +417,113 @@
       ctx.textAlign = "center";
       ctx.fillText(d.replace("-", "/"), px(i), H - 8);
     }
+  }
+
+  function drawExerciseHubChart(exerciseId) {
+    var canvas = document.getElementById("gym-hub-chart");
+    if (!canvas) return;
+    var history = (exerciseHistory[exerciseId] || []).filter(function (item) { return typeof item.load === "number" && !isNaN(item.load); });
+    var dpr = window.devicePixelRatio || 1;
+    var width = canvas.offsetWidth || 480;
+    var height = 260;
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    var ctx = canvas.getContext("2d");
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, width, height);
+
+    if (history.length < 2) {
+      ctx.fillStyle = "rgba(255,255,255,.2)";
+      ctx.font = "13px Syne, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("Conclua o exercício mais vezes para ver a evolução da carga", width / 2, height / 2);
+      return;
+    }
+
+    var vals = history.map(function (item) { return item.load; });
+    var minV = Math.min.apply(null, vals);
+    var maxV = Math.max.apply(null, vals);
+    var rng = Math.max(maxV - minV, 1);
+    var pad = { l: 38, r: 18, t: 18, b: 28 };
+    var cW = width - pad.l - pad.r;
+    var cH = height - pad.t - pad.b;
+    function px(i) { return pad.l + i / (history.length - 1) * cW; }
+    function py(v) { return pad.t + cH - ((v - minV) / rng) * cH; }
+
+    ctx.strokeStyle = "rgba(255,255,255,.06)";
+    ctx.lineWidth = 1;
+    for (var g = 0; g <= 4; g += 1) {
+      var gy = pad.t + cH * (1 - g / 4);
+      ctx.beginPath();
+      ctx.moveTo(pad.l, gy);
+      ctx.lineTo(width - pad.r, gy);
+      ctx.stroke();
+    }
+
+    ctx.beginPath();
+    ctx.moveTo(px(0), py(vals[0]));
+    for (var i = 1; i < vals.length; i += 1) ctx.lineTo(px(i), py(vals[i]));
+    ctx.strokeStyle = "rgba(200,169,110,.95)";
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+
+    for (i = 0; i < vals.length; i += 1) {
+      ctx.beginPath();
+      ctx.arc(px(i), py(vals[i]), 3.5, 0, Math.PI * 2);
+      ctx.fillStyle = i === vals.length - 1 ? "rgba(94,196,168,1)" : "rgba(200,169,110,.75)";
+      ctx.fill();
+    }
+
+    ctx.fillStyle = "rgba(255,255,255,.35)";
+    ctx.font = "10px DM Mono, monospace";
+    ctx.textAlign = "center";
+    var step = Math.max(1, Math.floor(history.length / 4));
+    for (i = 0; i < history.length; i += step) {
+      ctx.fillText(history[i].date.slice(5).replace("-", "/"), px(i), height - 8);
+    }
+  }
+
+  function renderExerciseHub(exerciseId) {
+    var ex = exercises.find(function (item) { return item.id === exerciseId; });
+    if (!ex) return;
+    exerciseHubId = exerciseId;
+    var history = (exerciseHistory[exerciseId] || []).slice().sort(function (a, b) { return String(a.date).localeCompare(String(b.date)); });
+    var bestLoad = history.reduce(function (best, item) {
+      return typeof item.load === "number" && !isNaN(item.load) ? Math.max(best, item.load) : best;
+    }, -Infinity);
+    var lastEntry = history.length ? history[history.length - 1] : null;
+    var daysLabel = (ex.days || []).map(function (d) { return DAYS_PT[d]; }).join(", ") || "—";
+    var infoRows = [
+      ["Grupo", TAG_LABELS[ex.tag] || ex.tag || "—"],
+      ["Séries", ex.sets || "—"],
+      ["Repetições", ex.reps || "—"],
+      ["Carga", ex.load || "—"],
+      ["Dias", daysLabel],
+      ["Observações", ex.notes || "Sem observações"]
+    ];
+
+    document.getElementById("gym-hub-icon").textContent = getExEmoji(ex.tag);
+    document.getElementById("gym-hub-badge").textContent = TAG_LABELS[ex.tag] || "Treino";
+    document.getElementById("gym-hub-title").textContent = ex.name;
+    document.getElementById("gym-hub-meta").textContent = daysLabel;
+    document.getElementById("gym-hub-current-load").textContent = ex.load || "—";
+    document.getElementById("gym-hub-session-count").textContent = String(history.length);
+    document.getElementById("gym-hub-best-load").textContent = bestLoad > -Infinity ? String(bestLoad).replace(".", ",") + " kg" : "—";
+    document.getElementById("gym-hub-last-date").textContent = lastEntry ? fmtShortDate(lastEntry.date) : "—";
+    document.getElementById("gym-hub-info-list").innerHTML = infoRows.map(function (row) {
+      return '<div class="gym-hub-info-row"><div class="gym-hub-info-label">' + row[0] + '</div><div class="gym-hub-info-value">' + row[1] + '</div></div>';
+    }).join("");
+    document.getElementById("gym-hub-history").innerHTML = history.length
+      ? history.slice().reverse().map(function (entry) {
+          return '<div class="gym-hub-history-row"><div class="gym-hub-history-dot"></div><div class="gym-hub-history-label">Treino concluído</div><div class="gym-hub-history-value">' + (entry.loadLabel || "—") + '</div><div class="gym-hub-history-date">' + fmtShortDate(entry.date) + '</div></div>';
+        }).join("")
+      : '<div class="ex-empty" style="padding:18px 8px;text-align:left"><p>Nenhuma sessão registrada ainda.</p></div>';
+    var heroBg = document.getElementById("gym-hub-hero-bg");
+    heroBg.style.backgroundImage = ex.image ? 'url("' + ex.image + '")' : "none";
+    heroBg.style.backgroundColor = ex.image ? "transparent" : "rgba(124,111,205,.18)";
+    openModal("exercise-hub");
+    setTimeout(function () { drawExerciseHubChart(exerciseId); }, 40);
   }
 
   function renderDiet() {
@@ -383,15 +633,18 @@
         e.stopPropagation();
         var id = this.dataset.id;
         todayDone[id] = !todayDone[id];
+        doneByDate[todayStr()] = Object.assign({}, todayDone);
+        if (todayDone[id]) trackExerciseCompletion(id, todayStr());
         save();
         renderDayWorkout();
+        renderWeightStats();
       });
     });
 
     list.querySelectorAll(".day-ex-item").forEach(function (item, i) {
       item.addEventListener("click", function (e) {
         if (e.target.closest(".done-check")) return;
-        openExModal(dayExs[i].id);
+        renderExerciseHub(dayExs[i].id);
       });
     });
   }
@@ -416,7 +669,7 @@
         '<div class="ex-card-sets">' + (ex.sets ? ex.sets + "x " : "") + (ex.reps || "") + (ex.load ? " · " + ex.load : "") + ' <span style="color:var(--muted)">' + daysLabel + "</span></div>" +
         "</div>" +
         '<button class="ex-card-del" data-id="' + ex.id + '"><i class="fas fa-times"></i></button>';
-      card.addEventListener("click", function (e) { if (e.target.closest(".ex-card-del")) return; openExModal(ex.id); });
+      card.addEventListener("click", function (e) { if (e.target.closest(".ex-card-del")) return; renderExerciseHub(ex.id); });
       grid.appendChild(card);
     });
 
@@ -425,6 +678,7 @@
         e.stopPropagation();
         if (!window.confirm("Excluir exercício?")) return;
         exercises = exercises.filter(function (x) { return x.id !== btn.dataset.id; });
+        delete exerciseHistory[btn.dataset.id];
         save();
         renderAll();
         toast("Exercício removido.", "info");
@@ -460,10 +714,7 @@
     document.getElementById("ex-load").value = ex ? ex.load || "" : "";
     document.getElementById("ex-notes").value = ex ? ex.notes || "" : "";
 
-    var sel = document.getElementById("ex-days");
-    Array.from(sel.options).forEach(function (opt) {
-      opt.selected = ex ? (ex.days || []).map(Number).includes(parseInt(opt.value, 10)) : false;
-    });
+    setExerciseDaySelection(ex ? (ex.days || []) : []);
 
     openModal("modal-ex");
   }
@@ -475,16 +726,6 @@
     renderDiet();
     renderDayWorkout();
     renderExSheet();
-  }
-
-  function exportData() {
-    var data = { profile: profile, weightLog: weightLog, exercises: exercises, diet: diet, exportDate: new Date().toISOString() };
-    var blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    var a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "academia_backup_" + todayStr() + ".json";
-    a.click();
-    toast("Dados exportados!", "ok");
   }
 
   function bindEvents() {
@@ -551,8 +792,17 @@
       toast("Perfil salvo!", "ok");
     });
 
-    document.getElementById("btn-add-ex").addEventListener("click", function () { openExModal(null); });
     document.getElementById("btn-add-ex2").addEventListener("click", function () { openExModal(null); });
+    document.getElementById("gym-hub-edit-btn").addEventListener("click", function () {
+      if (!exerciseHubId) return;
+      closeModal("exercise-hub");
+      openExModal(exerciseHubId);
+    });
+    document.getElementById("ex-days").addEventListener("click", function (e) {
+      var chip = e.target.closest(".ex-day-chip");
+      if (!chip) return;
+      chip.classList.toggle("active");
+    });
 
     document.getElementById("ex-img-preview").addEventListener("click", function () {
       document.getElementById("ex-img-input").click();
@@ -575,8 +825,7 @@
     document.getElementById("btn-save-ex").addEventListener("click", function () {
       var name = document.getElementById("ex-name").value.trim();
       if (!name) { toast("Insira um nome.", "err"); return; }
-      var sel = document.getElementById("ex-days");
-      var days = Array.from(sel.selectedOptions).map(function (o) { return parseInt(o.value, 10); });
+      var days = getExerciseDaySelection();
       var current = editExId ? (exercises.find(function (x) { return x.id === editExId; }) || {}) : {};
       var ex = {
         id: editExId || uid(),
@@ -606,6 +855,7 @@
       if (!editExId) return;
       if (!window.confirm("Excluir exercício?")) return;
       exercises = exercises.filter(function (x) { return x.id !== editExId; });
+      delete exerciseHistory[editExId];
       save();
       renderAll();
       closeModal("modal-ex");
@@ -643,34 +893,24 @@
     document.querySelectorAll(".overlay").forEach(function (ov) {
       ov.addEventListener("click", function (e) { if (e.target === ov) ov.classList.remove("open"); });
     });
-
-    document.getElementById("btn-export").addEventListener("click", exportData);
-    document.getElementById("btn-import-btn").addEventListener("click", function () { document.getElementById("import-file").click(); });
-    document.getElementById("import-file").addEventListener("change", function (e) {
-      var file = e.target.files[0];
-      if (!file) return;
-      var r = new FileReader();
-      r.onload = function (ev) {
-        try {
-          var d = JSON.parse(ev.target.result);
-          if (!window.confirm("Importar dados? Os dados atuais serão substituídos.")) return;
-          if (d.profile) profile = d.profile;
-          if (d.weightLog) weightLog = d.weightLog;
-          if (d.exercises) exercises = d.exercises;
-          if (d.diet) diet = d.diet;
-          todayDone = {};
-          save();
-          renderAll();
-          toast("Dados importados!", "ok");
-        } catch (err) {
-          toast("Erro ao importar.", "err");
-        }
-      };
-      r.readAsText(file);
-      e.target.value = "";
+    document.addEventListener("click", function (e) {
+      var profileBtn = e.target.closest("#btn-edit-profile");
+      if (profileBtn) {
+        document.getElementById("p-name").value = profile.name || "";
+        document.getElementById("p-age").value = profile.age || "";
+        document.getElementById("p-height").value = profile.height || "";
+        document.getElementById("p-goal-weight").value = profile.goalWeight || "";
+        document.getElementById("p-kcal-goal").value = profile.kcalGoal || 2000;
+        openModal("modal-profile");
+      }
     });
 
-    window.addEventListener("resize", function () { setTimeout(drawWeightChart, 60); });
+    window.addEventListener("resize", function () {
+      setTimeout(drawWeightChart, 60);
+      if (exerciseHubId && document.getElementById("exercise-hub").classList.contains("open")) {
+        setTimeout(function () { drawExerciseHubChart(exerciseHubId); }, 60);
+      }
+    });
   }
 
   loadAll();

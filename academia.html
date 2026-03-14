@@ -6,10 +6,10 @@
   <link rel="icon" type="image/png" href="img/soldesoter_logo.png">
   <title>Sol de Sóter · Academia</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/design-system.css">
   <link rel="stylesheet" href="css/app-shell.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <link rel="stylesheet" href="css/academia.css">
 </head>
 <body data-page="academia">
@@ -23,12 +23,6 @@
           <div>
             <h1>Minha <em>Academia</em></h1>
             <p>treino · dieta · evolução</p>
-          </div>
-          <div style="display:flex;gap:10px;">
-            <button class="btn btn-ghost btn-sm" id="btn-export"><i class="fas fa-download"></i> Exportar</button>
-            <button class="btn btn-ghost btn-sm" id="btn-import-btn"><i class="fas fa-upload"></i> Importar</button>
-            <input type="file" id="import-file" accept=".json" style="display:none">
-            <button class="btn btn-gold" id="btn-add-ex"><i class="fas fa-plus"></i> Exercício</button>
           </div>
         </div>
 
@@ -202,6 +196,72 @@
 
   <div class="toasts" id="toasts"></div>
 
+  <div class="overlay" id="exercise-hub">
+    <div class="gym-hub-card">
+      <div class="gym-hub-hero">
+        <div class="gym-hub-hero-bg" id="gym-hub-hero-bg"></div>
+        <div class="gym-hub-hero-overlay"></div>
+        <div class="gym-hub-nav">
+          <button class="gym-hub-back-btn" type="button" data-close="exercise-hub">← Voltar</button>
+          <button class="gym-hub-edit-btn" type="button" id="gym-hub-edit-btn">✎ Editar</button>
+        </div>
+        <div class="gym-hub-hero-content">
+          <div class="gym-hub-icon" id="gym-hub-icon">🏋️</div>
+          <div class="gym-hub-title-wrap">
+            <div class="gym-hub-badge" id="gym-hub-badge">Treino</div>
+            <div class="gym-hub-title" id="gym-hub-title">Exercício</div>
+            <div class="gym-hub-meta" id="gym-hub-meta"></div>
+          </div>
+        </div>
+      </div>
+      <div class="gym-hub-body">
+        <div class="gym-hub-grid">
+          <div class="gym-hub-panel">
+            <div class="gym-hub-panel-title">Resumo</div>
+            <div class="gym-hub-metrics">
+              <div class="gym-hub-metric">
+                <div class="k">Carga atual</div>
+                <div class="v" id="gym-hub-current-load">—</div>
+                <div class="s">configurada</div>
+              </div>
+              <div class="gym-hub-metric">
+                <div class="k">Sessões</div>
+                <div class="v" id="gym-hub-session-count">0</div>
+                <div class="s">registradas</div>
+              </div>
+              <div class="gym-hub-metric">
+                <div class="k">Melhor carga</div>
+                <div class="v" id="gym-hub-best-load">—</div>
+                <div class="s">histórico</div>
+              </div>
+              <div class="gym-hub-metric">
+                <div class="k">Última sessão</div>
+                <div class="v" id="gym-hub-last-date">—</div>
+                <div class="s">registrada</div>
+              </div>
+            </div>
+          </div>
+          <div class="gym-hub-panel">
+            <div class="gym-hub-panel-title">Evolução da Carga</div>
+            <div class="gym-hub-chart-wrap">
+              <canvas id="gym-hub-chart"></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="gym-hub-grid gym-hub-grid-bottom">
+          <div class="gym-hub-panel">
+            <div class="gym-hub-panel-title">Informações do treino</div>
+            <div class="gym-hub-info-list" id="gym-hub-info-list"></div>
+          </div>
+          <div class="gym-hub-panel">
+            <div class="gym-hub-panel-title">Histórico</div>
+            <div class="gym-hub-history" id="gym-hub-history"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="overlay" id="modal-profile">
     <div class="modal">
       <div class="modal-hd"><h3>Editar Perfil</h3><button class="mclose" data-close="modal-profile"><i class="fas fa-times"></i></button></div>
@@ -245,15 +305,15 @@
           </select>
         </div>
         <div class="fg"><label class="fl">Dias de Treino</label>
-          <select class="fsel" id="ex-days" multiple style="height:80px">
-            <option value="0">Domingo</option>
-            <option value="1">Segunda</option>
-            <option value="2">Terça</option>
-            <option value="3">Quarta</option>
-            <option value="4">Quinta</option>
-            <option value="5">Sexta</option>
-            <option value="6">Sábado</option>
-          </select>
+          <div class="ex-days-picker" id="ex-days">
+            <button class="ex-day-chip" type="button" data-day="0">Dom</button>
+            <button class="ex-day-chip" type="button" data-day="1">Seg</button>
+            <button class="ex-day-chip" type="button" data-day="2">Ter</button>
+            <button class="ex-day-chip" type="button" data-day="3">Qua</button>
+            <button class="ex-day-chip" type="button" data-day="4">Qui</button>
+            <button class="ex-day-chip" type="button" data-day="5">Sex</button>
+            <button class="ex-day-chip" type="button" data-day="6">Sáb</button>
+          </div>
         </div>
       </div>
       <div class="frow">

@@ -400,7 +400,7 @@ body {
 .rpg-attr {
   display: grid;
   grid-template-columns: 20px 1fr 32px;
-  align-items: center;
+  align-items: start;
   gap: 8px;
 }
 
@@ -408,6 +408,22 @@ body {
   font-size: 12px;
   text-align: center;
   opacity: .8;
+  padding-top: 12px;
+}
+
+.rpg-attr-main {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.rpg-attr-label {
+  font-size: 9px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: rgba(212, 175, 106, .55);
 }
 
 .rpg-attr-bar-wrap {
@@ -622,6 +638,35 @@ body {
   padding: 26px 28px;
   position: relative;
   overflow: hidden;
+}
+
+.rpg-tutorial-cta {
+  margin-top: 18px;
+}
+
+.rpg-tutorial-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(212, 175, 106, .28);
+  background: linear-gradient(135deg, rgba(212, 175, 106, .18), rgba(124, 92, 191, .18));
+  color: #f0e8d0;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+
+.rpg-tutorial-btn:hover {
+  transform: translateY(-1px);
+  border-color: rgba(212, 175, 106, .45);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .22);
 }
 
 .rpg-level-panel::before {
@@ -986,6 +1031,39 @@ body {
 }
 
 .rpg-ach-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.rpg-ach-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rpg-ach-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.rpg-ach-group-title {
+  font-family: "Cinzel", var(--font-display);
+  font-size: 13px;
+  color: #f0e8d0;
+}
+
+.rpg-ach-group-meta {
+  font-size: 9px;
+  font-family: var(--font-mono);
+  color: rgba(212, 175, 106, .5);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.rpg-ach-group-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
   gap: 10px;

@@ -1,0 +1,380 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+}
+
+body {
+  position: relative;
+  overflow-x: hidden;
+}
+
+#bg-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  z-index: 0;
+}
+
+.app-content {
+  width: min(var(--site-content-width), calc(100% - 40px));
+  max-width: var(--site-content-width);
+  margin: 0 auto;
+  padding-top: 58px;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.dreams-carousel {
+  position: relative;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  margin-bottom: 24px;
+}
+
+.dreams-carousel::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 120px;
+  pointer-events: none;
+  z-index: 4;
+  background: linear-gradient(180deg, rgba(13, 13, 18, 0) 0%, rgba(13, 13, 18, 0.62) 55%, var(--bg) 100%);
+}
+
+.dreams-stage {
+  position: relative;
+  min-height: 560px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  border-bottom: 0;
+  background: linear-gradient(135deg, rgba(10, 10, 18, 0.96), rgba(18, 16, 28, 0.92));
+  overflow: hidden;
+}
+
+.dreams-stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 18% 20%, rgba(200, 169, 110, 0.22), transparent 32%),
+    radial-gradient(circle at 80% 16%, rgba(124, 111, 205, 0.18), transparent 30%);
+  filter: blur(8px);
+}
+
+.dreams-stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(4, 4, 10, 0.1) 0%, rgba(4, 4, 10, 0.72) 62%, rgba(4, 4, 10, 0.9) 100%),
+    linear-gradient(90deg, rgba(4, 4, 10, 0.46) 0%, rgba(4, 4, 10, 0.08) 36%, rgba(4, 4, 10, 0.58) 100%);
+}
+
+.dreams-frame {
+  position: relative;
+  z-index: 2;
+  width: min(1180px, 92vw);
+  min-height: 490px;
+  margin: 34px auto;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 28px;
+  background: linear-gradient(180deg, rgba(10, 10, 18, 0.22), rgba(10, 10, 18, 0.08));
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.38);
+  display: flex;
+  align-items: flex-end;
+  padding: 44px 38px;
+}
+
+.dreams-inner-line {
+  position: absolute;
+  inset: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  pointer-events: none;
+}
+
+.dreams-content {
+  position: relative;
+  max-width: 760px;
+  z-index: 2;
+}
+
+.dreams-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 0 12px;
+  background: rgba(200, 169, 110, 0.16);
+  border: 1px solid rgba(200, 169, 110, 0.28);
+  border-radius: 999px;
+  color: var(--accent1);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.dreams-content h2 {
+  font-size: clamp(36px, 5vw, 74px);
+  line-height: 0.96;
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 14px;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+.dreams-content p {
+  max-width: 640px;
+  font-size: clamp(15px, 1.7vw, 20px);
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.78);
+  font-family: var(--font-ui);
+  font-weight: 600;
+  margin-bottom: 18px;
+}
+
+.dreams-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 18px;
+  text-decoration: none;
+  color: #0d0d12;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid rgba(200, 169, 110, 0.32);
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--accent1), #e8c987);
+  box-shadow: 0 18px 30px rgba(200, 169, 110, 0.18);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.dreams-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 22px 34px rgba(200, 169, 110, 0.24);
+  filter: brightness(1.02);
+}
+
+.dreams-thumbs {
+  position: absolute;
+  right: 28px;
+  bottom: 16px;
+  display: flex;
+  gap: 8px;
+  z-index: 2;
+}
+
+.dream-thumb {
+  width: 84px;
+  height: 44px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  background: rgba(12, 12, 22, 0.52);
+  overflow: hidden;
+  cursor: pointer;
+  position: relative;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.dream-thumb:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.dream-thumb.active {
+  border-color: rgba(200, 169, 110, 0.8);
+  box-shadow: 0 0 0 1px rgba(200, 169, 110, 0.34);
+}
+
+.dream-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.dream-thumb-fallback {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.85);
+  font-family: var(--font-display);
+  font-size: 22px;
+  background: linear-gradient(135deg, rgba(124, 111, 205, 0.26), rgba(200, 169, 110, 0.2));
+}
+
+.dreams-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 3;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 50%;
+  background: rgba(8, 8, 16, 0.52);
+  color: #fff;
+  font-size: 30px;
+  line-height: 1;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+
+.dreams-nav:hover {
+  transform: translateY(-50%) scale(1.04);
+  border-color: rgba(200, 169, 110, 0.4);
+  background: rgba(14, 14, 24, 0.72);
+}
+
+.dreams-nav.prev {
+  left: 18px;
+}
+
+.dreams-nav.next {
+  right: 18px;
+}
+
+.hero {
+  background: rgba(13, 13, 18, 0.72);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: clamp(28px, 5vw, 56px);
+  text-align: center;
+  margin: 0 auto 18px;
+  width: min(1180px, calc(100vw - 80px));
+}
+
+.hero-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  color: var(--accent1);
+  margin-bottom: 14px;
+}
+
+.hero h1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(42px, 8vw, 92px);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: #f0eaff;
+  text-shadow: 0 0 80px rgba(124, 111, 205, 0.45), 0 0 20px rgba(200, 169, 110, 0.2);
+  margin-bottom: 14px;
+}
+
+.hero h1 em {
+  color: var(--accent1);
+  font-style: italic;
+}
+
+.hero-subtitle {
+  font-family: var(--font-mono);
+  font-size: clamp(12px, 1.3vw, 14px);
+  letter-spacing: 0.12em;
+  color: var(--muted);
+}
+
+.cards-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: min(1180px, calc(100vw - 80px));
+  margin: 0 auto;
+}
+
+.card {
+  background: rgba(13, 13, 18, 0.72);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+
+.card h2 {
+  font-family: var(--font-ui);
+  font-size: 18px;
+  color: var(--accent1);
+  margin-bottom: 7px;
+}
+
+.card p {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+@media (max-width: 900px) {
+  .app-content {
+    padding-top: 58px;
+  }
+
+  .dreams-carousel::after {
+    height: 92px;
+  }
+
+  .hero,
+  .cards-grid {
+    width: min(1180px, calc(100vw - 32px));
+  }
+
+  .dreams-stage {
+    min-height: 460px;
+  }
+
+  .dreams-frame {
+    min-height: 390px;
+    padding: 26px 22px;
+  }
+
+  .dreams-content p {
+    font-size: clamp(14px, 4vw, 18px);
+  }
+
+  .dreams-cta {
+    min-height: 40px;
+    font-size: 11px;
+  }
+
+  .dream-thumb {
+    width: 62px;
+    height: 34px;
+  }
+
+  .cards-grid {
+    grid-template-columns: 1fr;
+  }
+}

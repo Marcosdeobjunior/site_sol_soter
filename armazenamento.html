@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="img/soldesoter_logo.png">
+  <title>Sol de Sóter · Armazenamento</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/design-system.css">
+  <link rel="stylesheet" href="css/app-shell.css">
+  <link rel="stylesheet" href="css/armazenamento.css">
+</head>
+<body data-page="armazenamento">
+  <canvas id="bg-canvas"></canvas>
+  <div data-app-header></div>
+
+  <main class="app-content">
+    <section class="storage-shell">
+      <div class="storage-hero">
+        <p class="storage-eyebrow">✦ Espaço Pessoal ✦</p>
+        <h1 class="storage-title"><em>Sól</em> de Sóter · Armazenamento</h1>
+        <p class="storage-subtitle">Conecte uma pasta no seu computador para autosave contínuo dos dados do site.</p>
+      </div>
+
+      <div class="storage-grid">
+        <article class="storage-card storage-status-card">
+          <div class="storage-card-label">Status</div>
+          <div class="storage-status-head">
+            <div class="storage-status-dot" id="fs-status-dot"></div>
+            <div>
+              <div class="storage-status-title" id="fs-status-title">Carregando...</div>
+              <div class="storage-status-sub" id="fs-status-sub">Verificando compatibilidade e conexão.</div>
+            </div>
+          </div>
+          <div class="storage-kpis">
+            <div class="storage-kpi">
+              <span class="storage-kpi-label">Pasta</span>
+              <strong class="storage-kpi-value" id="fs-folder-name">—</strong>
+            </div>
+            <div class="storage-kpi">
+              <span class="storage-kpi-label">Última sync</span>
+              <strong class="storage-kpi-value" id="fs-last-sync">—</strong>
+            </div>
+            <div class="storage-kpi">
+              <span class="storage-kpi-label">Payload</span>
+              <strong class="storage-kpi-value" id="fs-payload-size">—</strong>
+            </div>
+            <div class="storage-kpi">
+              <span class="storage-kpi-label">Blocos</span>
+              <strong class="storage-kpi-value" id="fs-payload-keys">—</strong>
+            </div>
+          </div>
+          <div class="storage-error" id="fs-last-error" hidden></div>
+        </article>
+
+        <article class="storage-card">
+          <div class="storage-card-label">Ações</div>
+          <div class="storage-actions">
+            <button class="storage-btn storage-btn-primary" id="fs-connect-btn" type="button">Escolher pasta</button>
+            <button class="storage-btn storage-btn-secondary" id="fs-sync-btn" type="button">Sincronizar agora</button>
+            <button class="storage-btn storage-btn-secondary" id="fs-restore-btn" type="button">Restaurar do arquivo</button>
+            <button class="storage-btn storage-btn-danger" id="fs-disconnect-btn" type="button">Desconectar pasta</button>
+          </div>
+        </article>
+
+        <article class="storage-card storage-guide-card">
+          <div class="storage-card-label">Como funciona</div>
+          <ul class="storage-guide">
+            <li>Você escolhe uma pasta uma única vez, por exemplo em `Documentos`.</li>
+            <li>Depois disso, cada alteração importante no site entra em autosave no arquivo `sol-de-soter-data.json`.</li>
+            <li>O navegador continua mantendo um cache local rápido como redundância.</li>
+            <li>Se trocar de navegador ou perder o cache, você pode restaurar pelo arquivo salvo na pasta.</li>
+          </ul>
+        </article>
+
+        <article class="storage-card storage-console-card">
+          <div class="storage-console-head">
+            <div class="storage-card-label">Console</div>
+            <button class="storage-console-clear" id="fs-console-refresh" type="button">Atualizar</button>
+          </div>
+          <div class="storage-console" id="fs-console"></div>
+        </article>
+
+        <article class="storage-card storage-pages-card">
+          <div class="storage-card-head">
+            <div>
+              <div class="storage-card-label">Dados por pagina</div>
+              <div class="storage-card-subtitle">Exclua somente uma area especifica sem limpar o restante do site. A exclusao usa verificacao em duas etapas e sincronizacao automatica.</div>
+            </div>
+          </div>
+          <div class="storage-pages-list" id="storage-pages-list"></div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <div data-app-footer></div>
+
+  <script src="js/app-shell.js"></script>
+  <script src="js/index.js"></script>
+  <script src="js/armazenamento.js"></script>
+</body>
+</html>
